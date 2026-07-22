@@ -1,0 +1,39 @@
+name: Quarterly data refresh
+
+# Runs at 06:00 UTC on the 1st of Jan / Apr / Jul / Oct.
+# Climate TRACE itself now releases monthly (with a ~60-day lag); quarterly
+# comfortably picks up 2-3 new months of data each run. Change the cron below
+# to "0 6 1 * *" if you'd rather refresh every month instead.
+on:
+  schedule:
+    - cron: "0 6 1 1,4,7,10 *"
+  workflow_dispatch: {}   # lets you trigger a refresh manually from the Actions tab
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pandas requests
+
+      - name: Run refresh script
+        run: python scripts/refresh_climatetrace_data.py
+
+      - name: Commit updated data if anything changed
+        run: |
+          git config user.name "smac-data-bot"
+          git config user.email "actions@github.com"
+          git add data/SMAC_methane_monthly.csv data/SMAC_methane_by_sector.csv
+          git diff --cached --quiet || git commit -m "Quarterly Climate TRACE data refresh"
+          git push
+        # Render and Railway both auto-redeploy on every push to the connected
+        # branch (same as Streamlit Community Cloud did), so no separate
+        # deploy step is needed here.

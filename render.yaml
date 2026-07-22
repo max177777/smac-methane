@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: smac-methane
+    runtime: docker
+    plan: starter          # cheapest paid tier that doesn't spin down; change to "free" to test first
+    autoDeploy: true        # redeploy automatically on every push to the connected branch
+    healthCheckPath: /      # Streamlit responds on / once it's up
+    envVars:
+      - key: STREAMLIT_SERVER_HEADLESS
+        value: "true"
