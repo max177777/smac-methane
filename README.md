@@ -1,6 +1,5 @@
 ---
-title: SMAC Methane Atlas
-emoji: 🌫️
+title: SMAC Methane Inventory Tool
 colorFrom: green
 colorTo: yellow
 sdk: streamlit
