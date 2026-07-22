@@ -1,14 +1,3 @@
----
-title: SMAC Methane Inventory Tool
-colorFrom: green
-colorTo: yellow
-sdk: streamlit
-sdk_version: 1.50.0
-app_file: app.py
-pinned: false
-license: mit
----
-
 # SMAC Methane Inventory & AI Project
 
 A Streamlit prototype that translates Climate TRACE methane data into structured
