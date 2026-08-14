@@ -1,5 +1,5 @@
 """
-Quarterly data refresh for the SMAC Methane Atlas.
+Quarterly data refresh for the SMAC Subnational Methane Inventory Tool.
 
 What this does
 ---------------

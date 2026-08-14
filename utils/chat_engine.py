@@ -10,8 +10,8 @@ import re
 from dataclasses import dataclass
 
 from utils.data_loader import (
-    COUNTRY_META, country_yearly, country_monthly, location_monthly,
-    location_yearly_ranking, fmt_int, pct_change,
+    COUNTRY_META, COUNTRY_ORDER, country_yearly, country_monthly, location_monthly,
+    location_yearly_ranking, fmt_int, pct_change, CURRENT_YEAR, DATA_RANGE_LABEL,
 )
 from utils.policy_content import POLICY, PATHWAYS, GWP100, GWP20
 
@@ -90,12 +90,15 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
         row = yearly[yearly["year"] == year]
         return float(row["ch4_tonnes"].iloc[0]) if len(row) else 0.0
 
-    y21, y22, y23, y24 = y(2021), y(2022), y(2023), y(2024)
-    yoy = pct_change(y24, y23)
-    drift = pct_change(y24, y21)
+    y21 = y(2021)
+    y_prior = y(CURRENT_YEAR - 1)
+    y_now = y(CURRENT_YEAR)
+    yoy = pct_change(y_now, y_prior)
+    drift = pct_change(y_now, y21)
+    n_years = CURRENT_YEAR - 2021
 
     # Subnational ranking for context
-    rank = location_yearly_ranking(iso, year=2024)
+    rank = location_yearly_ranking(iso, year=CURRENT_YEAR)
     total = rank["ch4_tonnes_year"].sum()
     top3_names = rank["location"].head(3).tolist()
     top3_share = rank.head(3)["share"].sum()
@@ -105,28 +108,28 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
     # ---------- DATA ----------
     if mode == "data":
         if is_loc:
-            share_of_nation = y24 / total * 100 if total else 0
+            share_of_nation = y_now / total * 100 if total else 0
             summary = (
-                f"In 2024, **{subject}** emitted **{fmt_int(y24 * mult)} {unit}** "
+                f"In {CURRENT_YEAR}, **{subject}** emitted **{fmt_int(y_now * mult)} {unit}** "
                 f"of methane (under the *{metric_label}* framing). That is "
                 f"**{share_of_nation:.2f}%** of {country_name}'s national CH₄ total."
             )
             insight = (
                 f"- 2021 baseline: **{fmt_int(y21 * mult)} {unit}**\n"
-                f"- 2023: **{fmt_int(y23 * mult)} {unit}**\n"
-                f"- 2024: **{fmt_int(y24 * mult)} {unit}**\n"
+                f"- {CURRENT_YEAR - 1}: **{fmt_int(y_prior * mult)} {unit}**\n"
+                f"- {CURRENT_YEAR}: **{fmt_int(y_now * mult)} {unit}**\n"
                 f"- Year-over-year: **{yoy:+.2f}%** ({'rising' if yoy > 0 else 'falling'})\n"
-                f"- Four-year drift: **{drift:+.2f}%**"
+                f"- {n_years}-year drift: **{drift:+.2f}%**"
             )
         else:
             summary = (
-                f"In 2024, **{country_name}** emitted **{fmt_int(y24 * mult)} {unit}** "
+                f"In {CURRENT_YEAR}, **{country_name}** emitted **{fmt_int(y_now * mult)} {unit}** "
                 f"of methane. The top three subnational units "
                 f"({', '.join(top3_names)}) together explain **{top3_share:.1f}%** "
                 f"of the national footprint."
             )
             top5 = rank.head(5)
-            insight = "Top subnational units (2024 CH₄, tonnes):\n\n" + "\n".join(
+            insight = f"Top subnational units ({CURRENT_YEAR} CH₄, tonnes):\n\n" + "\n".join(
                 f"- **{r.location}** — {fmt_int(r.ch4_tonnes_year)} t ({r.share:.1f}%)"
                 for r in top5.itertuples()
             )
@@ -143,7 +146,7 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
             ))
         blocks.append(ChatBlock(
             "Method · Uncertainty",
-            f"Data: Climate TRACE 2024 release · monthly subnational methane · 48-month series. "
+            f"Data: Climate TRACE · monthly subnational methane · {DATA_RANGE_LABEL} series. "
             f"Metric framing: {metric_label} (multiplier ×{mult:g}). Uncertainty band ≈ ±15-25% at subunit level.",
             is_method=True
         ))
@@ -158,7 +161,7 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
                                 "July", "August", "September", "October", "November", "December"][int(m)]
 
         summary = (
-            f"Across 2021–2024, **{subject}** shows a **{'rising' if drift > 0 else 'falling'}** "
+            f"Across {DATA_RANGE_LABEL}, **{subject}** shows a **{'rising' if drift > 0 else 'falling'}** "
             f"trajectory of **{drift:+.2f}%** in CH₄. The most recent year-on-year change is "
             f"**{yoy:+.2f}%**."
         )
@@ -168,7 +171,7 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
             f"- Low month: **{month_name(trough['month'])} {int(trough['year'])}** — "
             f"{fmt_int(trough['ch4_tonnes'])} t CH₄\n"
             f"- Range ratio (peak/trough): **{peak['ch4_tonnes'] / trough['ch4_tonnes']:.2f}×**\n"
-            f"- Annual average drift: **{drift / 3:+.2f}% / year**"
+            f"- Annual average drift: **{drift / max(n_years, 1):+.2f}% / year**"
         )
         if drift > 0:
             policy_ctx = ("A rising trajectory means current policy is not bending the curve. "
@@ -205,7 +208,7 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
         top3_total = rank.head(3)["ch4_tonnes_year"].sum()
         blocks.append(ChatBlock(
             "Key Data Insight",
-            f"In 2024, **{', '.join(top3_names)}** together produced "
+            f"In {CURRENT_YEAR}, **{', '.join(top3_names)}** together produced "
             f"**{fmt_int(top3_total)} t CH₄** — about **{top3_share:.1f}%** of national methane. "
             f"Yet only a subset of {subunit_type}s have binding instruments beyond the federal floor."
         ))
@@ -269,10 +272,10 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
             "depends on the time horizon — that choice changes which sectors look most urgent."
         ))
         insight = (
-            f"For {subject}'s {fmt_int(y24)} t CH₄ in 2024:\n\n"
-            f"- **GWP100 (×{GWP100}):** ≈ {fmt_int(y24 * GWP100)} t CO₂e — comparable to long-term "
+            f"For {subject}'s {fmt_int(y_now)} t CH₄ in {CURRENT_YEAR}:\n\n"
+            f"- **GWP100 (×{GWP100}):** ≈ {fmt_int(y_now * GWP100)} t CO₂e — comparable to long-term "
             f"climate accounting.\n"
-            f"- **GWP20 (×{GWP20}):** ≈ {fmt_int(y24 * GWP20)} t CO₂e — reflects near-term warming "
+            f"- **GWP20 (×{GWP20}):** ≈ {fmt_int(y_now * GWP20)} t CO₂e — reflects near-term warming "
             f"pressure relevant to 1.5°C pathways.\n\n"
             f"The GWP20 framing roughly **triples** methane's apparent weight versus GWP100."
         )
@@ -386,7 +389,7 @@ GENERAL_PATTERNS = [
        "- Improves monitoring, reporting, and verification (MRV) for both CO₂ and methane\n"
        "- Releases new data monthly, with about a 2-month lag\n\n"
        "**Why it matters:** Country-level inventories submitted to the UNFCCC are usually delayed by a year or more, and some large emitters don't report at all. Climate TRACE provides a near-real-time, independently verified alternative.\n\n"
-       "Time magazine named it one of the hundred best inventions of 2020. The data this prototype uses (the methane emissions you see across all 11 countries from 2021 to 2024) comes from Climate TRACE."),
+       f"Time magazine named it one of the hundred best inventions of 2020. The data this prototype uses (the methane emissions you see across all {len(COUNTRY_ORDER)} countries from {DATA_RANGE_LABEL}) comes from Climate TRACE."),
 
     (re.compile(r"joke|funny|laugh", re.I),
      "Climate science professor walks into a bar and orders a methane molecule. The bartender "
@@ -395,7 +398,7 @@ GENERAL_PATTERNS = [
 
     (re.compile(r"thank|thanks|cheers", re.I),
      "You're welcome. If you'd like to dig into the actual data, the Methane Specialist tab on "
-     "the left has the full atlas wired up."),
+     "the left has the full jurisdiction browser wired up."),
 ]
 
 

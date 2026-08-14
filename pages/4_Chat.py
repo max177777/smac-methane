@@ -9,6 +9,7 @@ import streamlit as st
 from utils.theme import inject_theme
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_ORDER, list_locations, list_all_locations_flat, country_yearly, fmt_mt,
+    CURRENT_YEAR, DATA_RANGE_LABEL,
 )
 from utils.policy_content import POLICY
 from utils.chat_engine import (
@@ -183,10 +184,10 @@ def methane_sidebar():
 
             # Show country quick stat
             cy = country_yearly(country)
-            y24 = float(cy[cy["year"] == 2024]["ch4_tonnes"].iloc[0]) if 2024 in cy["year"].values else 0
+            y_now = float(cy[cy["year"] == CURRENT_YEAR]["ch4_tonnes"].iloc[0]) if CURRENT_YEAR in cy["year"].values else 0
             st.markdown(
                 f"<div class='smac-meta' style='margin:-8px 0 18px;font-size:10px;'>"
-                f"{fmt_mt(y24)} Mt CH₄ in 2024 · {COUNTRY_META[country]['subunit_type']}s</div>",
+                f"{fmt_mt(y_now)} Mt CH₄ in {CURRENT_YEAR} · {COUNTRY_META[country]['subunit_type']}s</div>",
                 unsafe_allow_html=True,
             )
 
@@ -380,7 +381,7 @@ def render_methane_message(msg: dict):
         if msg.get("chart_df") is not None:
             st.markdown(
                 f'<div class="smac-meta" style="margin-top:14px;font-size:10px;">'
-                f'{msg["chart_subject"]} · monthly CH₄ tonnes · 2021–2024</div>',
+                f'{msg["chart_subject"]} · monthly CH₄ tonnes · {DATA_RANGE_LABEL}</div>',
                 unsafe_allow_html=True,
             )
             st.plotly_chart(
@@ -407,12 +408,12 @@ def render_general_empty():
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
                     text-align:center;padding:56px 20px 18px;">
           <div style="width:60px;height:60px;border:1.5px solid var(--ink);border-radius:50%;
-                      display:grid;place-items:center;font-family:Fraunces,serif;font-size:24px;
+                      display:grid;place-items:center;font-family:Quicksand,sans-serif;font-size:24px;
                       background:var(--moss);color:var(--paper);margin-bottom:22px;
                       box-shadow:var(--shadow);">G</div>
           <div class="smac-eyebrow" style="justify-content:center;">General Assistant</div>
           <h2 style="font-size:2.1rem;margin:2px 0 14px;">Ask me <em>anything.</em></h2>
-          <p style="font-family:Fraunces,serif;font-size:16px;line-height:1.6;color:var(--ink-soft);
+          <p style="font-family:Quicksand,sans-serif;font-size:16px;line-height:1.6;color:var(--ink-soft);
                     max-width:480px;font-weight:300;margin-bottom:26px;">
             A general-purpose chat for climate explainers, definitions, drafting, or open questions.
             For data-grounded methane analysis, switch to the
@@ -443,7 +444,7 @@ def methane_chips():
     country_name = COUNTRY_META[st.session_state.chat_country]["name"]
     return [
         f"Top emitters in {country_name}",
-        f"{country_name} 2021 to 2024 trend",
+        f"{country_name} {DATA_RANGE_LABEL} trend",
         f"How does GWP20 change {country_name}?",
         f"What policies should {country_name} prioritise?",
     ]

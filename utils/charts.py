@@ -11,15 +11,15 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
-# Palette (matches the SMAC editorial theme)
-PAPER = "#f4efe6"
-INK = "#1a1f1a"
-INK_SOFT = "#3a4239"
-LINE_SOFT = "#c4bca8"
-MOSS = "#2d4a36"
-COPPER = "#b5612a"
-RUST = "#7a3a1a"
-SKY = "#5d7a8c"
+# Palette (matches the SMAC brand: white base, mint-green accent)
+PAPER = "#ffffff"
+INK = "#12161a"
+INK_SOFT = "#566058"
+LINE_SOFT = "#e2e9e5"
+MOSS = "#0e9d6c"      # primary brand mint (deep)
+COPPER = "#eaa93d"    # secondary chart accent (warm, for contrast against green)
+RUST = "#c9645a"      # tertiary chart accent
+SKY = "#4c8bf5"       # quaternary chart accent
 
 
 def time_series_plotly(df: pd.DataFrame, y_col: str = "ch4_tonnes",
@@ -32,7 +32,7 @@ def time_series_plotly(df: pd.DataFrame, y_col: str = "ch4_tonnes",
         mode="lines",
         line=dict(color=MOSS, width=2),
         fill="tozeroy",
-        fillcolor="rgba(45,74,54,0.12)",
+        fillcolor="rgba(14,157,108,0.12)",
         name="CH₄ tonnes",
         hovertemplate="<b>%{x|%b %Y}</b><br>%{y:,.0f} t CH₄<extra></extra>",
     ))
@@ -45,16 +45,16 @@ def time_series_plotly(df: pd.DataFrame, y_col: str = "ch4_tonnes",
         title=dict(text=title, font=dict(size=14, color=INK_SOFT)) if title else None,
         xaxis=dict(
             showgrid=False, showline=True, linecolor=INK, linewidth=1,
-            tickfont=dict(size=10, family="JetBrains Mono, monospace", color=INK_SOFT),
+            tickfont=dict(size=10, family="Quicksand, sans-serif", color=INK_SOFT),
         ),
         yaxis=dict(
             showgrid=True, gridcolor=LINE_SOFT, gridwidth=0.5,
             zeroline=False, showline=True, linecolor=INK, linewidth=1,
-            tickfont=dict(size=10, family="JetBrains Mono, monospace", color=INK_SOFT),
+            tickfont=dict(size=10, family="Quicksand, sans-serif", color=INK_SOFT),
             tickformat=",.0f",
         ),
         showlegend=False,
-        hoverlabel=dict(bgcolor=PAPER, bordercolor=INK, font=dict(family="JetBrains Mono, monospace", color=INK)),
+        hoverlabel=dict(bgcolor=PAPER, bordercolor=INK, font=dict(family="Quicksand, sans-serif", color=INK)),
     )
     return fig
 
@@ -75,13 +75,13 @@ def multi_series_plotly(df_long: pd.DataFrame, height: int = 320) -> go.Figure:
         plot_bgcolor=PAPER, paper_bgcolor=PAPER,
         font=dict(family="Inter, sans-serif", size=12, color=INK),
         xaxis=dict(showgrid=False, showline=True, linecolor=INK, linewidth=1,
-                   tickfont=dict(size=10, family="JetBrains Mono, monospace", color=INK_SOFT)),
+                   tickfont=dict(size=10, family="Quicksand, sans-serif", color=INK_SOFT)),
         yaxis=dict(showgrid=True, gridcolor=LINE_SOFT, gridwidth=0.5, zeroline=False,
                    showline=True, linecolor=INK, linewidth=1,
-                   tickfont=dict(size=10, family="JetBrains Mono, monospace", color=INK_SOFT),
+                   tickfont=dict(size=10, family="Quicksand, sans-serif", color=INK_SOFT),
                    tickformat=",.0f"),
-        legend=dict(orientation="h", y=1.10, x=0, font=dict(size=11, family="JetBrains Mono, monospace")),
-        hoverlabel=dict(bgcolor=PAPER, bordercolor=INK, font=dict(family="JetBrains Mono, monospace", color=INK)),
+        legend=dict(orientation="h", y=1.10, x=0, font=dict(size=11, family="Quicksand, sans-serif")),
+        hoverlabel=dict(bgcolor=PAPER, bordercolor=INK, font=dict(family="Quicksand, sans-serif", color=INK)),
     )
     return fig
 
@@ -97,8 +97,8 @@ def horizontal_bar_altair(df: pd.DataFrame, label_col: str, value_col: str,
                               labelLimit=200)),
         x=alt.X(f"{value_col}:Q",
                 axis=alt.Axis(title=value_label, titleFontSize=10,
-                              titleFont="JetBrains Mono", titleColor=INK_SOFT,
-                              labelFontSize=10, labelFont="JetBrains Mono",
+                              titleFont="Quicksand", titleColor=INK_SOFT,
+                              labelFontSize=10, labelFont="Quicksand",
                               labelColor=INK_SOFT, format=",.0f",
                               gridColor=LINE_SOFT, gridDash=[2, 2])),
         tooltip=[label_col, alt.Tooltip(value_col, format=",.0f")],
@@ -126,8 +126,8 @@ def sector_bar_altair(sectors: list[tuple[str, int]], height: int = 240) -> alt.
                               labelColor=INK, labelLimit=200)),
         x=alt.X("pct:Q",
                 axis=alt.Axis(title="% of national CH₄", titleFontSize=10,
-                              titleFont="JetBrains Mono", titleColor=INK_SOFT,
-                              labelFontSize=10, labelFont="JetBrains Mono",
+                              titleFont="Quicksand", titleColor=INK_SOFT,
+                              labelFontSize=10, labelFont="Quicksand",
                               labelColor=INK_SOFT, gridColor=LINE_SOFT, gridDash=[2, 2])),
         color=alt.Color("color:N", scale=None, legend=None),
         tooltip=["sector", alt.Tooltip("pct", title="Share %")],
@@ -146,8 +146,8 @@ def yoy_bar_altair(df: pd.DataFrame, label_col: str = "location",
                               labelColor=INK)),
         x=alt.X(f"{value_col}:Q",
                 axis=alt.Axis(title="YoY change (%)", titleFontSize=10,
-                              titleFont="JetBrains Mono", titleColor=INK_SOFT,
-                              labelFontSize=10, labelFont="JetBrains Mono",
+                              titleFont="Quicksand", titleColor=INK_SOFT,
+                              labelFontSize=10, labelFont="Quicksand",
                               labelColor=INK_SOFT, gridColor=LINE_SOFT, gridDash=[2, 2])),
         color=alt.Color("color:N", scale=None, legend=None),
         tooltip=[label_col, alt.Tooltip(value_col, format=".2f", title="YoY %")],
@@ -161,7 +161,7 @@ def sparkline_plotly(df: pd.DataFrame, y_col: str = "ch4_tonnes", height: int = 
     fig.add_trace(go.Scatter(
         x=df["date"], y=df[y_col], mode="lines",
         line=dict(color=MOSS, width=1.4),
-        fill="tozeroy", fillcolor="rgba(45,74,54,0.10)",
+        fill="tozeroy", fillcolor="rgba(14,157,108,0.10)",
         hoverinfo="skip",
     ))
     fig.update_layout(
@@ -178,7 +178,7 @@ def comparison_plotly(df_long: pd.DataFrame, value_label: str = "CH₄ tonnes",
     """Overlay multiple subnational series for head-to-head comparison.
     df_long must have columns: date, value, series.
     """
-    palette = [MOSS, COPPER, SKY, RUST, INK_SOFT, "#8a6d3b", "#436c70", "#9c5454"]
+    palette = [MOSS, COPPER, SKY, RUST, INK_SOFT, "#7c5cbf", "#2f6fa8", "#d97757"]
     fig = go.Figure()
     for i, (name, sub) in enumerate(df_long.groupby("series", sort=False)):
         fig.add_trace(go.Scatter(
@@ -192,19 +192,19 @@ def comparison_plotly(df_long: pd.DataFrame, value_label: str = "CH₄ tonnes",
         plot_bgcolor=PAPER, paper_bgcolor=PAPER,
         font=dict(family="Inter, sans-serif", size=12, color=INK),
         xaxis=dict(showgrid=False, showline=True, linecolor=INK, linewidth=1,
-                   tickfont=dict(size=10, family="JetBrains Mono, monospace", color=INK_SOFT)),
-        yaxis=dict(title=dict(text=value_label, font=dict(size=10, family="JetBrains Mono, monospace", color=INK_SOFT)),
+                   tickfont=dict(size=10, family="Quicksand, sans-serif", color=INK_SOFT)),
+        yaxis=dict(title=dict(text=value_label, font=dict(size=10, family="Quicksand, sans-serif", color=INK_SOFT)),
                    showgrid=True, gridcolor=LINE_SOFT, gridwidth=0.5, zeroline=False,
                    showline=True, linecolor=INK, linewidth=1,
-                   tickfont=dict(size=10, family="JetBrains Mono, monospace", color=INK_SOFT),
+                   tickfont=dict(size=10, family="Quicksand, sans-serif", color=INK_SOFT),
                    tickformat=",.0f"),
-        legend=dict(orientation="h", y=1.12, x=0, font=dict(size=11, family="JetBrains Mono, monospace")),
-        hoverlabel=dict(bgcolor=PAPER, bordercolor=INK, font=dict(family="JetBrains Mono, monospace", color=INK)),
+        legend=dict(orientation="h", y=1.12, x=0, font=dict(size=11, family="Quicksand, sans-serif")),
+        hoverlabel=dict(bgcolor=PAPER, bordercolor=INK, font=dict(family="Quicksand, sans-serif", color=INK)),
     )
     return fig
 
 
-# Stable sector palette + stacking order (editorial earthy tones)
+# Stable sector palette + stacking order
 SECTOR_ORDER = [
     "fossil-fuel-operations", "agriculture", "waste", "land-use-change",
     "manufacturing", "power", "transportation", "mineral-extraction",
@@ -215,12 +215,12 @@ SECTOR_COLORS = {
     "agriculture": MOSS,
     "waste": RUST,
     "land-use-change": SKY,
-    "manufacturing": "#8a6d3b",
-    "power": "#436c70",
-    "transportation": "#9c5454",
+    "manufacturing": "#7c5cbf",
+    "power": "#2f6fa8",
+    "transportation": "#d97757",
     "mineral-extraction": INK_SOFT,
     "other-energy-use": LINE_SOFT,
-    "other": "#b8ad95",
+    "other": "#b9c4bd",
 }
 
 
@@ -260,13 +260,13 @@ def sector_stack_plotly(df_long: pd.DataFrame, normalize: bool = False,
         xaxis=dict(showgrid=False, showline=True, linecolor=INK, linewidth=1,
                    tickfont=dict(size=11, family="Inter, sans-serif", color=INK)),
         yaxis=dict(title=dict(text="share of CH₄ (%)" if normalize else "CH₄ (t)",
-                              font=dict(size=10, family="JetBrains Mono, monospace", color=INK_SOFT)),
+                              font=dict(size=10, family="Quicksand, sans-serif", color=INK_SOFT)),
                    showgrid=True, gridcolor=LINE_SOFT, gridwidth=0.5, zeroline=False,
                    showline=True, linecolor=INK, linewidth=1,
-                   tickfont=dict(size=10, family="JetBrains Mono, monospace", color=INK_SOFT),
+                   tickfont=dict(size=10, family="Quicksand, sans-serif", color=INK_SOFT),
                    tickformat=",.0f"),
-        legend=dict(orientation="h", y=1.10, x=0, font=dict(size=10, family="JetBrains Mono, monospace")),
-        hoverlabel=dict(bgcolor=PAPER, bordercolor=INK, font=dict(family="JetBrains Mono, monospace", color=INK)),
+        legend=dict(orientation="h", y=1.10, x=0, font=dict(size=10, family="Quicksand, sans-serif")),
+        hoverlabel=dict(bgcolor=PAPER, bordercolor=INK, font=dict(family="Quicksand, sans-serif", color=INK)),
     )
     return fig
 
@@ -297,7 +297,7 @@ def sector_pies_plotly(df_long: pd.DataFrame, height: int = 300) -> go.Figure:
                         line=dict(color=PAPER, width=1.5)),
             textinfo="percent", texttemplate="%{percent:.0%}",
             textposition="inside", insidetextorientation="horizontal",
-            textfont=dict(size=10, family="JetBrains Mono, monospace", color=PAPER),
+            textfont=dict(size=10, family="Quicksand, sans-serif", color=PAPER),
             hovertemplate=f"<b>{reg}</b><br>%{{label}}: %{{percent}}<extra></extra>",
             showlegend=False,
         ), row=1, col=i + 1)
@@ -308,8 +308,8 @@ def sector_pies_plotly(df_long: pd.DataFrame, height: int = 300) -> go.Figure:
         plot_bgcolor=PAPER, paper_bgcolor=PAPER,
         font=dict(family="Inter, sans-serif", size=12, color=INK),
         hoverlabel=dict(bgcolor=PAPER, bordercolor=INK,
-                        font=dict(family="JetBrains Mono, monospace", color=INK)),
+                        font=dict(family="Quicksand, sans-serif", color=INK)),
     )
     # subplot titles -> serif, ink
-    fig.update_annotations(font=dict(size=13, family="Fraunces, serif", color=INK))
+    fig.update_annotations(font=dict(size=13, family="Quicksand, sans-serif", color=INK))
     return fig

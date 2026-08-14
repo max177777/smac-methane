@@ -21,9 +21,9 @@ st.set_page_config(
 
 overview = st.Page("pages/1_Overview.py", title="Overview", default=True)
 data_methods = st.Page("pages/5_Data_Methods.py", title="Data & Methods")
-atlas = st.Page("pages/2_Atlas.py", title="SMAC")
+country_profile = st.Page("pages/2_Country_Profile.py", title="SMAC")
 insights = st.Page("pages/3_Insights.py", title="Insights")
 chat = st.Page("pages/4_Chat.py", title="Chat")
 
-pg = st.navigation([overview, data_methods, atlas, insights, chat], position="top")
+pg = st.navigation([overview, data_methods, country_profile, insights, chat], position="top")
 pg.run()

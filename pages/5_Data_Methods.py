@@ -20,7 +20,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<p style="font-family:Fraunces,serif;font-size:19px;line-height:1.65;'
+    '<p style="font-family:Quicksand,sans-serif;font-size:19px;line-height:1.65;'
     'color:var(--ink-soft);max-width:760px;font-weight:300;">'
     "This tool exists to give SMAC members a fast, first-pass read on <strong>where their "
     "methane comes from</strong>. Concretely, we are trying to do one thing well: get a "
@@ -102,7 +102,7 @@ for title, desc in limitations:
     st.markdown(
         f"""
         <div style="border-left:3px solid var(--copper);padding:4px 20px;margin-bottom:20px;">
-          <div style="font-family:Fraunces,serif;font-size:19px;font-weight:400;margin-bottom:6px;">{title}</div>
+          <div style="font-family:Quicksand,sans-serif;font-size:19px;font-weight:400;margin-bottom:6px;">{title}</div>
           <div style="font-size:14px;line-height:1.65;color:var(--ink-soft);max-width:720px;">{desc}</div>
         </div>
         """,
@@ -150,7 +150,7 @@ st.markdown(
 
 st.markdown("<br><br>", unsafe_allow_html=True)
 st.markdown(
-    '<div style="text-align:center;font-family:JetBrains Mono,monospace;font-size:10px;color:var(--ink-soft);letter-spacing:0.14em;text-transform:uppercase;padding:24px 0;border-top:1px solid var(--line);">'
+    '<div style="text-align:center;font-family:Quicksand,sans-serif;font-size:10px;color:var(--ink-soft);letter-spacing:0.14em;text-transform:uppercase;padding:24px 0;border-top:1px solid var(--line);">'
     'smac prototype <span style="color:var(--copper);">✦</span> climate trace data · updated quarterly <span style="color:var(--copper);">✦</span> TESTING '
     '</div>',
     unsafe_allow_html=True,

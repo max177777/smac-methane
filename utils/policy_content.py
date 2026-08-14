@@ -105,6 +105,26 @@ POLICY = {
             ("Autonomous-community plans", "Galicia, Castile and León lead on agricultural methane."),
         ],
     },
+    "IDN": {
+        "summary": "Profile content for Indonesia is being prepared as SMAC onboarding continues — Palembang and West Java joined as members. Emissions data and curated policy detail will populate here once available.",
+        "governance": "To be added.",
+        "policies": [],
+    },
+    "CHN": {
+        "summary": "Profile content for China is being prepared as SMAC onboarding continues — Beijing joined as an observer. Emissions data and curated policy detail will populate here once available.",
+        "governance": "To be added.",
+        "policies": [],
+    },
+    "ITA": {
+        "summary": "Profile content for Italy is being prepared as SMAC onboarding continues — Lombardy and Emilia-Romagna joined as observers. Emissions data and curated policy detail will populate here once available.",
+        "governance": "To be added.",
+        "policies": [],
+    },
+    "BOL": {
+        "summary": "Profile content for Bolivia is being prepared as SMAC onboarding continues — Santa Cruz joined as a member. Emissions data and curated policy detail will populate here once available.",
+        "governance": "To be added.",
+        "policies": [],
+    },
 }
 
 
@@ -154,6 +174,10 @@ SECTORS = {
         ("Enteric Fermentation", 36), ("Landfills & Waste", 28), ("Manure Management", 22),
         ("Energy", 8), ("Other", 6),
     ],
+    "IDN": [],
+    "CHN": [],
+    "ITA": [],
+    "BOL": [],
 }
 
 
