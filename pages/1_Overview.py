@@ -24,7 +24,7 @@ with col1:
     st.markdown(
         '<div style="display:flex;align-items:center;gap:10px;margin:-4px 0 18px;flex-wrap:wrap;">'
         '<span class="smac-pill">● Prototype</span>'
-        f'<span class="smac-meta" style="font-size:12px;">Climate TRACE · {DATA_RANGE_LABEL}</span>'
+        f'<span class="smac-meta" style="font-size:12px;">SMAC · {DATA_RANGE_LABEL}</span>'
         '</div>',
         unsafe_allow_html=True,
     )
