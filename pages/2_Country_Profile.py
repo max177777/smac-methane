@@ -33,9 +33,9 @@ all_locs = all_member_locations()  # [(iso, location), ...] sorted by country, t
 if "smac_jurisdiction" not in st.session_state:
     st.session_state.smac_jurisdiction = ("USA", "California")
 
-eyebrow("THE SMAC")
+eyebrow("JurisdictionS")
 st.markdown(
-    "<h1 style='font-size:2.4rem;margin-bottom:6px;'>Jurisdictions</h1>",
+    "<h1 style='font-size:2.4rem;margin-bottom:6px;'>SMAC</h1>",
     unsafe_allow_html=True,
 )
 st.markdown(
