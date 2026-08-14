@@ -40,6 +40,19 @@ def _clean_location_name(raw: str) -> str:
     return raw
 
 
+# Display-only overrides — the underlying data/roster key stays as the left-hand value
+# (needed for joins/lookups), but the UI shows the right-hand value instead.
+_DISPLAY_NAME_OVERRIDES = {
+    "Delhi [New Delhi]": "Delhi",
+}
+
+
+def display_name(location: str) -> str:
+    """UI-facing name for a location — use this everywhere a jurisdiction name is
+    shown to the user. Does NOT change the underlying key used for data lookups."""
+    return _DISPLAY_NAME_OVERRIDES.get(location, location)
+
+
 # Rows to drop outright: near-duplicate jurisdictions in the source data where two
 # overlapping boundaries were both published for the same place. Kept side chosen to
 # match earlier confirmed decisions.
