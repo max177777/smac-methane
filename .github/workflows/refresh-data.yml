@@ -1,12 +1,15 @@
 name: Quarterly data refresh
 
-# Runs at 06:00 UTC on the 1st of Jan / Apr / Jul / Oct.
-# Climate TRACE itself now releases monthly (with a ~60-day lag); quarterly
-# comfortably picks up 2-3 new months of data each run. Change the cron below
-# to "0 6 1 * *" if you'd rather refresh every month instead.
+# ⚠️ DISABLED as of the SMAC-2026-DATA-TRACE switch (Aug 2026). This script and its
+# schedule target the OLD data format (data/SMAC_methane_monthly.csv +
+# data/SMAC_methane_by_sector.csv), which the app no longer reads — everything now
+# runs on data/SMAC_ch4_summary.csv. Re-enable only after scripts/refresh_climatetrace_data.py
+# is rewritten to produce that new schema (iso3, name, sector_category, total_emissions).
+# The schedule trigger is commented out below; workflow_dispatch (manual run) still
+# works if you want to test the old script, but it will NOT update the file the app uses.
 on:
-  schedule:
-    - cron: "0 6 1 1,4,7,10 *"
+  # schedule:
+  #   - cron: "0 6 1 1,4,7,10 *"
   workflow_dispatch: {}   # lets you trigger a refresh manually from the Actions tab
 
 jobs:

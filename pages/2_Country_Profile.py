@@ -1,51 +1,87 @@
 """
-Country / Jurisdiction Profile page.
-Country selector, KPIs, time series, sector decomposition, subnational ranking.
+SMAC page — jurisdiction (not country) profile.
+Every button is one actual SMAC member/observer subnational unit, color-coded by
+country, sorted alphabetically by country then by jurisdiction. Shows that
+jurisdiction's KPIs, time series, real sector breakdown, top emission sources, and a
+quick-bullet Methane Action Plan built from those top sources.
 """
 
-import pandas as pd
+import re
+
 import streamlit as st
 
 from utils.theme import inject_theme, eyebrow
 from utils.data_loader import (
-    COUNTRY_META, COUNTRY_ORDER, country_monthly, country_yearly, CURRENT_YEAR, DATA_RANGE_LABEL,
-    location_yearly_ranking, member_status, fmt_int, fmt_mt, pct_change,
+    COUNTRY_META, COUNTRY_COLORS, CURRENT_YEAR, DATA_RANGE_LABEL,
+    all_member_locations, member_status, location_yearly, location_monthly,
+    location_yearly_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
+    fmt_int, fmt_mt, pct_change,
 )
-from utils.policy_content import POLICY, SECTORS, GWP100, GWP20
-from utils.charts import time_series_plotly, sector_bar_altair, yoy_bar_altair
-
+from utils.policy_content import POLICY, GWP100, GWP20
+from utils.charts import time_series_plotly, SECTOR_COLORS
 
 inject_theme()
 
-# ============== COUNTRY SELECTOR ==============
-# Use session state so selection persists across reruns
-if "profile_country" not in st.session_state:
-    st.session_state.profile_country = "USA"
 
-# Tab-style country picker — a wrapping grid (not one row of 15 too-narrow columns,
-# which squeezed "United States" etc. down to one letter per line)
-PILLS_PER_ROW = 5
-for row_start in range(0, len(COUNTRY_ORDER), PILLS_PER_ROW):
-    row_isos = COUNTRY_ORDER[row_start:row_start + PILLS_PER_ROW]
-    tab_cols = st.columns(PILLS_PER_ROW)
-    for i, iso in enumerate(row_isos):
-        with tab_cols[i]:
-            is_active = st.session_state.profile_country == iso
-            btn_type = "primary" if is_active else "secondary"
-            if st.button(COUNTRY_META[iso]["name"], key=f"profile_tab_{iso}",
-                         use_container_width=True, type=btn_type):
-                st.session_state.profile_country = iso
-                st.rerun()
+def _slug(iso: str, loc: str) -> str:
+    return "jc-" + re.sub(r"[^a-z0-9]+", "-", f"{iso}-{loc}".lower()).strip("-")
 
-iso = st.session_state.profile_country
-meta = COUNTRY_META[iso]
-policy = POLICY[iso]
-sectors = SECTORS[iso]
+
+# ============== JURISDICTION SELECTOR ==============
+all_locs = all_member_locations()  # [(iso, location), ...] sorted by country, then location
+
+if "smac_jurisdiction" not in st.session_state:
+    st.session_state.smac_jurisdiction = ("USA", "California")
+
+eyebrow("THE SMAC")
+st.markdown(
+    "<h1 style='font-size:2.4rem;margin-bottom:6px;'>Jurisdictions</h1>",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<div class="smac-meta" style="margin-bottom:16px;">'
+    'every button below is an actual SMAC member or observer &nbsp;·&nbsp; '
+    'colored by country &nbsp;·&nbsp; A–Z by country, then by jurisdiction</div>',
+    unsafe_allow_html=True,
+)
+
+# Build the per-button color/active-state CSS once, then render real st.button widgets
+# inside st.container(key=...) wrappers — this is the supported way to give each
+# button its own styling, since Streamlit renders every element as its own DOM node
+# (raw HTML can't reach into a later widget's markup).
+css_rules = []
+for iso, loc in all_locs:
+    slug = _slug(iso, loc)
+    color = COUNTRY_COLORS.get(iso, "#0e9d6c")
+    is_active = st.session_state.smac_jurisdiction == (iso, loc)
+    ring = "outline:3px solid var(--ink); outline-offset:2px;" if is_active else ""
+    css_rules.append(
+        f'.st-key-{slug} button {{ background:{color} !important; color:#ffffff !important; '
+        f'font-size:13px !important; padding:8px 14px !important; {ring} }}'
+    )
+    css_rules.append(f'.st-key-{slug} button:hover {{ filter:brightness(1.12); }}')
+st.markdown(f"<style>{''.join(css_rules)}</style>", unsafe_allow_html=True)
+
+PILLS_PER_ROW = 6
+for row_start in range(0, len(all_locs), PILLS_PER_ROW):
+    row_items = all_locs[row_start:row_start + PILLS_PER_ROW]
+    cols = st.columns(PILLS_PER_ROW)
+    for i, (iso, loc) in enumerate(row_items):
+        with cols[i]:
+            with st.container(key=_slug(iso, loc)):
+                if st.button(loc, key=f"btn-{_slug(iso, loc)}", use_container_width=True):
+                    st.session_state.smac_jurisdiction = (iso, loc)
+                    st.rerun()
 
 st.markdown("<br>", unsafe_allow_html=True)
 
+iso, loc = st.session_state.smac_jurisdiction
+meta = COUNTRY_META[iso]
+status = member_status(iso, loc)
+status_label = {"member": "● SMAC Member", "observer": "○ SMAC Observer"}.get(status, "")
+
 # ============== HEADER ==============
-yearly = country_yearly(iso)
+yearly = location_yearly(iso, loc)
 y21 = float(yearly[yearly["year"] == 2021]["ch4_tonnes"].iloc[0]) if 2021 in yearly["year"].values else 0
 y_prior = float(yearly[yearly["year"] == CURRENT_YEAR - 1]["ch4_tonnes"].iloc[0]) if (CURRENT_YEAR - 1) in yearly["year"].values else 0
 y_now = float(yearly[yearly["year"] == CURRENT_YEAR]["ch4_tonnes"].iloc[0]) if CURRENT_YEAR in yearly["year"].values else 0
@@ -53,183 +89,152 @@ yoy = pct_change(y_now, y_prior)
 drift = pct_change(y_now, y21)
 
 ranking = location_yearly_ranking(iso, year=CURRENT_YEAR)
-n_loc = len(ranking)
-
-if ranking.empty:
-    st.markdown(
-        f'<div class="smac-meta">{meta["region"]} &nbsp; · &nbsp; new SMAC member</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(f"<h1 style='font-size:4rem;margin-top:8px;margin-bottom:18px;'>{meta['name']}</h1>",
-                unsafe_allow_html=True)
-    st.info(
-        f"**{meta['name']}** is a recent addition to SMAC's membership. Climate TRACE "
-        f"emissions data for it hasn't been loaded into this tool yet — it's coming soon. "
-        f"Pick a different country above to explore data that's already loaded.",
-        icon="🌱",
-    )
-    st.stop()
+rank_row = ranking[ranking["location"] == loc]
+rank_pos = (ranking.index[ranking["location"] == loc][0] + 1) if len(rank_row) else None
+loc_share = float(rank_row["share"].iloc[0]) if len(rank_row) else None
 
 col1, col2 = st.columns([1, 1], gap="large")
 
 with col1:
     st.markdown(
-        f'<div class="smac-meta">{meta["region"]} &nbsp; · &nbsp; {n_loc} SMAC {meta["subunit_type"]}{"s" if n_loc != 1 else ""} &nbsp; · &nbsp; {DATA_RANGE_LABEL}</div>',
+        f'<div class="smac-meta" style="display:flex;align-items:center;gap:10px;">'
+        f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;'
+        f'background:{COUNTRY_COLORS.get(iso, "#0e9d6c")};"></span>'
+        f'{meta["name"]} &nbsp;·&nbsp; {meta["region"]} &nbsp;·&nbsp; {DATA_RANGE_LABEL}</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
-        f"<h1 style='font-size:4rem;margin-top:8px;margin-bottom:18px;'>{meta['name']}</h1>",
+        f"<h1 style='font-size:3.4rem;margin-top:8px;margin-bottom:6px;'>{loc}</h1>",
         unsafe_allow_html=True,
     )
+    if status_label:
+        st.markdown(f'<span class="smac-pill">{status_label}</span>', unsafe_allow_html=True)
     st.markdown(
-        f'<p style="font-family:Quicksand,sans-serif;font-size:18px;line-height:1.6;color:var(--ink-soft);font-weight:300;">{policy["summary"]}</p>',
+        f'<a href="https://climatetrace.org/explore?search={loc.replace(" ", "+")}" '
+        f'target="_blank" style="text-decoration:none;display:inline-block;margin-top:14px;">'
+        f'<span class="smac-pill" style="background:var(--paper-3);color:var(--mint-deep);">'
+        f'🗺 View {loc} source map on Climate TRACE →</span></a>',
         unsafe_allow_html=True,
     )
-    st.markdown(
-        f'<a href="https://climatetrace.org/explore?search={meta["name"].replace(" ", "+")}" '
-        f'target="_blank" style="text-decoration:none;">'
-        f'<span class="smac-pill">🗺 View {meta["name"]} source map on Climate TRACE →</span></a>',
-        unsafe_allow_html=True,
-    )
-    with st.expander(f"Show map of {meta['name']}"):
+    with st.expander(f"Show map of {loc}"):
         import streamlit.components.v1 as components
         components.iframe(
-            f"https://www.google.com/maps?q={meta['name'].replace(' ', '+')}&output=embed",
+            f"https://www.google.com/maps?q={loc.replace(' ', '+')}+{meta['name'].replace(' ', '+')}&output=embed",
             height=220,
-        )
-        st.markdown(
-            '<div class="smac-meta" style="font-size:9px;margin-top:6px;line-height:1.5;">'
-            'General-location map for orientation. For facility-level emission sources, use '
-            'the Climate TRACE link above.</div>',
-            unsafe_allow_html=True,
         )
 
 with col2:
-    st.markdown(
-        f"""
-        <div style="border-left:1px solid var(--line);padding-left:28px;height:100%;">
-          <div style="font-family:Quicksand,sans-serif;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--copper);margin-bottom:10px;">/ Governance</div>
-          <p style="font-size:14px;line-height:1.65;color:var(--ink-soft);margin-bottom:6px;">{policy['governance']}</p>
-          <p style="font-size:11px;line-height:1.5;color:var(--ink-soft);opacity:0.75;margin-bottom:18px;">National structure, for context — the data and charts on this page cover only {n_loc} SMAC {meta['subunit_type']}{'s' if n_loc != 1 else ''}, not every {meta['subunit_type']} shown above.</p>
-          <div style="font-family:Quicksand,sans-serif;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--copper);margin-bottom:10px;">/ Key policy instruments</div>
-          {''.join(f'<p style="font-size:14px;line-height:1.65;color:var(--ink-soft);margin-bottom:14px;"><strong style="color:var(--ink);">{n}.</strong> {d}</p>' for n, d in policy['policies'])}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    kpi_cols = st.columns(2)
+    with kpi_cols[0]:
+        yoy_is_nan = yoy != yoy
+        st.metric(f"{CURRENT_YEAR} Total CH₄", f"{fmt_mt(y_now)} Mt",
+                  "—" if yoy_is_nan else f"{yoy:+.2f}% YoY",
+                  delta_color=("normal" if yoy_is_nan else ("inverse" if yoy > 0 else "normal")))
+        st.metric("CO₂e · GWP100", f"{fmt_mt(y_now * GWP100)} Mt", f"×{GWP100} IPCC AR6", delta_color="off")
+    with kpi_cols[1]:
+        rank_label = f"#{rank_pos} of {len(ranking)} in {meta['name']}" if rank_pos else "—"
+        st.metric("Rank within country", rank_label,
+                  f"{loc_share:.1f}% of national CH₄" if loc_share is not None else "", delta_color="off")
+        st.metric("CO₂e · GWP20", f"{fmt_mt(y_now * GWP20)} Mt", f"×{GWP20} IPCC AR6", delta_color="off")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ============== KPIs ==============
-kpi_cols = st.columns(4)
-with kpi_cols[0]:
-    delta_text = f"{yoy:+.2f}% YoY"
-    delta_color = "inverse" if yoy > 0 else "normal"
-    st.metric(f"{CURRENT_YEAR} Total CH₄", f"{fmt_mt(y_now)} Mt", delta_text, delta_color=delta_color)
-with kpi_cols[1]:
-    st.metric("CO₂e · GWP100", f"{fmt_mt(y_now * GWP100)} Mt", f"×{GWP100} (IPCC AR6)", delta_color="off")
-with kpi_cols[2]:
-    st.metric("CO₂e · GWP20", f"{fmt_mt(y_now * GWP20)} Mt", f"×{GWP20} (IPCC AR6)", delta_color="off")
-with kpi_cols[3]:
-    delta_color = "inverse" if drift > 0 else "normal"
-    st.metric(f"{CURRENT_YEAR - 2021}-year drift", f"{drift:+.1f}%", f"2021 → {CURRENT_YEAR}", delta_color=delta_color)
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-# ============== TIME SERIES + SECTORS ==============
+# ============== TIME SERIES + SECTOR BREAKDOWN ==============
 col_a, col_b = st.columns([1.3, 1], gap="large")
 
 with col_a:
     eyebrow("Monthly time series")
-    st.markdown(f"<h3>CH₄ tonnes · all SMAC subnational units · {DATA_RANGE_LABEL}</h3>", unsafe_allow_html=True)
-    monthly = country_monthly(iso)
+    st.markdown(f"<h3>CH₄ tonnes · {DATA_RANGE_LABEL}</h3>", unsafe_allow_html=True)
+    monthly = location_monthly(iso, loc)
     st.plotly_chart(time_series_plotly(monthly, height=320), use_container_width=True,
                     config={"displayModeBar": False})
 
 with col_b:
-    eyebrow("Sector decomposition")
-    st.markdown("<h3>Approximate · literature-derived</h3>", unsafe_allow_html=True)
-    st.altair_chart(sector_bar_altair(sectors, height=320), use_container_width=True)
+    eyebrow("Sector breakdown")
+    st.markdown(f"<h3>{CURRENT_YEAR} · real Climate TRACE data</h3>", unsafe_allow_html=True)
+    sec = location_sectors(iso, loc, CURRENT_YEAR)
+    if sec.empty:
+        st.info(f"No {CURRENT_YEAR} sector data for {loc} yet.")
+    else:
+        import plotly.graph_objects as go
+        fig = go.Figure(go.Pie(
+            labels=sec["sector"], values=sec["total_emission"], hole=0.5,
+            marker=dict(colors=[SECTOR_COLORS.get(s, "#b9c4bd") for s in sec["sector"]]),
+            textinfo="percent", textfont=dict(family="Quicksand, sans-serif", size=11),
+        ))
+        fig.update_layout(height=320, showlegend=True,
+                          legend=dict(orientation="v", font=dict(size=10, family="Quicksand, sans-serif")),
+                          margin=dict(l=0, r=0, t=10, b=10), paper_bgcolor="rgba(0,0,0,0)")
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ============== SUBNATIONAL RANKING ==============
-prior_yy, now_yy = str(CURRENT_YEAR - 1)[2:], str(CURRENT_YEAR)[2:]
-eyebrow(f"Subnational ranking · {CURRENT_YEAR}")
-st.markdown("<h3>Top emitters and year-over-year movement</h3>", unsafe_allow_html=True)
+# ============== TOP EMISSION SOURCES + METHANE ACTION PLAN ==============
+eyebrow("Top emission sources")
+top_sectors = top_sectors_pareto(iso, loc, CURRENT_YEAR, threshold=0.80)
 
-display_df = ranking.head(15).copy()
-display_df["SMAC Status"] = display_df["location"].apply(
-    lambda loc: {"member": "● Member", "observer": "○ Observer"}.get(member_status(iso, loc), "")
-)
-display_df = display_df.rename(columns={
-    "location": meta["subunit_type"].title(),
-    "ch4_tonnes_year": f"{CURRENT_YEAR} CH₄ (t)",
-    "share": "Share (%)",
-    "yoy_pct": f"YoY {prior_yy}→{now_yy} (%)",
-})
+if top_sectors.empty:
+    st.info(f"No {CURRENT_YEAR} data yet for {loc} to build an action plan from.")
+else:
+    st.markdown(
+        f"<h3>The sectors driving ~{top_sectors['cum_share'].iloc[-1]*100:.0f}% of {loc}'s methane</h3>",
+        unsafe_allow_html=True,
+    )
+    src_cols = st.columns(len(top_sectors))
+    for i, row in enumerate(top_sectors.itertuples()):
+        with src_cols[i]:
+            st.markdown(
+                f"""
+                <div style="border:1px solid var(--line);border-left:4px solid {SECTOR_COLORS.get(row.sector, '#b9c4bd')};padding:16px 18px;background:var(--paper);height:100%;">
+                  <div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:14px;margin-bottom:4px;">{row.sector}</div>
+                  <div style="font-family:Quicksand,sans-serif;font-size:24px;font-weight:700;letter-spacing:-0.01em;">{row.share*100:.1f}%</div>
+                  <div style="font-size:11px;color:var(--ink-soft);margin-top:2px;">{fmt_int(row.total_emission)} t CH₄</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-# Configure column display
-col_config = {
-    meta["subunit_type"].title(): st.column_config.TextColumn(width="medium"),
-    "SMAC Status": st.column_config.TextColumn(width="small"),
-    f"{CURRENT_YEAR} CH₄ (t)": st.column_config.NumberColumn(format="%d"),
-    "Share (%)": st.column_config.ProgressColumn(
-        format="%.2f%%", min_value=0,
-        max_value=float(display_df["Share (%)"].max()) if len(display_df) else 1.0,
-    ),
-    f"YoY {prior_yy}→{now_yy} (%)": st.column_config.NumberColumn(format="%+.2f%%"),
-}
-
-# Drop the underlying yearly raw columns we don't need
-keep_cols = [meta["subunit_type"].title(), "SMAC Status", f"{CURRENT_YEAR} CH₄ (t)", "Share (%)", f"YoY {prior_yy}→{now_yy} (%)"]
-display_df = display_df[keep_cols]
-
-st.dataframe(display_df, hide_index=True, use_container_width=True,
-             column_config=col_config, height=560)
-st.markdown(
-    '<div class="smac-meta" style="font-size:11px;margin-top:8px;">'
-    '● Member = full SMAC member &nbsp;·&nbsp; ○ Observer = SMAC observer</div>',
-    unsafe_allow_html=True,
-)
+    st.markdown("<br>", unsafe_allow_html=True)
+    eyebrow("Methane Action Plan")
+    st.markdown(f"<h3>Quick actions for {loc}, by top source</h3>", unsafe_allow_html=True)
+    st.markdown(
+        '<div class="smac-meta" style="margin-bottom:14px;">'
+        'generic best-practice actions for each top sector — a starting checklist, not a '
+        'substitute for a full jurisdiction-specific plan</div>',
+        unsafe_allow_html=True,
+    )
+    bullets = action_plan_bullets(top_sectors)
+    plan_cols = st.columns(2)
+    for i, (sector, bullet) in enumerate(bullets):
+        with plan_cols[i % 2]:
+            st.markdown(
+                f'<div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">'
+                f'<span style="width:8px;height:8px;border-radius:50%;background:{SECTOR_COLORS.get(sector, "#b9c4bd")};'
+                f'flex-shrink:0;margin-top:6px;"></span>'
+                f'<div><div style="font-family:Quicksand,sans-serif;font-size:10px;letter-spacing:0.08em;'
+                f'text-transform:uppercase;color:var(--ink-soft);margin-bottom:2px;">{sector}</div>'
+                f'<div style="font-size:13.5px;line-height:1.5;color:var(--ink);">{bullet}</div></div></div>',
+                unsafe_allow_html=True,
+            )
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ============== YoY visual ==============
-col_y1, col_y2 = st.columns([1, 1], gap="large")
-with col_y1:
-    eyebrow("Year-over-year change")
-    st.markdown(f"<h3>Top 10 movers · {CURRENT_YEAR - 1} → {CURRENT_YEAR}</h3>", unsafe_allow_html=True)
-    yoy_df = ranking.head(10).copy()
-    if "yoy_pct" in yoy_df.columns:
-        yoy_df = yoy_df.dropna(subset=["yoy_pct"])
-        st.altair_chart(yoy_bar_altair(yoy_df, height=320), use_container_width=True)
-
-with col_y2:
-    eyebrow("Concentration")
-    st.markdown("<h3>How concentrated is the country's methane?</h3>", unsafe_allow_html=True)
-    cumulative = ranking.head(10).copy()
-    cumulative["cum_share"] = cumulative["share"].cumsum()
-    cumulative["rank"] = range(1, len(cumulative) + 1)
-    cumulative_chart = pd.DataFrame({
-        "rank": cumulative["rank"],
-        "cum_share": cumulative["cum_share"],
-        "location": cumulative["location"],
-    })
-
-    import altair as alt
-    from utils.charts import MOSS, COPPER, INK_SOFT, LINE_SOFT, PAPER, INK
-    line = alt.Chart(cumulative_chart).mark_line(color=MOSS, strokeWidth=2.4, point=alt.OverlayMarkDef(filled=True, fill=MOSS, size=70)).encode(
-        x=alt.X("rank:Q", title=f"Top N {meta['subunit_type']}s",
-                scale=alt.Scale(domain=[1, 10]),
-                axis=alt.Axis(titleFontSize=10, titleFont="Quicksand", titleColor=INK_SOFT,
-                              labelFontSize=10, labelFont="Quicksand", labelColor=INK_SOFT,
-                              gridColor=LINE_SOFT, gridDash=[2, 2], values=list(range(1, 11)))),
-        y=alt.Y("cum_share:Q", title="Cumulative share (%)",
-                scale=alt.Scale(domain=[0, 100]),
-                axis=alt.Axis(titleFontSize=10, titleFont="Quicksand", titleColor=INK_SOFT,
-                              labelFontSize=10, labelFont="Quicksand", labelColor=INK_SOFT,
-                              gridColor=LINE_SOFT, gridDash=[2, 2])),
-        tooltip=["rank", "location", alt.Tooltip("cum_share", format=".1f", title="Cumulative %")],
-    ).properties(height=320, background=PAPER).configure_view(strokeWidth=0)
-    st.altair_chart(line, use_container_width=True)
+# ============== COUNTRY POLICY CONTEXT ==============
+policy = POLICY.get(iso, {})
+if policy.get("policies"):
+    eyebrow("Country policy context")
+    st.markdown(f"<h3>{meta['name']}'s methane policy stack</h3>", unsafe_allow_html=True)
+    st.markdown(
+        f'<p style="font-size:14px;line-height:1.65;color:var(--ink-soft);margin-bottom:6px;">{policy.get("summary", "")}</p>'
+        f'<p style="font-size:11px;line-height:1.5;color:var(--ink-soft);opacity:0.75;margin-bottom:16px;">'
+        f'National-level context — this describes {meta["name"]}\'s policy landscape broadly, not {loc} specifically.</p>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "".join(
+            f'<p style="font-size:14px;line-height:1.65;color:var(--ink-soft);margin-bottom:12px;">'
+            f'<strong style="color:var(--ink);">{n}.</strong> {d}</p>'
+            for n, d in policy["policies"]
+        ),
+        unsafe_allow_html=True,
+    )

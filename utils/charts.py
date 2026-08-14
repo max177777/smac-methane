@@ -204,24 +204,9 @@ def comparison_plotly(df_long: pd.DataFrame, value_label: str = "CH₄ tonnes",
     return fig
 
 
-# Stable sector palette + stacking order
-SECTOR_ORDER = [
-    "fossil-fuel-operations", "agriculture", "waste", "land-use-change",
-    "manufacturing", "power", "transportation", "mineral-extraction",
-    "other-energy-use", "other",
-]
-SECTOR_COLORS = {
-    "fossil-fuel-operations": COPPER,
-    "agriculture": MOSS,
-    "waste": RUST,
-    "land-use-change": SKY,
-    "manufacturing": "#7c5cbf",
-    "power": "#2f6fa8",
-    "transportation": "#d97757",
-    "mineral-extraction": INK_SOFT,
-    "other-energy-use": LINE_SOFT,
-    "other": "#b9c4bd",
-}
+# Stable sector palette + stacking order — single source of truth in data_loader.py,
+# since the sector taxonomy is a property of the dataset, not of chart styling.
+from utils.data_loader import SECTOR_ORDER, SECTOR_COLORS  # noqa: E402
 
 
 def sector_stack_plotly(df_long: pd.DataFrame, normalize: bool = False,
