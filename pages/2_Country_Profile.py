@@ -15,7 +15,7 @@ from utils.data_loader import (
     COUNTRY_META, COUNTRY_COLORS, CURRENT_YEAR, DATA_RANGE_LABEL,
     all_member_locations, member_status, location_yearly, location_monthly,
     location_yearly_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
-    fmt_int, fmt_mt, pct_change,
+    fmt_int, fmt_mt, pct_change, display_name,
 )
 from utils.policy_content import POLICY, GWP100, GWP20
 from utils.charts import time_series_plotly, SECTOR_COLORS
@@ -62,20 +62,22 @@ for iso, loc in all_locs:
     css_rules.append(f'.st-key-{slug} button:hover {{ filter:brightness(1.12); }}')
 st.markdown(f"<style>{''.join(css_rules)}</style>", unsafe_allow_html=True)
 
-PILLS_PER_ROW = 6
+PILLS_PER_ROW = 4
 for row_start in range(0, len(all_locs), PILLS_PER_ROW):
     row_items = all_locs[row_start:row_start + PILLS_PER_ROW]
     cols = st.columns(PILLS_PER_ROW)
     for i, (iso, loc) in enumerate(row_items):
         with cols[i]:
             with st.container(key=_slug(iso, loc)):
-                if st.button(loc, key=f"btn-{_slug(iso, loc)}", use_container_width=True):
+                label = f"{display_name(loc)} ({COUNTRY_META[iso]['name']})"
+                if st.button(label, key=f"btn-{_slug(iso, loc)}", use_container_width=True):
                     st.session_state.smac_jurisdiction = (iso, loc)
                     st.rerun()
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 iso, loc = st.session_state.smac_jurisdiction
+loc_display = display_name(loc)
 meta = COUNTRY_META[iso]
 status = member_status(iso, loc)
 status_label = {"member": "● SMAC Member", "observer": "○ SMAC Observer"}.get(status, "")
@@ -104,7 +106,7 @@ with col1:
         unsafe_allow_html=True,
     )
     st.markdown(
-        f"<h1 style='font-size:3.4rem;margin-top:8px;margin-bottom:6px;'>{loc}</h1>",
+        f"<h1 style='font-size:3.4rem;margin-top:8px;margin-bottom:6px;'>{loc_display}</h1>",
         unsafe_allow_html=True,
     )
     if status_label:
@@ -113,10 +115,10 @@ with col1:
         f'<a href="https://climatetrace.org/explore?search={loc.replace(" ", "+")}" '
         f'target="_blank" style="text-decoration:none;display:inline-block;margin-top:14px;">'
         f'<span class="smac-pill" style="background:var(--paper-3);color:var(--mint-deep);">'
-        f'🗺 View {loc} source map on Climate TRACE →</span></a>',
+        f'🗺 View {loc_display} source map on Climate TRACE →</span></a>',
         unsafe_allow_html=True,
     )
-    with st.expander(f"Show map of {loc}"):
+    with st.expander(f"Show map of {loc_display}"):
         import streamlit.components.v1 as components
         components.iframe(
             f"https://www.google.com/maps?q={loc.replace(' ', '+')}+{meta['name'].replace(' ', '+')}&output=embed",
@@ -154,7 +156,7 @@ with col_b:
     st.markdown(f"<h3>{CURRENT_YEAR} · real Climate TRACE data</h3>", unsafe_allow_html=True)
     sec = location_sectors(iso, loc, CURRENT_YEAR)
     if sec.empty:
-        st.info(f"No {CURRENT_YEAR} sector data for {loc} yet.")
+        st.info(f"No {CURRENT_YEAR} sector data for {loc_display} yet.")
     else:
         import plotly.graph_objects as go
         fig = go.Figure(go.Pie(
@@ -174,10 +176,10 @@ eyebrow("Top emission sources")
 top_sectors = top_sectors_pareto(iso, loc, CURRENT_YEAR, threshold=0.80)
 
 if top_sectors.empty:
-    st.info(f"No {CURRENT_YEAR} data yet for {loc} to build an action plan from.")
+    st.info(f"No {CURRENT_YEAR} data yet for {loc_display} to build an action plan from.")
 else:
     st.markdown(
-        f"<h3>The sectors driving ~{top_sectors['cum_share'].iloc[-1]*100:.0f}% of {loc}'s methane</h3>",
+        f"<h3>The sectors driving ~{top_sectors['cum_share'].iloc[-1]*100:.0f}% of {loc_display}'s methane</h3>",
         unsafe_allow_html=True,
     )
     src_cols = st.columns(len(top_sectors))
@@ -196,7 +198,7 @@ else:
 
     st.markdown("<br>", unsafe_allow_html=True)
     eyebrow("Methane Action Plan")
-    st.markdown(f"<h3>Quick actions for {loc}, by top source</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3>Quick actions for {loc_display}, by top source</h3>", unsafe_allow_html=True)
     st.markdown(
         '<div class="smac-meta" style="margin-bottom:14px;">'
         'generic best-practice actions for each top sector — a starting checklist, not a '
@@ -227,7 +229,7 @@ if policy.get("policies"):
     st.markdown(
         f'<p style="font-size:14px;line-height:1.65;color:var(--ink-soft);margin-bottom:6px;">{policy.get("summary", "")}</p>'
         f'<p style="font-size:11px;line-height:1.5;color:var(--ink-soft);opacity:0.75;margin-bottom:16px;">'
-        f'National-level context — this describes {meta["name"]}\'s policy landscape broadly, not {loc} specifically.</p>',
+        f'National-level context — this describes {meta["name"]}\'s policy landscape broadly, not {loc_display} specifically.</p>',
         unsafe_allow_html=True,
     )
     st.markdown(

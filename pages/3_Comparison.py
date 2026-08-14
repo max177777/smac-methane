@@ -1,7 +1,10 @@
 """
 Comparison page.
-Pick two locations (country-level or subnational-level) and two years, side by side:
-sector breakdown, data table, and multi-year sector-composition trend for each.
+Pick two SMAC subnational jurisdictions and two years, side by side: sector
+breakdown, data table, and multi-year sector-composition trend for each.
+Subnational only — the dataset only covers actual SMAC member/observer
+jurisdictions, not comprehensive country-wide data, so a "country total" would
+just be the sum of a country's SMAC members, not a real national figure.
 """
 
 import plotly.graph_objects as go
@@ -10,7 +13,7 @@ import streamlit as st
 from utils.theme import inject_theme, eyebrow
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_ORDER, CURRENT_YEAR, SECTOR_ORDER,
-    list_locations, location_sectors, country_sectors, sector_yearly_series,
+    list_locations, location_sectors, sector_yearly_series, display_name,
     fmt_int, fmt_mt,
 )
 from utils.charts import SECTOR_COLORS, INK, INK_SOFT, LINE_SOFT, PAPER
@@ -23,31 +26,23 @@ eyebrow("Comparison")
 st.markdown("<h1>Compare CH₄ <em>emissions</em></h1>", unsafe_allow_html=True)
 st.markdown(
     '<div class="smac-meta" style="margin-bottom:18px;">'
-    'pick any two SMAC jurisdictions — or two whole countries — and compare side by side</div>',
+    'pick any two SMAC jurisdictions and compare side by side</div>',
     unsafe_allow_html=True,
 )
 
-mode = st.radio(
-    "Comparison mode", options=["Country-level", "Subnational-level"],
-    horizontal=True, key="cmp_mode",
-)
-
-st.markdown("<br>", unsafe_allow_html=True)
-
 
 def _picker(side: str):
-    """Renders Country [+ Subnational] + Year pickers for one side ('A' or 'B').
-    Returns (iso, location_or_None, year)."""
+    """Renders Country + Subnational + Year pickers for one side ('A' or 'B').
+    Returns (iso, location, year)."""
     st.markdown(f"<h3 style='margin-bottom:10px;'>Location {side}</h3>", unsafe_allow_html=True)
     iso = st.selectbox(
         f"Country {side}", options=COUNTRY_ORDER,
         format_func=lambda x: COUNTRY_META[x]["name"],
         key=f"cmp_country_{side}",
     )
-    location = None
-    if mode == "Subnational-level":
-        locs = list_locations(iso)
-        location = st.selectbox(f"Subnational unit {side}", options=locs, key=f"cmp_loc_{side}")
+    locs = list_locations(iso)
+    location = st.selectbox(f"Subnational unit {side}", options=locs,
+                            format_func=display_name, key=f"cmp_loc_{side}")
     year = st.selectbox(f"Year {side}", options=list(reversed(YEARS)),
                         index=YEARS[::-1].index(CURRENT_YEAR), key=f"cmp_year_{side}")
     return iso, location, year
@@ -63,7 +58,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 
 def _sector_df(iso, location, year):
-    return location_sectors(iso, location, year) if location else country_sectors(iso, year)
+    return location_sectors(iso, location, year)
 
 
 def _sector_bar(sec_df, title, key):
@@ -108,8 +103,8 @@ def _trend_chart(iso, location, key):
 
 
 # ============== SECTOR BREAKDOWN ==============
-label_a = loc_a if loc_a else COUNTRY_META[iso_a]["name"]
-label_b = loc_b if loc_b else COUNTRY_META[iso_b]["name"]
+label_a = f"{display_name(loc_a)} ({COUNTRY_META[iso_a]['name']})"
+label_b = f"{display_name(loc_b)} ({COUNTRY_META[iso_b]['name']})"
 
 sec_a = _sector_df(iso_a, loc_a, year_a)
 sec_b = _sector_df(iso_b, loc_b, year_b)
