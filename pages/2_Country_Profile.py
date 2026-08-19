@@ -15,7 +15,7 @@ from utils.data_loader import (
     COUNTRY_META, COUNTRY_COLORS, CURRENT_YEAR, DATA_RANGE_LABEL,
     all_member_locations, member_status, location_yearly, location_monthly,
     location_yearly_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
-    fmt_int, fmt_mt, pct_change, display_name,
+    top_point_sources, fmt_int, fmt_mt, pct_change, display_name,
 )
 from utils.policy_content import POLICY, GWP100, GWP20
 from utils.charts import time_series_plotly, SECTOR_COLORS
@@ -33,9 +33,9 @@ all_locs = all_member_locations()  # [(iso, location), ...] sorted by country, t
 if "smac_jurisdiction" not in st.session_state:
     st.session_state.smac_jurisdiction = ("USA", "California")
 
-eyebrow("JurisdictionS")
+eyebrow("THE SMAC")
 st.markdown(
-    "<h1 style='font-size:2.4rem;margin-bottom:6px;'>SMAC</h1>",
+    "<h1 style='font-size:2.4rem;margin-bottom:6px;'>Jurisdictions</h1>",
     unsafe_allow_html=True,
 )
 st.markdown(
@@ -171,8 +171,48 @@ with col_b:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ============== TOP EMISSION SOURCES + METHANE ACTION PLAN ==============
-eyebrow("Top emission sources")
+# ============== TOP 20 EMITTING SOURCES ==============
+eyebrow("Top emitting sources")
+top20 = top_point_sources(iso, loc, CURRENT_YEAR, top_n=20)
+
+if top20.empty:
+    st.info(f"No {CURRENT_YEAR} source-level data yet for {loc_display}.")
+else:
+    top_n_share = top20.attrs.get("top_n_share_pct", 0.0)
+    st.markdown(
+        f"<h3>Top {len(top20)} sources ≈ <em>{top_n_share:.1f}%</em> of {loc_display}'s {CURRENT_YEAR} methane</h3>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="smac-meta" style="margin-bottom:14px;">'
+        "Climate TRACE's public data for these jurisdictions doesn't include individual named "
+        "facilities with coordinates — there's no point-source ID to rank. What it does have is "
+        "a much finer breakdown than the 8 broad sectors above: 68 activity-level categories "
+        "(e.g. \"oil-and-gas-production\", \"enteric-fermentation-cattle-operation\"). We treat "
+        "each of those as one emitting source and rank them here — the closest faithful read on "
+        "\"top sources\" the underlying data supports, tagged with its parent sector.</div>",
+        unsafe_allow_html=True,
+    )
+    display_top20 = top20[["sub_sector_label", "sector", "total_emission", "share"]].rename(columns={
+        "sub_sector_label": "Emitting source", "sector": "Sector",
+        "total_emission": f"{CURRENT_YEAR} CH₄ (t)", "share": "Share of jurisdiction (%)",
+    })
+    st.dataframe(
+        display_top20, hide_index=True, use_container_width=True, height=460,
+        column_config={
+            "Emitting source": st.column_config.TextColumn(width="medium"),
+            "Sector": st.column_config.TextColumn(width="medium"),
+            f"{CURRENT_YEAR} CH₄ (t)": st.column_config.NumberColumn(format="%d"),
+            "Share of jurisdiction (%)": st.column_config.ProgressColumn(
+                format="%.2f%%", min_value=0, max_value=float(display_top20["Share of jurisdiction (%)"].max()),
+            ),
+        },
+    )
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# ============== TOP SECTORS + METHANE ACTION PLAN ==============
+eyebrow("Top sectors")
 top_sectors = top_sectors_pareto(iso, loc, CURRENT_YEAR, threshold=0.80)
 
 if top_sectors.empty:

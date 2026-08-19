@@ -507,3 +507,62 @@ def action_plan_bullets(top_sectors: pd.DataFrame, max_per_sector: int = 2) -> l
         for bullet in SECTOR_ACTIONS.get(row.sector, [])[:max_per_sector]:
             out.append((row.sector, bullet))
     return out
+
+
+# ============== SUB-SECTOR / "TOP EMITTING SOURCES" DATA ==============
+# Climate TRACE's public per-jurisdiction files don't include individual named
+# facilities with coordinates for every sector — there's no lat/lon or asset-ID
+# column we can rank. What we DO have is a much finer breakdown than the 8 broad
+# categories: 68 `original_inventory_sector` sub-sectors (e.g.
+# "enteric-fermentation-cattle-operation", "oil-and-gas-production"). We treat each
+# sub-sector as one "emitting source" and rank those — the closest faithful proxy
+# for "top emitting sources" the underlying data actually supports. Each is tagged
+# with its parent broad sector (matches SECTOR_ORDER) for the sector-color tags.
+SUBSECTOR_DATA_PATH = Path(__file__).parent.parent / "data" / "SMAC_ch4_subsectors.csv"
+
+
+def has_subsector_data() -> bool:
+    return SUBSECTOR_DATA_PATH.exists()
+
+
+@st.cache_data(show_spinner=False)
+def load_subsector_raw() -> pd.DataFrame:
+    df = pd.read_csv(SUBSECTOR_DATA_PATH)
+    df["sub_sector_label"] = df["sub_sector"].map(_prettify_subsector)
+    return df
+
+
+def _prettify_subsector(raw: str) -> str:
+    """'enteric-fermentation-cattle-operation' -> 'Enteric Fermentation Cattle Operation'"""
+    return " ".join(w.capitalize() for w in raw.split("-"))
+
+
+@st.cache_data(show_spinner=False)
+def top_point_sources(iso: str, location: str, year: int = CURRENT_YEAR,
+                       top_n: int = 20) -> pd.DataFrame:
+    """Top N emitting sources (sub-sectors) for one jurisdiction/year, ranked by
+    CH4 emissions descending. Columns: sub_sector, sub_sector_label, sector,
+    total_emission, share (of jurisdiction total, %). Also attaches
+    `jurisdiction_total` and `top_n_share_pct` (what % of the jurisdiction's total
+    CH4 those top N sources represent) as DataFrame attrs."""
+    df = load_subsector_raw()
+    sub = df[(df["iso3_country"] == iso) & (df["location"] == location) & (df["year"] == year)]
+    empty = pd.DataFrame(columns=["sub_sector", "sub_sector_label", "sector", "total_emission", "share"])
+    if sub.empty:
+        empty.attrs["jurisdiction_total"] = 0.0
+        empty.attrs["top_n_share_pct"] = 0.0
+        return empty
+
+    agg = (
+        sub.groupby(["sub_sector", "sub_sector_label", "sector"], as_index=False)["total_emission"]
+        .sum()
+        .sort_values("total_emission", ascending=False)
+        .reset_index(drop=True)
+    )
+    jurisdiction_total = agg["total_emission"].sum()
+    agg["share"] = (agg["total_emission"] / jurisdiction_total * 100) if jurisdiction_total > 0 else 0.0
+
+    top = agg.head(top_n).copy()
+    top.attrs["jurisdiction_total"] = float(jurisdiction_total)
+    top.attrs["top_n_share_pct"] = float(top["share"].sum())
+    return top
