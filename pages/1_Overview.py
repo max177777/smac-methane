@@ -23,8 +23,7 @@ with col1:
     eyebrow("AI Methane Decision Assistant · V1")
     st.markdown(
         '<div style="display:flex;align-items:center;gap:10px;margin:-4px 0 18px;flex-wrap:wrap;">'
-        '<span class="smac-pill">● Prototype</span>'
-        f'<span class="smac-meta" style="font-size:12px;">Climate TRACE · {DATA_RANGE_LABEL}</span>'
+        f'<span class="smac-meta" style="font-size:12px;">SMAC · {DATA_RANGE_LABEL}</span>'
         '</div>',
         unsafe_allow_html=True,
     )
@@ -36,10 +35,11 @@ with col1:
     st.markdown(
         '<p style="font-family:Inter,sans-serif;font-size:18px;line-height:1.6;'
         'color:var(--ink-soft);max-width:520px;margin-top:24px;font-weight:400;">'
-        "An AI-assisted reasoning interface for subnational governments and organizations, "
-        "integrating 48 months of methane emissions data across all SMAC members — over 300 "
-        "subnational units — paired with a chat that reasons through IPCC GWP frameworks and "
-        "policy context."
+        "The SMAC Methane Inventory Tool tracks methane emissions across every actual "
+        "Subnational Methane Action Coalition member and observer jurisdiction — 36 "
+        "states, provinces, and regions across 15 countries — from 2021 through 2026, "
+        "paired with a chat that reasons through IPCC GWP frameworks and policy "
+        "context."
         "</p>",
         unsafe_allow_html=True,
     )
@@ -68,32 +68,32 @@ with col2:
     total_loc = int(summary["n_locations"].sum())
     n_months = total_months_of_data()
 
-    eyebrow(f"At a glance · {CURRENT_YEAR}")
+    eyebrow("At a glance")
     st.markdown(
         f"""
         <div style="border-top:1px solid var(--line);padding:20px 0;display:flex;justify-content:space-between;align-items:baseline;">
           <div style="font-family:Quicksand,sans-serif;font-size:42px;font-weight:300;letter-spacing:-0.02em;line-height:1;">
             {len(COUNTRY_ORDER)}<span style="font-family:Quicksand,sans-serif;font-size:11px;color:var(--ink-soft);margin-left:6px;letter-spacing:0.1em;">countries</span>
           </div>
-          <div style="font-family:Quicksand,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-soft);text-align:right;max-width:180px;line-height:1.4;">SMAC MEMBERS &amp; OBSERVERS</div>
+          <div style="font-family:Quicksand,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-soft);text-align:right;max-width:220px;line-height:1.4;white-space:nowrap;">with SMAC members</div>
         </div>
         <div style="border-top:1px solid var(--line);padding:20px 0;display:flex;justify-content:space-between;align-items:baseline;">
           <div style="font-family:Quicksand,sans-serif;font-size:42px;font-weight:300;letter-spacing:-0.02em;line-height:1;">
             {total_loc}<span style="font-family:Quicksand,sans-serif;font-size:11px;color:var(--ink-soft);margin-left:6px;letter-spacing:0.1em;">subnational jurisdictions</span>
           </div>
-          <div style="font-family:Quicksand,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-soft);text-align:right;max-width:180px;line-height:1.4;">Actual SMAC members &amp; observers</div>
+          <div style="font-family:Quicksand,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-soft);text-align:right;max-width:220px;line-height:1.4;white-space:nowrap;">SMAC members &amp; observers</div>
         </div>
         <div style="border-top:1px solid var(--line);padding:20px 0;display:flex;justify-content:space-between;align-items:baseline;">
           <div style="font-family:Quicksand,sans-serif;font-size:42px;font-weight:300;letter-spacing:-0.02em;line-height:1;">
             {n_months}<span style="font-family:Quicksand,sans-serif;font-size:11px;color:var(--ink-soft);margin-left:6px;letter-spacing:0.1em;">months</span>
           </div>
-          <div style="font-family:Quicksand,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-soft);text-align:right;max-width:180px;line-height:1.4;">Monthly time series · {DATA_RANGE_LABEL}</div>
+          <div style="font-family:Quicksand,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-soft);text-align:right;max-width:220px;line-height:1.4;white-space:nowrap;">monthly time series</div>
         </div>
         <div style="border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:20px 0;display:flex;justify-content:space-between;align-items:baseline;">
           <div style="font-family:Quicksand,sans-serif;font-size:42px;font-weight:300;letter-spacing:-0.02em;line-height:1;">
             {fmt_mt(total_now)}<span style="font-family:Quicksand,sans-serif;font-size:11px;color:var(--ink-soft);margin-left:6px;letter-spacing:0.1em;">Mt CH₄</span>
           </div>
-          <div style="font-family:Quicksand,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-soft);text-align:right;max-width:180px;line-height:1.4;">Combined {CURRENT_YEAR} SMAC emissions</div>
+          <div style="font-family:Quicksand,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-soft);text-align:right;max-width:220px;line-height:1.4;white-space:nowrap;">combined SMAC emissions</div>
         </div>
         """,
         unsafe_allow_html=True,
