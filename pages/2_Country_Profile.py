@@ -14,7 +14,7 @@ from utils.theme import inject_theme, eyebrow
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_COLORS, CURRENT_YEAR, DATA_RANGE_LABEL,
     all_member_locations, member_status, location_yearly, location_monthly,
-    location_yearly_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
+    smac_wide_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
     top_point_sources, fmt_int, fmt_mt, pct_change, display_name,
 )
 from utils.policy_content import POLICY, GWP100, GWP20
@@ -90,10 +90,11 @@ y_now = float(yearly[yearly["year"] == CURRENT_YEAR]["ch4_tonnes"].iloc[0]) if C
 yoy = pct_change(y_now, y_prior)
 drift = pct_change(y_now, y21)
 
-ranking = location_yearly_ranking(iso, year=CURRENT_YEAR)
-rank_row = ranking[ranking["location"] == loc]
-rank_pos = (ranking.index[ranking["location"] == loc][0] + 1) if len(rank_row) else None
-loc_share = float(rank_row["share"].iloc[0]) if len(rank_row) else None
+smac_rank_df = smac_wide_ranking(CURRENT_YEAR)
+smac_row = smac_rank_df[(smac_rank_df["iso3_country"] == iso) & (smac_rank_df["location"] == loc)]
+smac_rank_pos = int(smac_row["rank"].iloc[0]) if len(smac_row) else None
+smac_share = float(smac_row["share"].iloc[0]) if len(smac_row) else None
+n_smac_jurisdictions = len(smac_rank_df)
 
 col1, col2 = st.columns([1, 1], gap="large")
 
@@ -134,9 +135,9 @@ with col2:
                   delta_color=("normal" if yoy_is_nan else ("inverse" if yoy > 0 else "normal")))
         st.metric("CO₂e · GWP100", f"{fmt_mt(y_now * GWP100)} Mt", f"×{GWP100} IPCC AR6", delta_color="off")
     with kpi_cols[1]:
-        rank_label = f"#{rank_pos} of {len(ranking)} in {meta['name']}" if rank_pos else "—"
-        st.metric("Rank within country", rank_label,
-                  f"{loc_share:.1f}% of national CH₄" if loc_share is not None else "", delta_color="off")
+        rank_label = f"#{smac_rank_pos} of {n_smac_jurisdictions}" if smac_rank_pos else "—"
+        st.metric("Rank within SMAC", rank_label,
+                  f"{smac_share:.1f}% of all SMAC CH₄" if smac_share is not None else "", delta_color="off")
         st.metric("CO₂e · GWP20", f"{fmt_mt(y_now * GWP20)} Mt", f"×{GWP20} IPCC AR6", delta_color="off")
 
 st.markdown("<br>", unsafe_allow_html=True)

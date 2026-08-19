@@ -368,6 +368,27 @@ def total_months_of_data() -> int:
 
 
 @st.cache_data(show_spinner=False)
+def smac_wide_ranking(year: int = CURRENT_YEAR) -> pd.DataFrame:
+    """Every SMAC jurisdiction ranked against every OTHER SMAC jurisdiction (not
+    just within its own country) for one year — with only 1-8 jurisdictions per
+    country, a within-country rank isn't a meaningful comparison; ranking across
+    the full ~36-member roster is. Columns: iso3_country, location, ch4_tonnes_year,
+    share (of total SMAC CH4), rank (1 = highest emitter)."""
+    df = load_raw()
+    sub = df[df["year"] == year]
+    agg = (
+        sub.groupby(["iso3_country", "location"], as_index=False)["total_emission"].sum()
+        .rename(columns={"total_emission": "ch4_tonnes_year"})
+        .sort_values("ch4_tonnes_year", ascending=False)
+        .reset_index(drop=True)
+    )
+    total = agg["ch4_tonnes_year"].sum()
+    agg["share"] = (agg["ch4_tonnes_year"] / total * 100) if total > 0 else 0.0
+    agg["rank"] = agg.index + 1
+    return agg
+
+
+@st.cache_data(show_spinner=False)
 def all_countries_year_total(year: int = CURRENT_YEAR) -> pd.DataFrame:
     """One row per country, {year} total + locations count."""
     df = load_raw()
