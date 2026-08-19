@@ -140,6 +140,23 @@ with col1:
         )
 
 with col2:
+    # Hide only the little up/down arrow glyph on these three metrics (their delta
+    # isn't a real increase/decrease, so an arrow is misleading) — targets each
+    # metric's own st.container(key=...) so the delta TEXT stays visible and stays
+    # inside the metric's card; only the SVG arrow icon is removed.
+    st.markdown(
+        """
+        <style>
+        .st-key-kpi-gwp100 [data-testid="stMetricDelta"] svg,
+        .st-key-kpi-rank [data-testid="stMetricDelta"] svg,
+        .st-key-kpi-gwp20 [data-testid="stMetricDelta"] svg {
+          display: none !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     kpi_cols = st.columns(2)
     with kpi_cols[0]:
         yoy_is_nan = yoy != yoy
@@ -150,44 +167,35 @@ with col2:
             help=f"Total methane {loc_display} emitted in {sel_year}, in million tonnes (Mt). "
                  f"The small number below is the year-over-year change vs {sel_year - 1}.",
         )
-        st.metric(
-            f"CO₂e · GWP100 · {sel_year}", f"{fmt_mt(y_now * GWP100)} Mt", None,
-            help=f"{sel_year} methane converted to CO₂-equivalent using the 100-year Global "
-                 f"Warming Potential (×{GWP100}) — the standard used in most national inventories "
-                 f"and long-term climate accounting.",
-        )
-        st.markdown(
-            f'<div class="smac-meta" style="font-size:12px;font-weight:600;margin-top:2px;margin-bottom:14px;">'
-            f'×{GWP100} IPCC AR6</div>',
-            unsafe_allow_html=True,
-        )
+        with st.container(key="kpi-gwp100"):
+            st.metric(
+                f"CO₂e · GWP100 · {sel_year}", f"{fmt_mt(y_now * GWP100)} Mt",
+                f"×{GWP100} IPCC AR6", delta_color="off",
+                help=f"{sel_year} methane converted to CO₂-equivalent using the 100-year Global "
+                     f"Warming Potential (×{GWP100}) — the standard used in most national "
+                     f"inventories and long-term climate accounting.",
+            )
     with kpi_cols[1]:
         rank_label = f"#{smac_rank_pos} of {n_smac_jurisdictions}" if smac_rank_pos else "—"
-        st.metric(
-            f"Rank within SMAC · {sel_year}", rank_label, None,
-            help=f"{loc_display}'s position when every one of the {n_smac_jurisdictions} SMAC "
-                 f"member/observer jurisdictions worldwide is ranked by {sel_year} methane "
-                 f"emissions, #1 = highest. The percentage is {loc_display}'s share of the "
-                 f"combined total that all {n_smac_jurisdictions} SMAC jurisdictions emitted "
-                 f"together in {sel_year} — e.g. \"7.3%\" means this one jurisdiction accounts "
-                 f"for 7.3% of everything the whole SMAC coalition emitted that year.",
-        )
-        st.markdown(
-            f'<div class="smac-meta" style="font-size:12px;font-weight:600;margin-top:2px;margin-bottom:14px;">'
-            f'{smac_share:.1f}% of all SMAC CH₄</div>' if smac_share is not None else '',
-            unsafe_allow_html=True,
-        )
-        st.metric(
-            f"CO₂e · GWP20 · {sel_year}", f"{fmt_mt(y_now * GWP20)} Mt", None,
-            help=f"{sel_year} methane converted to CO₂-equivalent using the 20-year Global "
-                 f"Warming Potential (×{GWP20}) — reflects methane's much stronger near-term "
-                 f"warming effect, relevant for near-term (e.g. 2030/2050) climate targets.",
-        )
-        st.markdown(
-            f'<div class="smac-meta" style="font-size:12px;font-weight:600;margin-top:2px;margin-bottom:14px;">'
-            f'×{GWP20} IPCC AR6</div>',
-            unsafe_allow_html=True,
-        )
+        with st.container(key="kpi-rank"):
+            st.metric(
+                f"Rank within SMAC · {sel_year}", rank_label,
+                f"{smac_share:.1f}% of all SMAC CH₄" if smac_share is not None else "", delta_color="off",
+                help=f"{loc_display}'s position when every one of the {n_smac_jurisdictions} SMAC "
+                     f"member/observer jurisdictions worldwide is ranked by {sel_year} methane "
+                     f"emissions, #1 = highest. The percentage is {loc_display}'s share of the "
+                     f"combined total that all {n_smac_jurisdictions} SMAC jurisdictions emitted "
+                     f"together in {sel_year} — e.g. \"7.3%\" means this one jurisdiction accounts "
+                     f"for 7.3% of everything the whole SMAC coalition emitted that year.",
+            )
+        with st.container(key="kpi-gwp20"):
+            st.metric(
+                f"CO₂e · GWP20 · {sel_year}", f"{fmt_mt(y_now * GWP20)} Mt",
+                f"×{GWP20} IPCC AR6", delta_color="off",
+                help=f"{sel_year} methane converted to CO₂-equivalent using the 20-year Global "
+                     f"Warming Potential (×{GWP20}) — reflects methane's much stronger near-term "
+                     f"warming effect, relevant for near-term (e.g. 2030/2050) climate targets.",
+            )
 
 st.markdown("<br>", unsafe_allow_html=True)
 
