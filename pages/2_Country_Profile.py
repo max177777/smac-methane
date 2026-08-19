@@ -83,20 +83,33 @@ status = member_status(iso, loc)
 status_label = {"member": "● SMAC Member", "observer": "○ SMAC Observer"}.get(status, "")
 
 # ============== HEADER ==============
+YEARS = list(range(2021, CURRENT_YEAR + 2))  # includes the partial current-year+1 (2026)
+if "smac_year" not in st.session_state:
+    st.session_state.smac_year = CURRENT_YEAR
+
 yearly = location_yearly(iso, loc)
 y21 = float(yearly[yearly["year"] == 2021]["ch4_tonnes"].iloc[0]) if 2021 in yearly["year"].values else 0
-y_prior = float(yearly[yearly["year"] == CURRENT_YEAR - 1]["ch4_tonnes"].iloc[0]) if (CURRENT_YEAR - 1) in yearly["year"].values else 0
-y_now = float(yearly[yearly["year"] == CURRENT_YEAR]["ch4_tonnes"].iloc[0]) if CURRENT_YEAR in yearly["year"].values else 0
+
+col1, col2 = st.columns([1, 1], gap="large")
+
+with col2:
+    sel_year = st.selectbox(
+        "Year", options=list(reversed(YEARS)),
+        index=YEARS[::-1].index(st.session_state.smac_year),
+        key="smac_year_select",
+    )
+    st.session_state.smac_year = sel_year
+
+y_prior = float(yearly[yearly["year"] == sel_year - 1]["ch4_tonnes"].iloc[0]) if (sel_year - 1) in yearly["year"].values else 0
+y_now = float(yearly[yearly["year"] == sel_year]["ch4_tonnes"].iloc[0]) if sel_year in yearly["year"].values else 0
 yoy = pct_change(y_now, y_prior)
 drift = pct_change(y_now, y21)
 
-smac_rank_df = smac_wide_ranking(CURRENT_YEAR)
+smac_rank_df = smac_wide_ranking(sel_year)
 smac_row = smac_rank_df[(smac_rank_df["iso3_country"] == iso) & (smac_rank_df["location"] == loc)]
 smac_rank_pos = int(smac_row["rank"].iloc[0]) if len(smac_row) else None
 smac_share = float(smac_row["share"].iloc[0]) if len(smac_row) else None
 n_smac_jurisdictions = len(smac_rank_df)
-
-col1, col2 = st.columns([1, 1], gap="large")
 
 with col1:
     st.markdown(
@@ -130,15 +143,39 @@ with col2:
     kpi_cols = st.columns(2)
     with kpi_cols[0]:
         yoy_is_nan = yoy != yoy
-        st.metric(f"{CURRENT_YEAR} Total CH₄", f"{fmt_mt(y_now)} Mt",
-                  "—" if yoy_is_nan else f"{yoy:+.2f}% YoY",
-                  delta_color=("normal" if yoy_is_nan else ("inverse" if yoy > 0 else "normal")))
-        st.metric("CO₂e · GWP100", f"{fmt_mt(y_now * GWP100)} Mt", f"×{GWP100} IPCC AR6", delta_color="off")
+        st.metric(
+            f"{sel_year} Total CH₄", f"{fmt_mt(y_now)} Mt",
+            "—" if yoy_is_nan else f"{yoy:+.2f}% YoY",
+            delta_color=("normal" if yoy_is_nan else ("inverse" if yoy > 0 else "normal")),
+            help=f"Total methane {loc_display} emitted in {sel_year}, in million tonnes (Mt). "
+                 f"The small number below is the year-over-year change vs {sel_year - 1}.",
+        )
+        st.metric(
+            f"CO₂e · GWP100 · {sel_year}", f"{fmt_mt(y_now * GWP100)} Mt",
+            f"×{GWP100} IPCC AR6", delta_color="off",
+            help=f"{sel_year} methane converted to CO₂-equivalent using the 100-year Global "
+                 f"Warming Potential (×{GWP100}) — the standard used in most national inventories "
+                 f"and long-term climate accounting.",
+        )
     with kpi_cols[1]:
         rank_label = f"#{smac_rank_pos} of {n_smac_jurisdictions}" if smac_rank_pos else "—"
-        st.metric("Rank within SMAC", rank_label,
-                  f"{smac_share:.1f}% of all SMAC CH₄" if smac_share is not None else "", delta_color="off")
-        st.metric("CO₂e · GWP20", f"{fmt_mt(y_now * GWP20)} Mt", f"×{GWP20} IPCC AR6", delta_color="off")
+        st.metric(
+            f"Rank within SMAC · {sel_year}", rank_label,
+            f"{smac_share:.1f}% of all SMAC CH₄" if smac_share is not None else "", delta_color="off",
+            help=f"{loc_display}'s position when every one of the {n_smac_jurisdictions} SMAC "
+                 f"member/observer jurisdictions worldwide is ranked by {sel_year} methane "
+                 f"emissions, #1 = highest. The percentage is {loc_display}'s share of the "
+                 f"combined total that all {n_smac_jurisdictions} SMAC jurisdictions emitted "
+                 f"together in {sel_year} — e.g. \"7.3%\" means this one jurisdiction accounts "
+                 f"for 7.3% of everything the whole SMAC coalition emitted that year.",
+        )
+        st.metric(
+            f"CO₂e · GWP20 · {sel_year}", f"{fmt_mt(y_now * GWP20)} Mt",
+            f"×{GWP20} IPCC AR6", delta_color="off",
+            help=f"{sel_year} methane converted to CO₂-equivalent using the 20-year Global "
+                 f"Warming Potential (×{GWP20}) — reflects methane's much stronger near-term "
+                 f"warming effect, relevant for near-term (e.g. 2030/2050) climate targets.",
+        )
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -154,10 +191,10 @@ with col_a:
 
 with col_b:
     eyebrow("Sector breakdown")
-    st.markdown(f"<h3>{CURRENT_YEAR} · real Climate TRACE data</h3>", unsafe_allow_html=True)
-    sec = location_sectors(iso, loc, CURRENT_YEAR)
+    st.markdown(f"<h3>{sel_year} · real Climate TRACE data</h3>", unsafe_allow_html=True)
+    sec = location_sectors(iso, loc, sel_year)
     if sec.empty:
-        st.info(f"No {CURRENT_YEAR} sector data for {loc_display} yet.")
+        st.info(f"No {sel_year} sector data for {loc_display} yet.")
     else:
         import plotly.graph_objects as go
         fig = go.Figure(go.Pie(
@@ -174,14 +211,14 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # ============== TOP 20 EMITTING SOURCES ==============
 eyebrow("Top emitting sources")
-top20 = top_point_sources(iso, loc, CURRENT_YEAR, top_n=20)
+top20 = top_point_sources(iso, loc, sel_year, top_n=20)
 
 if top20.empty:
-    st.info(f"No {CURRENT_YEAR} source-level data yet for {loc_display}.")
+    st.info(f"No {sel_year} source-level data yet for {loc_display}.")
 else:
     top_n_share = top20.attrs.get("top_n_share_pct", 0.0)
     st.markdown(
-        f"<h3>Top {len(top20)} sources ≈ <em>{top_n_share:.1f}%</em> of {loc_display}'s {CURRENT_YEAR} methane</h3>",
+        f"<h3>Top {len(top20)} sources ≈ <em>{top_n_share:.1f}%</em> of {loc_display}'s {sel_year} methane</h3>",
         unsafe_allow_html=True,
     )
     st.markdown(
@@ -196,14 +233,14 @@ else:
     )
     display_top20 = top20[["sub_sector_label", "sector", "total_emission", "share"]].rename(columns={
         "sub_sector_label": "Emitting source", "sector": "Sector",
-        "total_emission": f"{CURRENT_YEAR} CH₄ (t)", "share": "Share of jurisdiction (%)",
+        "total_emission": f"{sel_year} CH₄ (t)", "share": "Share of jurisdiction (%)",
     })
     st.dataframe(
         display_top20, hide_index=True, use_container_width=True, height=460,
         column_config={
             "Emitting source": st.column_config.TextColumn(width="medium"),
             "Sector": st.column_config.TextColumn(width="medium"),
-            f"{CURRENT_YEAR} CH₄ (t)": st.column_config.NumberColumn(format="%d"),
+            f"{sel_year} CH₄ (t)": st.column_config.NumberColumn(format="%d"),
             "Share of jurisdiction (%)": st.column_config.ProgressColumn(
                 format="%.2f%%", min_value=0, max_value=float(display_top20["Share of jurisdiction (%)"].max()),
             ),
@@ -214,10 +251,10 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # ============== TOP SECTORS + METHANE ACTION PLAN ==============
 eyebrow("Top sectors")
-top_sectors = top_sectors_pareto(iso, loc, CURRENT_YEAR, threshold=0.80)
+top_sectors = top_sectors_pareto(iso, loc, sel_year, threshold=0.80)
 
 if top_sectors.empty:
-    st.info(f"No {CURRENT_YEAR} data yet for {loc_display} to build an action plan from.")
+    st.info(f"No {sel_year} data yet for {loc_display} to build an action plan from.")
 else:
     st.markdown(
         f"<h3>The sectors driving ~{top_sectors['cum_share'].iloc[-1]*100:.0f}% of {loc_display}'s methane</h3>",
