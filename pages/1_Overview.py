@@ -7,7 +7,7 @@ import streamlit as st
 from utils.theme import inject_theme, eyebrow, dot_logo, dark_band, render_footer
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_ORDER, all_countries_year_total, CURRENT_YEAR, DATA_RANGE_LABEL,
-    MEMBER_ROSTER, total_member_counts, total_months_of_data,
+    MEMBER_ROSTER, total_member_counts, total_months_of_data, load_subsector_raw,
     country_monthly, country_yearly, fmt_mt, pct_change,
 )
 from utils.charts import sparkline_plotly
@@ -64,9 +64,9 @@ with col1:
 
 with col2:
     summary = all_countries_year_total(CURRENT_YEAR)
-    total_now = summary["ch4_year_tonnes"].sum()
     total_loc = int(summary["n_locations"].sum())
     n_months = total_months_of_data()
+    n_subsectors = load_subsector_raw()["sub_sector"].nunique()
 
     eyebrow("At a glance")
     st.markdown(
@@ -91,9 +91,9 @@ with col2:
         </div>
         <div style="border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:20px 0;display:flex;justify-content:space-between;align-items:baseline;">
           <div style="font-family:Quicksand,sans-serif;font-size:42px;font-weight:300;letter-spacing:-0.02em;line-height:1;">
-            {fmt_mt(total_now)}<span style="font-family:Quicksand,sans-serif;font-size:11px;color:var(--ink-soft);margin-left:6px;letter-spacing:0.1em;">Mt CH₄</span>
+            {n_subsectors}<span style="font-family:Quicksand,sans-serif;font-size:11px;color:var(--ink-soft);margin-left:6px;letter-spacing:0.1em;">activity sources</span>
           </div>
-          <div style="font-family:Quicksand,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-soft);text-align:right;max-width:220px;line-height:1.4;white-space:nowrap;">combined SMAC emissions</div>
+          <div style="font-family:Quicksand,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-soft);text-align:right;max-width:220px;line-height:1.4;white-space:nowrap;">tracked per jurisdiction</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -105,15 +105,8 @@ st.markdown("---")
 n_members, n_observers = total_member_counts()
 eyebrow("Members")
 st.markdown(
-    f"<h2 style='font-size:2.2rem;margin-bottom:8px;'>{n_members} members "
+    f"<h2 style='font-size:2.2rem;margin-bottom:28px;'>{n_members} members "
     f"<em>and {n_observers} observers</em>, across {len(COUNTRY_ORDER)} countries.</h2>",
-    unsafe_allow_html=True,
-)
-st.markdown(
-    '<p style="color:var(--ink-soft);font-size:14px;margin-bottom:28px;">'
-    "Every jurisdiction below is an actual SMAC member or observer — not just any state "
-    "or province Climate TRACE happens to publish data for."
-    "</p>",
     unsafe_allow_html=True,
 )
 

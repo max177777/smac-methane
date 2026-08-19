@@ -130,22 +130,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown("<br>", unsafe_allow_html=True)
-
-# ============== UPDATE CADENCE ==============
-eyebrow("Update cadence")
-st.markdown(
-    "<h2>Refreshed on a schedule, not on demand.</h2>",
-    unsafe_allow_html=True,
-)
-st.markdown(
-    '<p style="font-size:15px;line-height:1.7;color:var(--ink-soft);max-width:760px;">'
-    "Climate TRACE itself now publishes monthly. This tool's underlying dataset is refreshed "
-    "on a quarterly cycle — pulling the latest Climate TRACE release, reprocessing it into the "
-    "subnational tables used across this site, and redeploying automatically. The exact "
-    "&ldquo;data as of&rdquo; date for the current release is shown in the footer of every page."
-    "</p>",
-    unsafe_allow_html=True,
-)
-
 render_footer()
