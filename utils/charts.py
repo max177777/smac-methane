@@ -42,7 +42,6 @@ def time_series_plotly(df: pd.DataFrame, y_col: str = "ch4_tonnes",
         plot_bgcolor=PAPER,
         paper_bgcolor=PAPER,
         font=dict(family="Inter, sans-serif", size=12, color=INK),
-        title=dict(text=title, font=dict(size=14, color=INK_SOFT)) if title else None,
         xaxis=dict(
             showgrid=False, showline=True, linecolor=INK, linewidth=1,
             tickfont=dict(size=10, family="Quicksand, sans-serif", color=INK_SOFT),
@@ -56,6 +55,8 @@ def time_series_plotly(df: pd.DataFrame, y_col: str = "ch4_tonnes",
         showlegend=False,
         hoverlabel=dict(bgcolor=PAPER, bordercolor=INK, font=dict(family="Quicksand, sans-serif", color=INK)),
     )
+    if title:
+        fig.update_layout(title=dict(text=title, font=dict(size=14, color=INK_SOFT)))
     return fig
 
 
