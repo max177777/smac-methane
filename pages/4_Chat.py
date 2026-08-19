@@ -6,7 +6,7 @@ Chat page. Dual mode:
 
 import streamlit as st
 
-from utils.theme import inject_theme
+from utils.theme import inject_theme, render_footer
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_ORDER, list_locations, list_all_locations_flat, country_yearly, fmt_mt,
     CURRENT_YEAR, DATA_RANGE_LABEL,
@@ -528,3 +528,6 @@ if final_input:
         st.session_state.messages_general.append({"role": "assistant", "content": reply})
 
     st.rerun()
+
+
+render_footer()

@@ -7,7 +7,7 @@ a number here as more certain than it actually is.
 
 import streamlit as st
 
-from utils.theme import inject_theme, eyebrow
+from utils.theme import inject_theme, eyebrow, render_footer
 
 
 inject_theme()
@@ -148,10 +148,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown("<br><br>", unsafe_allow_html=True)
-st.markdown(
-    '<div style="text-align:center;font-family:Quicksand,sans-serif;font-size:10px;color:var(--ink-soft);letter-spacing:0.14em;text-transform:uppercase;padding:24px 0;border-top:1px solid var(--line);">'
-    'smac prototype <span style="color:var(--copper);">✦</span> climate trace data · updated quarterly <span style="color:var(--copper);">✦</span> TESTING '
-    '</div>',
-    unsafe_allow_html=True,
-)
+render_footer()

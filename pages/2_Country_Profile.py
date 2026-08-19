@@ -10,7 +10,7 @@ import re
 
 import streamlit as st
 
-from utils.theme import inject_theme, eyebrow, dark_band
+from utils.theme import inject_theme, eyebrow, dark_band, render_footer
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_COLORS, CURRENT_YEAR, DATA_RANGE_LABEL,
     all_member_locations, member_status, location_yearly, location_monthly,
@@ -438,3 +438,6 @@ if policy.get("policies"):
         ),
         unsafe_allow_html=True,
     )
+
+
+render_footer()

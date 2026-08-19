@@ -5,7 +5,7 @@ Replicates smacmethane.org/contact — membership + research team contacts.
 
 import streamlit as st
 
-from utils.theme import inject_theme, eyebrow
+from utils.theme import inject_theme, eyebrow, render_footer
 
 inject_theme()
 
@@ -81,3 +81,6 @@ st.markdown(
     'UC Berkeley Law · a key SMAC partner providing policy guidance and expertise</div>',
     unsafe_allow_html=True,
 )
+
+
+render_footer()

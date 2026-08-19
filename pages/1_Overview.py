@@ -4,7 +4,7 @@ Overview / landing page.
 
 import streamlit as st
 
-from utils.theme import inject_theme, eyebrow, dot_logo, dark_band
+from utils.theme import inject_theme, eyebrow, dot_logo, dark_band, render_footer
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_ORDER, all_countries_year_total, CURRENT_YEAR, DATA_RANGE_LABEL,
     MEMBER_ROSTER, total_member_counts, total_months_of_data,
@@ -24,7 +24,7 @@ with col1:
     st.markdown(
         '<div style="display:flex;align-items:center;gap:10px;margin:-4px 0 18px;flex-wrap:wrap;">'
         '<span class="smac-pill">● Prototype</span>'
-        f'<span class="smac-meta" style="font-size:12px;">SMAC · {DATA_RANGE_LABEL}</span>'
+        f'<span class="smac-meta" style="font-size:12px;">Climate TRACE · {DATA_RANGE_LABEL}</span>'
         '</div>',
         unsafe_allow_html=True,
     )
@@ -234,10 +234,4 @@ for row_start in range(0, len(COUNTRY_ORDER), cols_per_row):
             st.plotly_chart(sparkline_plotly(monthly, height=50), use_container_width=True,
                             config={"displayModeBar": False})
 
-st.markdown("<br><br>", unsafe_allow_html=True)
-st.markdown(
-    '<div style="text-align:center;font-family:Quicksand,sans-serif;font-size:10px;color:var(--ink-soft);letter-spacing:0.14em;text-transform:uppercase;padding:24px 0;border-top:1px solid var(--line);">'
-    f'smac prototype <span style="color:var(--copper);">✦</span> climate trace data · {DATA_RANGE_LABEL} <span style="color:var(--copper);">✦</span> TESTING '
-    '</div>',
-    unsafe_allow_html=True,
-)
+render_footer()

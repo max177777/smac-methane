@@ -10,7 +10,7 @@ just be the sum of a country's SMAC members, not a real national figure.
 import plotly.graph_objects as go
 import streamlit as st
 
-from utils.theme import inject_theme, eyebrow
+from utils.theme import inject_theme, eyebrow, render_footer
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_ORDER, CURRENT_YEAR, SECTOR_ORDER,
     list_locations, location_sectors, sector_yearly_series, display_name,
@@ -155,3 +155,6 @@ with trend_a:
 with trend_b:
     st.markdown(f'<div class="smac-meta">{label_b} · CH₄ by sector · {2021}–{CURRENT_YEAR + 1}</div>', unsafe_allow_html=True)
     _trend_chart(iso_b, loc_b, "chart_trend_b")
+
+
+render_footer()

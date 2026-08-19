@@ -531,3 +531,78 @@ def thinking():
         '<div class="typing-dots"><span></span><span></span><span></span></div>',
         unsafe_allow_html=True,
     )
+
+
+def render_footer():
+    """Site-wide footer — call once at the bottom of every page. Short by design
+    (© line + compact link row); the fuller legal text lives in expanders so it
+    doesn't need its own nav page, and doesn't bloat every page by default."""
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown(
+        '<div style="border-top:1px solid var(--line);padding-top:20px;">'
+        '<div style="font-family:Quicksand,sans-serif;font-size:12px;color:var(--ink-soft);line-height:1.6;">'
+        "© 2026 Subnational Methane Action Coalition (SMAC) · Project Climate, "
+        "UC Berkeley Law (CLEE). All rights reserved."
+        "</div>"
+        '<div style="font-size:11px;color:var(--ink-soft);opacity:0.75;margin-top:4px;max-width:720px;">'
+        "Unless otherwise indicated, original site content, interface, and analyses are "
+        "© 2026 SMAC / CLEE. Third-party datasets, logos, and trademarks (including "
+        "Climate TRACE data) remain the property of their respective owners."
+        "</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown('<div style="height:10px;"></div>', unsafe_allow_html=True)
+    link_cols = st.columns(6)
+    with link_cols[0]:
+        st.page_link("pages/1_Overview.py", label="About", icon=None)
+    with link_cols[5]:
+        st.page_link("pages/6_Contact.py", label="Contact", icon=None)
+
+    exp_cols = st.columns(4)
+    with exp_cols[0]:
+        with st.expander("Data Sources"):
+            st.markdown(
+                "This site incorporates methane emissions data from Climate TRACE, an "
+                "independent third-party coalition, along with contextual policy "
+                "information compiled by the SMAC research team. All third-party data, "
+                "trademarks, and materials remain the property of their respective "
+                "owners and are subject to their original terms, licenses, and "
+                "attribution requirements. Inclusion of third-party data does not imply "
+                "endorsement by or affiliation with the original data providers unless "
+                "explicitly stated. See **Data & Methods** for provenance and known "
+                "limitations."
+            )
+    with exp_cols[1]:
+        with st.expander("AI Disclaimer"):
+            st.markdown(
+                "This site uses AI-assisted tools, including a chat interface, to "
+                "retrieve, summarize, analyze, or generate information about methane "
+                "emissions and policy. AI-generated outputs may contain errors, "
+                "omissions, or outdated information and should not be treated as "
+                "authoritative professional, legal, financial, or policy advice. "
+                "Verify anything important — especially before using it in official "
+                "reporting or decision-making — against the underlying Climate TRACE "
+                "data and cited policy sources."
+            )
+    with exp_cols[2]:
+        with st.expander("Privacy"):
+            st.markdown(
+                "This site may process information you submit — for example, through "
+                "the Chat feature — in order to provide its features. Please don't "
+                "submit confidential, sensitive, or personally identifiable "
+                "information. Where third-party hosting, analytics, or AI services are "
+                "used to operate this site, information may also be processed "
+                "according to those providers' own privacy policies."
+            )
+    with exp_cols[3]:
+        with st.expander("Terms of Use"):
+            st.markdown(
+                "The information and tools on this site are provided for "
+                "informational, research, and educational purposes. While reasonable "
+                "efforts are made to keep data and analysis accurate and current, no "
+                "guarantee is made regarding the completeness, accuracy, reliability, "
+                "or availability of the site or its outputs. Use of this site, and any "
+                "reliance on its content, is at your own discretion and risk."
+            )
