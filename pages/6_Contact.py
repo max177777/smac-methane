@@ -78,7 +78,7 @@ with col2:
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown(
     '<div class="smac-meta">Center for Law, Energy &amp; the Environment (CLEE) · '
-    'UC Berkeley Law · a key SMAC partner providing policy guidance and expertise</div>',
+    'UC Berkeley Law</div>',
     unsafe_allow_html=True,
 )
 
