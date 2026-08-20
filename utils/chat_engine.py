@@ -14,6 +14,7 @@ from utils.data_loader import (
     location_yearly_ranking, fmt_int, pct_change, CURRENT_YEAR, DATA_RANGE_LABEL,
 )
 from utils.policy_content import POLICY, PATHWAYS, GWP100, GWP20
+from utils.rag import rag_search, format_rag_context
 
 
 @dataclass
@@ -298,6 +299,24 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
             f"Values rounded for display. SMAC always discloses which GWP horizon is in use to "
             f"prevent metric-switching greenwashing.",
             is_method=True,
+        ))
+
+    # ---------- REFERENCE LIBRARY (local RAG) ----------
+    # Uses the SAME sidebar selections (jurisdiction, output type) as filters
+    # before ranking — this is the retrieval step that will carry over once
+    # the backend swaps to a real LLM: same filters, same corpus, just a
+    # generative model instead of these scripted blocks doing the writing.
+    rag_hits = rag_search(
+        user_text,
+        iso=iso,
+        location=ctx.location if is_loc else None,
+        output_type=ctx.output,
+        k=3,
+    )
+    if rag_hits:
+        blocks.append(ChatBlock(
+            "Reference Library",
+            format_rag_context(rag_hits),
         ))
 
     response = MethaneResponse(blocks=blocks, chart_subject=subject)
