@@ -17,8 +17,9 @@ from utils.data_loader import (
     smac_wide_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
     top_point_sources, fmt_int, fmt_mt, pct_change, display_name,
 )
-from utils.policy_content import POLICY, GWP100, GWP20
+from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans
 from utils.charts import time_series_plotly, SECTOR_COLORS
+from utils.rag import rag_search
 
 inject_theme()
 
@@ -396,26 +397,87 @@ else:
 
     st.markdown("<br>", unsafe_allow_html=True)
     eyebrow("Methane Action Plan")
-    st.markdown(f"<h3>Quick actions for {loc_display}, by top source</h3>", unsafe_allow_html=True)
-    st.markdown(
-        '<div class="smac-meta" style="margin-bottom:14px;">'
-        'generic best-practice actions for each top sector — a starting checklist, not a '
-        'substitute for a full jurisdiction-specific plan</div>',
-        unsafe_allow_html=True,
+
+    official_plans = get_official_plans(iso, loc)
+    rag_hits = rag_search(
+        f"methane action plan mitigation strategy for {loc_display}",
+        iso=iso, location=loc, output_type="pathway", k=4,
     )
-    bullets = action_plan_bullets(top_sectors)
-    plan_cols = st.columns(2)
-    for i, (sector, bullet) in enumerate(bullets):
-        with plan_cols[i % 2]:
+    dedicated_hits = [h for h in rag_hits if h["location"] == loc]
+    has_dedicated = bool(official_plans) or bool(dedicated_hits)
+
+    if has_dedicated:
+        st.markdown(f"<h3>{loc_display}'s actual methane action plan</h3>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<h3>Quick actions for {loc_display}, by top source</h3>", unsafe_allow_html=True)
+
+    if official_plans:
+        st.markdown(
+            '<div class="smac-meta" style="margin-bottom:10px;">official external plan(s) on file</div>',
+            unsafe_allow_html=True,
+        )
+        for p in official_plans:
             st.markdown(
-                f'<div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">'
-                f'<span style="width:8px;height:8px;border-radius:50%;background:{SECTOR_COLORS.get(sector, "#b9c4bd")};'
-                f'flex-shrink:0;margin-top:6px;"></span>'
-                f'<div><div style="font-family:Quicksand,sans-serif;font-size:10px;letter-spacing:0.08em;'
-                f'text-transform:uppercase;color:var(--ink-soft);margin-bottom:2px;">{sector}</div>'
-                f'<div style="font-size:13.5px;line-height:1.5;color:var(--ink);">{bullet}</div></div></div>',
+                f'<a href="{p["url"]}" target="_blank" style="text-decoration:none;display:block;margin-bottom:10px;">'
+                f'<div class="smac-card" style="padding:14px 18px;">'
+                f'<div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:14px;color:var(--ink);">📄 {p["title"]} →</div>'
+                f'<div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">{p["org"]} · {p["year"]}</div>'
+                f'</div></a>',
                 unsafe_allow_html=True,
             )
+
+    if dedicated_hits:
+        st.markdown(
+            '<div class="smac-meta" style="margin:14px 0 10px;">'
+            f'excerpts retrieved from {loc_display}\'s own documents in our library</div>',
+            unsafe_allow_html=True,
+        )
+        for h in dedicated_hits[:3]:
+            st.markdown(
+                f'<div class="smac-card" style="padding:14px 18px;margin-bottom:10px;">'
+                f'<div style="font-size:13px;line-height:1.55;color:var(--ink);margin-bottom:6px;">'
+                f'&ldquo;{h["text"][:400]}{"…" if len(h["text"]) > 400 else ""}&rdquo;</div>'
+                f'<div class="smac-meta" style="font-size:10.5px;">source: {h["source_file"]}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+    if not has_dedicated:
+        st.markdown(
+            '<div class="smac-meta" style="margin-bottom:14px;">'
+            f'no dedicated action plan indexed for {loc_display} yet — showing generic '
+            'best-practice actions for each top sector instead, plus the closest matches '
+            'from our general solution-bank library</div>',
+            unsafe_allow_html=True,
+        )
+        bullets = action_plan_bullets(top_sectors)
+        plan_cols = st.columns(2)
+        for i, (sector, bullet) in enumerate(bullets):
+            with plan_cols[i % 2]:
+                st.markdown(
+                    f'<div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">'
+                    f'<span style="width:8px;height:8px;border-radius:50%;background:{SECTOR_COLORS.get(sector, "#b9c4bd")};'
+                    f'flex-shrink:0;margin-top:6px;"></span>'
+                    f'<div><div style="font-family:Quicksand,sans-serif;font-size:10px;letter-spacing:0.08em;'
+                    f'text-transform:uppercase;color:var(--ink-soft);margin-bottom:2px;">{sector}</div>'
+                    f'<div style="font-size:13.5px;line-height:1.5;color:var(--ink);">{bullet}</div></div></div>',
+                    unsafe_allow_html=True,
+                )
+        if rag_hits:
+            st.markdown(
+                '<div class="smac-meta" style="margin:14px 0 10px;">'
+                'closest matches from the general solution-bank library</div>',
+                unsafe_allow_html=True,
+            )
+            for h in rag_hits[:2]:
+                st.markdown(
+                    f'<div class="smac-card" style="padding:14px 18px;margin-bottom:10px;">'
+                    f'<div style="font-size:13px;line-height:1.55;color:var(--ink);margin-bottom:6px;">'
+                    f'&ldquo;{h["text"][:350]}{"…" if len(h["text"]) > 350 else ""}&rdquo;</div>'
+                    f'<div class="smac-meta" style="font-size:10.5px;">source: {h["source_file"]}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
 
 st.markdown("<br>", unsafe_allow_html=True)
 

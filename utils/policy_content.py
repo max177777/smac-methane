@@ -310,3 +310,46 @@ PATHWAYS = {
 # IPCC AR6 GWP factors (non-fossil CH4)
 GWP100 = 27
 GWP20 = 80
+
+
+# Real, external, official methane/climate action plans for SMAC jurisdictions —
+# sourced from the internal reference library (Current_Methane_Action_Plans.docx
+# Tier 1) plus one verified official source (Jalisco). Keyed by (iso3, location)
+# exactly matching MEMBER_ROSTER's location strings in data_loader.py. Only
+# jurisdictions with a confirmed, real URL are listed here — everything else
+# falls back to the RAG-retrieved solution bank on the SMAC page.
+OFFICIAL_ACTION_PLANS: dict[tuple[str, str], list[dict]] = {
+    ("CAN", "British Columbia"): [
+        {"title": "CleanBC Roadmap to 2030", "org": "Government of British Columbia",
+         "year": 2021,
+         "url": "https://www2.gov.bc.ca/assets/gov/environment/climate-change/action/cleanbc/cleanbc_roadmap_2030.pdf"},
+    ],
+    ("USA", "Colorado"): [
+        {"title": "Colorado Methane Action Plan", "org": "State of Colorado", "year": 2024,
+         "url": "https://drive.google.com/file/d/1ltnNkUsGx_7ZgpAR1LeFzLczQu7DRbZR/view"},
+    ],
+    ("USA", "California"): [
+        {"title": "Short-Lived Climate Pollutant (SLCP) Reduction Strategy",
+         "org": "California EPA / Air Resources Board", "year": 2017,
+         "url": "https://ww2.arb.ca.gov/sites/default/files/2020-07/final_SLCP_strategy.pdf"},
+    ],
+    ("USA", "Maryland"): [
+        {"title": "Comprehensive Climate Action Plan", "org": "Maryland Department of the Environment",
+         "year": 2025,
+         "url": "https://mde.maryland.gov/programs/air/ClimateChange/CLIMATE%20POLLUTION%20GRANTS/CCAP_State%20of%20Maryland%202025.pdf"},
+    ],
+    ("IND", "Punjab"): [
+        {"title": "Pathways to Net-Zero in Punjab: The Critical Role of Non-CO2 Pollutants",
+         "org": "PSCST, Govt. of Punjab · TERI · IGSD", "year": 2025,
+         "url": "https://www.igsd.org/wp-content/uploads/2025/09/Pathways-to-Net-Zero-in-Punjab-The-Critical-Role-of-NonCO2-Pollutants.2025.pdf"},
+    ],
+    ("MEX", "Jalisco"): [
+        {"title": "Programa Estatal para la Acción ante el Cambio Climático (PEACC) 2019–2024",
+         "org": "SEMADET, Gobierno de Jalisco", "year": 2024,
+         "url": "https://semadet.jalisco.gob.mx/gobernanza-ambiental/cambio-climatico/programa-estatal-de-accion-ante-el-cambio-climatico-peacc"},
+    ],
+}
+
+
+def get_official_plans(iso: str, location: str) -> list[dict]:
+    return OFFICIAL_ACTION_PLANS.get((iso, location), [])
