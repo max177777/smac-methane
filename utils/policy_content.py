@@ -353,3 +353,62 @@ OFFICIAL_ACTION_PLANS: dict[tuple[str, str], list[dict]] = {
 
 def get_official_plans(iso: str, location: str) -> list[dict]:
     return OFFICIAL_ACTION_PLANS.get((iso, location), [])
+
+
+# Per-jurisdiction Carbon Mapper plume/source links, keyed exactly like
+# OFFICIAL_ACTION_PLANS above. Sourced from the team's "SMAC Plumes" reference
+# doc (checked 2026-07-06), with Jalisco's coordinates corrected per a follow-up.
+# One remaining known data-quality caveat carried over from the source doc:
+#   - Baden-Württemberg, Germany and Minas Gerais, Brazil: their URLs reuse a
+#     gadm_composite_id from another jurisdiction (Andalusia and Espírito
+#     Santo respectively), but both include an explicit &location= param and
+#     correct recenter coordinates, so the map should still land in the right
+#     place — just noting the ID reuse in case it matters for the underlying
+#     data filter.
+# `has_plumes` is intentionally omitted: the source doc conveyed plume
+# presence via cell highlighting, which didn't survive being pasted as plain
+# text, so we don't actually know which jurisdictions were flagged.
+CARBON_MAPPER_LINKS: dict[tuple[str, str], dict] = {
+    ("NGA", "Cross River"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-2205#6.98/5.793/8.666", "as_of": "2026-07-06"},
+    ("NGA", "Enugu"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-2174#8.23/6.516/7.385", "as_of": "2026-07-06"},
+    ("ZAF", "Gauteng"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-3665#7.12/-26.02/28.127", "as_of": "2026-07-06"},
+    ("ZAF", "Western Cape"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-3671#6.11/-32.66/20.99", "as_of": "2026-07-06"},
+    ("KOR", "Chungcheongnam-do"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-1620#7.7/36.524/126.591", "as_of": "2026-07-06"},
+    ("KOR", "Gyeonggi-do"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-1625#7.32/37.591/127.114", "as_of": "2026-07-06"},
+    ("IND", "Delhi [New Delhi]"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-1283#9.01/28.6468/77.0853", "as_of": "2026-07-06"},
+    ("IND", "Punjab"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-1286#6.67/31.073/75.401", "as_of": "2026-07-06"},
+    ("IDN", "Jawa Barat"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm0-250#7.89/-6.865/107.601", "as_of": "2026-07-06"},
+    ("IDN", "Palembang City"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm2-18466#10.61/-2.9795/104.7442", "as_of": "2026-07-06"},
+    ("CHN", "Beijing"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-528#7.05/40.255/116.457", "as_of": "2026-07-06"},
+    ("ESP", "Andalucía"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-907#6.54/37.346/-4.576", "as_of": "2026-07-06"},
+    ("DEU", "Baden-Württemberg"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-907&location=Baden-W%C3%BCrttemberg%2C+Germany#6.94/48.675/9.004", "as_of": "2026-07-06"},
+    ("ITA", "Lombardia"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-1393#7.01/45.668/9.964", "as_of": "2026-07-06"},
+    ("ITA", "Emilia-Romagna"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-1409#7.52/44.445/10.978", "as_of": "2026-07-06"},
+    ("USA", "California"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-3478#4.55/37.42/-119.27", "as_of": "2026-07-06"},
+    ("USA", "Colorado"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-3480#5.76/39.027/-105.551", "as_of": "2026-07-06"},
+    ("USA", "Maryland"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-3446#6.9/38.814/-77.269", "as_of": "2026-07-06"},
+    ("MEX", "Jalisco"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-1833#7.29/20.85/-103.649", "as_of": "2026-07-06"},
+    ("MEX", "Querétaro"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-1842#7.31/20.845/-99.82", "as_of": "2026-07-06"},
+    ("MEX", "Yucatán"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-1852#6.99/20.591/-88.97", "as_of": "2026-07-06"},
+    ("CAN", "British Columbia"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-466#4.02/54.57/-126.55", "as_of": "2026-07-06"},
+    ("CAN", "Québec"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-463#3.1/55.44/-69.05", "as_of": "2026-07-06"},
+    ("CAN", "Alberta"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-462#4.24/54.87/-115", "as_of": "2026-07-06"},
+    ("ARG", "Buenos Aires"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-128#5.2/-37.248/-60.031", "as_of": "2026-07-06"},
+    ("ARG", "Córdoba"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-147#5.43/-32.293/-63.778", "as_of": "2026-07-06"},
+    ("ARG", "Chubut"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-145#6.01/-44.036/-67.885", "as_of": "2026-07-06"},
+    ("BRA", "Espírito Santo"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-391#5.98/-19.606/-35.364", "as_of": "2026-07-06"},
+    ("BRA", "Goiás"): {"url": "https://data.carbonmapper.org/?gadm_composite_id=Gadm1-392&plume_gas=CH4#5.47/-15.978/-49.578", "as_of": "2026-07-06"},
+    ("BRA", "Minas Gerais"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-391&location=Minas+Gerais%2C+Brazil#5.52/-18.634/-45.451", "as_of": "2026-07-06"},
+    ("BRA", "Pernambuco"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-374#5.62/-6.652/-36.868", "as_of": "2026-07-06"},
+    ("BRA", "Piauí"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-375#13.98/-5.1629/-42.74509", "as_of": "2026-07-06"},
+    ("BRA", "Rio de Janeiro"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-376#7/-22.072/-42.924", "as_of": "2026-07-06"},
+    ("BRA", "Rio Grande do Sul"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-379#5.18/-30.471/-53.668", "as_of": "2026-07-06"},
+    ("BRA", "Sergipe"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-384#7.43/-10.544/-37.32", "as_of": "2026-07-06"},
+    ("BOL", "Santa Cruz"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-364#5.26/-17.007/-61.148", "as_of": "2026-07-06"},
+}
+
+CARBON_MAPPER_PORTAL_URL = "https://data.carbonmapper.org/"
+
+
+def get_carbon_mapper_link(iso: str, location: str) -> dict | None:
+    return CARBON_MAPPER_LINKS.get((iso, location))

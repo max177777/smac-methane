@@ -17,7 +17,7 @@ from utils.data_loader import (
     smac_wide_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
     top_point_sources, fmt_int, fmt_mt, pct_change, display_name,
 )
-from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans
+from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans, get_carbon_mapper_link, CARBON_MAPPER_PORTAL_URL
 from utils.charts import time_series_plotly, SECTOR_COLORS
 from utils.rag import rag_search
 
@@ -366,6 +366,44 @@ else:
                 format="%.2f%%", min_value=0, max_value=float(display_top20["Share of jurisdiction (%)"].max()),
             ),
         },
+    )
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# ============== SATELLITE DATA (Carbon Mapper) ==============
+eyebrow("Satellite data")
+st.markdown(f"<h3>Observed plumes for {loc_display}</h3>", unsafe_allow_html=True)
+st.markdown(
+    '<div class="smac-meta" style="margin-bottom:14px;">'
+    "the sources above are modeled from activity data; Carbon Mapper's satellite/aircraft "
+    "instruments observe individual methane plumes directly — pairing the two shows where "
+    "the inventory estimate and a direct observation agree, and where they don't</div>",
+    unsafe_allow_html=True,
+)
+
+cm_link = get_carbon_mapper_link(iso, loc)
+if cm_link:
+    st.markdown(
+        f'<a href="{cm_link["url"]}" target="_blank" style="text-decoration:none;">'
+        f'<div class="smac-card" style="padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">'
+        f'<div><div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:14px;color:var(--ink);">'
+        f'🛰️ View {loc_display}\'s plume data on Carbon Mapper →</div>'
+        f'<div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">'
+        f'checked as of {cm_link["as_of"]}'
+        f'</div></div></div></a>',
+        unsafe_allow_html=True,
+    )
+else:
+    st.markdown(
+        f'<a href="{CARBON_MAPPER_PORTAL_URL}" target="_blank" style="text-decoration:none;">'
+        f'<div class="smac-card" style="padding:16px 20px;">'
+        f'<div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:14px;color:var(--ink);">'
+        f'🛰️ Explore global plume data on Carbon Mapper →</div>'
+        f'<div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">'
+        f'a {loc_display}-specific saved view isn\'t linked yet — this opens the general portal, '
+        f'where you can search for {loc_display} directly</div>'
+        f'</div></a>',
+        unsafe_allow_html=True,
     )
 
 st.markdown("<br>", unsafe_allow_html=True)
