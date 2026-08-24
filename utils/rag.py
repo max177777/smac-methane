@@ -89,15 +89,19 @@ def rag_search(
     iso: str | None = None,
     location: str | None = None,
     output_type: str | None = None,
+    sector: str | None = None,
     k: int = 4,
     min_score: float = 0.5,
 ) -> list[dict]:
     """
-    Retrieve the top-k chunks for `query`, filtered by jurisdiction/output type
-    where possible. Filtering degrades gracefully: if the exact (iso, location)
-    has no indexed material, falls back to iso-only, then to the unfiltered
-    corpus — so a jurisdiction with no local documents still gets the general
-    solution-bank / template material rather than nothing.
+    Retrieve the top-k chunks for `query`, filtered by jurisdiction / output
+    type / sector where possible — these three filters are the CLEAR-style
+    "lock the question" controls exposed in the Chat sidebar (Context =
+    jurisdiction, part of Locate-in-Time/Evidence = sector + output type).
+    Filtering degrades gracefully: narrows on every filter first, then drops
+    sector, then output type, then location, in that order — so a
+    jurisdiction with no sector-specific material still gets its general
+    documents rather than nothing.
     Returns [] if nothing clears `min_score` (caller should treat that as "no
     grounded material" rather than force a low-quality citation).
     """
@@ -106,7 +110,7 @@ def rag_search(
     index = _load_index()
     chunks = index["chunks"]
 
-    def candidate_indices(require_loc: bool, require_output: bool):
+    def candidate_indices(require_loc: bool, require_output: bool, require_sector: bool):
         out = []
         for i, c in enumerate(chunks):
             if require_loc:
@@ -116,15 +120,19 @@ def rag_search(
                     continue
             if require_output and output_type and output_type not in c["output_types"]:
                 continue
+            if require_sector and sector and c["sector"] != sector:
+                continue
             out.append(i)
         return out
 
     # progressively widen the filter until we have candidates to rank
-    candidates = candidate_indices(require_loc=True, require_output=True)
+    candidates = candidate_indices(True, True, True)
     if not candidates:
-        candidates = candidate_indices(require_loc=True, require_output=False)
+        candidates = candidate_indices(True, True, False)
     if not candidates:
-        candidates = candidate_indices(require_loc=False, require_output=True)
+        candidates = candidate_indices(True, False, False)
+    if not candidates:
+        candidates = candidate_indices(False, True, False)
     if not candidates:
         candidates = list(range(len(chunks)))
 

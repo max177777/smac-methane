@@ -11,7 +11,8 @@ from dataclasses import dataclass
 
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_ORDER, country_yearly, country_monthly, location_monthly,
-    location_yearly_ranking, fmt_int, pct_change, CURRENT_YEAR, DATA_RANGE_LABEL,
+    location_yearly_ranking, location_sectors, SECTOR_ORDER, fmt_int, pct_change,
+    CURRENT_YEAR, DATA_RANGE_LABEL,
 )
 from utils.policy_content import POLICY, PATHWAYS, GWP100, GWP20
 from utils.rag import rag_search, format_rag_context
@@ -26,6 +27,8 @@ class MethaneContext:
     location: str  # "__all__" or specific name
     metric: str    # "ch4" | "gwp100" | "gwp20"
     output: str    # "data" | "trend" | "policy" | "pathway" | "method"
+    year: str = "all"      # "all" or a specific year as string, e.g. "2024"
+    sector: str = "all"    # "all" or one of data_loader.SECTOR_ORDER
 
 
 @dataclass
@@ -78,6 +81,12 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
     country_name = meta["name"]
     subunit_type = meta["subunit_type"]
 
+    # CLEAR "Locate in Time": a specific year pins every KPI/ranking below to
+    # that year instead of the site-wide CURRENT_YEAR default. "all" keeps
+    # today's default behavior unchanged.
+    target_year = int(ctx.year) if ctx.year and ctx.year != "all" else CURRENT_YEAR
+    sector_filter = ctx.sector if ctx.sector and ctx.sector != "all" else None
+
     # Pick the data slice
     is_loc = ctx.location != "__all__"
     if is_loc:
@@ -95,17 +104,30 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
         return float(row["ch4_tonnes"].iloc[0]) if len(row) else 0.0
 
     y21 = y(2021)
-    y_prior = y(CURRENT_YEAR - 1)
-    y_now = y(CURRENT_YEAR)
+    y_prior = y(target_year - 1)
+    y_now = y(target_year)
     yoy = pct_change(y_now, y_prior)
     drift = pct_change(y_now, y21)
-    n_years = CURRENT_YEAR - 2021
+    n_years = max(target_year - 2021, 1)
 
     # Subnational ranking for context
-    rank = location_yearly_ranking(iso, year=CURRENT_YEAR)
+    rank = location_yearly_ranking(iso, year=target_year)
     total = rank["ch4_tonnes_year"].sum()
     top3_names = rank["location"].head(3).tolist()
     top3_share = rank.head(3)["share"].sum()
+
+    # CLEAR "Context": a specific sector pulls that sector's own share of this
+    # jurisdiction's total, shown alongside the aggregate CH4 figures.
+    sector_insight = None
+    if sector_filter and is_loc:
+        sec_df = location_sectors(iso, ctx.location, target_year)
+        sec_row = sec_df[sec_df["sector"] == sector_filter]
+        if len(sec_row) and y_now > 0:
+            sec_tonnes = float(sec_row["total_emission"].iloc[0])
+            sector_insight = (
+                f"**{sector_filter}** accounted for **{fmt_int(sec_tonnes)} t CH₄** in "
+                f"{target_year} — **{sec_tonnes / y_now * 100:.1f}%** of {subject}'s total."
+            )
 
     blocks: list[ChatBlock] = []
 
@@ -114,31 +136,33 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
         if is_loc:
             share_of_nation = y_now / total * 100 if total else 0
             summary = (
-                f"In {CURRENT_YEAR}, **{subject}** emitted **{fmt_int(y_now * mult)} {unit}** "
+                f"In {target_year}, **{subject}** emitted **{fmt_int(y_now * mult)} {unit}** "
                 f"of methane (under the *{metric_label}* framing). That is "
                 f"**{share_of_nation:.2f}%** of {country_name}'s national CH₄ total."
             )
             insight = (
                 f"- 2021 baseline: **{fmt_int(y21 * mult)} {unit}**\n"
-                f"- {CURRENT_YEAR - 1}: **{fmt_int(y_prior * mult)} {unit}**\n"
-                f"- {CURRENT_YEAR}: **{fmt_int(y_now * mult)} {unit}**\n"
+                f"- {target_year - 1}: **{fmt_int(y_prior * mult)} {unit}**\n"
+                f"- {target_year}: **{fmt_int(y_now * mult)} {unit}**\n"
                 f"- Year-over-year: **{yoy:+.2f}%** ({'rising' if yoy > 0 else 'falling'})\n"
                 f"- {n_years}-year drift: **{drift:+.2f}%**"
             )
         else:
             summary = (
-                f"In {CURRENT_YEAR}, **{country_name}** emitted **{fmt_int(y_now * mult)} {unit}** "
+                f"In {target_year}, **{country_name}** emitted **{fmt_int(y_now * mult)} {unit}** "
                 f"of methane. The top three subnational units "
                 f"({', '.join(top3_names)}) together explain **{top3_share:.1f}%** "
                 f"of the national footprint."
             )
             top5 = rank.head(5)
-            insight = f"Top subnational units ({CURRENT_YEAR} CH₄, tonnes):\n\n" + "\n".join(
+            insight = f"Top subnational units ({target_year} CH₄, tonnes):\n\n" + "\n".join(
                 f"- **{r.location}** — {fmt_int(r.ch4_tonnes_year)} t ({r.share:.1f}%)"
                 for r in top5.itertuples()
             )
 
         blocks.append(ChatBlock("Summary", summary))
+        if sector_insight:
+            insight = insight + f"\n- {sector_insight}"
         blocks.append(ChatBlock("Key Data Insight", insight))
         blocks.append(ChatBlock("Policy Context", POLICY[iso]["summary"]))
         path = PATHWAYS.get(iso, [])
@@ -212,7 +236,7 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
         top3_total = rank.head(3)["ch4_tonnes_year"].sum()
         blocks.append(ChatBlock(
             "Key Data Insight",
-            f"In {CURRENT_YEAR}, **{', '.join(top3_names)}** together produced "
+            f"In {target_year}, **{', '.join(top3_names)}** together produced "
             f"**{fmt_int(top3_total)} t CH₄** — about **{top3_share:.1f}%** of national methane. "
             f"Yet only a subset of {subunit_type}s have binding instruments beyond the federal floor."
         ))
@@ -276,7 +300,7 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
             "depends on the time horizon — that choice changes which sectors look most urgent."
         ))
         insight = (
-            f"For {subject}'s {fmt_int(y_now)} t CH₄ in {CURRENT_YEAR}:\n\n"
+            f"For {subject}'s {fmt_int(y_now)} t CH₄ in {target_year}:\n\n"
             f"- **GWP100 (×{GWP100}):** ≈ {fmt_int(y_now * GWP100)} t CO₂e — comparable to long-term "
             f"climate accounting.\n"
             f"- **GWP20 (×{GWP20}):** ≈ {fmt_int(y_now * GWP20)} t CO₂e — reflects near-term warming "
@@ -305,14 +329,16 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
         ))
 
     # ---------- REFERENCE LIBRARY (local RAG) ----------
-    # Uses the SAME sidebar selections (jurisdiction, output type) as filters
-    # before ranking. rag_hits also feeds the optional LLM enrichment below —
-    # same filters, same corpus, whether a generative model is wired in or not.
+    # Uses the SAME sidebar selections (jurisdiction, output type, sector) as
+    # filters before ranking. rag_hits also feeds the optional LLM enrichment
+    # below — same filters, same corpus, whether a generative model is wired
+    # in or not.
     rag_hits = rag_search(
         user_text,
         iso=iso,
         location=ctx.location if is_loc else None,
         output_type=ctx.output,
+        sector=sector_filter,
         k=3,
     )
     rag_context = format_rag_context(rag_hits)
@@ -329,11 +355,12 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
             facts = {
                 "jurisdiction": subject,
                 "country": country_name,
-                f"{CURRENT_YEAR} total CH4 (t)": fmt_int(y_now),
+                f"{target_year} total CH4 (t)": fmt_int(y_now),
                 "year-over-year change (%)": f"{yoy:+.2f}" if yoy == yoy else "n/a",
                 f"{n_years}-year drift since 2021 (%)": f"{drift:+.2f}" if drift == drift else "n/a",
                 "top 3 subunits": ", ".join(top3_names) if top3_names else "n/a",
                 "top 3 share of national total (%)": f"{top3_share:.1f}",
+                "sector focus (user-selected, only discuss this if set)": sector_filter or "none — discuss all sectors",
             }
             enriched = enrich_narrative_blocks(
                 target_blocks, user_text=user_text, facts=facts,

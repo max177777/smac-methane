@@ -11,7 +11,7 @@ import streamlit as st
 from utils.theme import inject_theme
 from utils.data_loader import (
     COUNTRY_META, list_all_locations_flat, country_yearly, fmt_mt,
-    CURRENT_YEAR, DATA_RANGE_LABEL, display_name,
+    CURRENT_YEAR, DATA_RANGE_LABEL, display_name, SECTOR_ORDER,
 )
 from utils.chat_engine import MethaneContext, build_methane_response, ChatBlock
 from utils.llm import has_llm
@@ -28,6 +28,10 @@ if "chat_location" not in st.session_state:
     st.session_state.chat_location = "California"
 if "chat_output" not in st.session_state:
     st.session_state.chat_output = "data"
+if "chat_year" not in st.session_state:
+    st.session_state.chat_year = "all"
+if "chat_sector" not in st.session_state:
+    st.session_state.chat_sector = "all"
 if "messages_methane" not in st.session_state:
     st.session_state.messages_methane = [
         {"role": "assistant",
@@ -139,8 +143,38 @@ def methane_sidebar():
             unsafe_allow_html=True,
         )
 
-        # ---- Output type ----
-        st.markdown('<div class="smac-eyebrow">Output type</div>', unsafe_allow_html=True)
+        # ---- Question Scope (CLEAR-aligned: locks Context/Time/Evidence before answering) ----
+        st.markdown('<div class="smac-eyebrow">Question scope</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="smac-meta" style="font-size:9px;margin:-10px 0 12px;line-height:1.5;">'
+            'pins the year and sector so the answer — and what it retrieves from the document '
+            'library — stays locked to what you actually asked, instead of drifting to '
+            'whatever\'s most recent or most generic.</div>',
+            unsafe_allow_html=True,
+        )
+
+        year_options = ["all"] + [str(y) for y in range(2026, 2020, -1)]
+        year = st.selectbox(
+            "Year", options=year_options,
+            format_func=lambda x: "All years (2021–2026)" if x == "all" else x,
+            index=year_options.index(st.session_state.chat_year),
+            key="sb_year",
+        )
+        if year != st.session_state.chat_year:
+            st.session_state.chat_year = year
+            st.rerun()
+
+        sector_options = ["all"] + SECTOR_ORDER
+        sector = st.selectbox(
+            "Sector", options=sector_options,
+            format_func=lambda x: "All sectors" if x == "all" else x,
+            index=sector_options.index(st.session_state.chat_sector),
+            key="sb_sector",
+        )
+        if sector != st.session_state.chat_sector:
+            st.session_state.chat_sector = sector
+            st.rerun()
+
         output_options = {
             "data": "Data summary",
             "trend": "Trend analysis",
@@ -148,19 +182,17 @@ def methane_sidebar():
             "pathway": "Mitigation pathway",
             "method": "Method explanation",
         }
-        output = st.radio(
-            "output_select",
-            options=list(output_options.keys()),
+        output = st.selectbox(
+            "Output type", options=list(output_options.keys()),
             format_func=lambda x: output_options[x],
             index=list(output_options.keys()).index(st.session_state.chat_output),
-            label_visibility="collapsed",
             key="sb_output",
         )
         if output != st.session_state.chat_output:
             st.session_state.chat_output = output
             st.rerun()
 
-        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
         if st.button("Reset conversation", use_container_width=True):
             st.session_state.messages_methane = st.session_state.messages_methane[:1]  # keep welcome
             st.rerun()
@@ -175,16 +207,22 @@ loc = st.session_state.chat_location
 loc_display = display_name(loc)
 output_label = {"data": "Data summary", "trend": "Trend analysis", "policy": "Policy analysis",
                 "pathway": "Mitigation pathway", "method": "Method explanation"}[st.session_state.chat_output]
+year_label = "All years" if st.session_state.chat_year == "all" else st.session_state.chat_year
+sector_label = "All sectors" if st.session_state.chat_sector == "all" else st.session_state.chat_sector
 
 llm_status = "AI-enriched · grounded in real data" if has_llm() else "scripted · grounded in real data"
 
 st.markdown(
     f"""
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;margin-bottom:8px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
       <div class="smac-meta" style="font-size:11px;">
         context: <strong style="color:var(--ink);">{loc_display}</strong>
         <span style="color:var(--copper);margin:0 8px;">/</span>
         <strong style="color:var(--ink);">{COUNTRY_META[iso]['name']}</strong>
+        <span style="color:var(--copper);margin:0 8px;">/</span>
+        <strong style="color:var(--ink);">{year_label}</strong>
+        <span style="color:var(--copper);margin:0 8px;">/</span>
+        <strong style="color:var(--ink);">{sector_label}</strong>
         <span style="color:var(--copper);margin:0 8px;">/</span>
         <strong style="color:var(--ink);">{output_label}</strong>
       </div>
@@ -284,6 +322,8 @@ if final_input:
         location=st.session_state.chat_location,
         metric="ch4",
         output=st.session_state.chat_output,
+        year=st.session_state.chat_year,
+        sector=st.session_state.chat_sector,
     )
     resp = build_methane_response(final_input, ctx)
     st.session_state.messages_methane.append({
