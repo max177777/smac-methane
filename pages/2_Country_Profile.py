@@ -233,12 +233,6 @@ with col1:
         f'🗺 View {loc_display} source map on Climate TRACE →</span></a>',
         unsafe_allow_html=True,
     )
-    with st.expander(f"Show map of {loc_display}"):
-        import streamlit.components.v1 as components
-        components.iframe(
-            f"https://www.google.com/maps?q={loc.replace(' ', '+')}+{meta['name'].replace(' ', '+')}&output=embed",
-            height=220,
-        )
 
 with col2:
     # Hide only the little up/down arrow glyph on these three metrics (their delta
@@ -383,11 +377,19 @@ st.markdown(
 
 cm_link = get_carbon_mapper_link(iso, loc)
 if cm_link:
+    import streamlit.components.v1 as components
+    components.iframe(cm_link["url"], height=480)
+    st.markdown(
+        '<div class="smac-meta" style="font-size:9px;margin:6px 0 10px;line-height:1.5;">'
+        "if the map above doesn't load (some browsers block embedded third-party maps), "
+        "use the button below to open it directly</div>",
+        unsafe_allow_html=True,
+    )
     st.markdown(
         f'<a href="{cm_link["url"]}" target="_blank" style="text-decoration:none;">'
         f'<div class="smac-card" style="padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">'
         f'<div><div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:14px;color:var(--ink);">'
-        f'🛰️ View {loc_display}\'s plume data on Carbon Mapper →</div>'
+        f'🛰️ Open {loc_display}\'s plume data on Carbon Mapper →</div>'
         f'<div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">'
         f'checked as of {cm_link["as_of"]}'
         f'</div></div></div></a>',

@@ -16,6 +16,7 @@ from utils.data_loader import (
 from utils.chat_engine import MethaneContext, build_methane_response, ChatBlock
 from utils.llm import has_llm
 from utils.charts import time_series_plotly
+from utils.policy_content import get_carbon_mapper_link, CARBON_MAPPER_PORTAL_URL
 
 
 inject_theme()
@@ -120,28 +121,31 @@ def methane_sidebar():
             unsafe_allow_html=True,
         )
 
-        # ---- Map ----
-        st.markdown('<div class="smac-eyebrow">Map</div>', unsafe_allow_html=True)
-        map_query = f"{loc}, {COUNTRY_META[iso]['name']}".replace(" ", "+")
-        import streamlit.components.v1 as components
-        components.iframe(
-            f"https://www.google.com/maps?q={map_query}&output=embed",
-            height=180,
-        )
-        st.markdown(
-            '<div class="smac-meta" style="font-size:9px;margin:6px 0 10px;line-height:1.5;">'
-            'General-location map — Climate TRACE does not publish exact facility '
-            'coordinates in the data this tool uses.</div>',
-            unsafe_allow_html=True,
-        )
-        trace_query = loc.replace(" ", "+")
-        st.markdown(
-            f'<a href="https://climatetrace.org/explore?search={trace_query}" target="_blank" '
-            f'style="text-decoration:none;">'
-            f'<div class="smac-pill" style="display:block;text-align:center;margin-bottom:18px;cursor:pointer;">'
-            f'🗺 View source-level map on Climate TRACE →</div></a>',
-            unsafe_allow_html=True,
-        )
+        # ---- Satellite data ----
+        st.markdown('<div class="smac-eyebrow">Satellite data</div>', unsafe_allow_html=True)
+        cm_link = get_carbon_mapper_link(iso, loc)
+        if cm_link:
+            import streamlit.components.v1 as components
+            components.iframe(cm_link["url"], height=200)
+            st.markdown(
+                '<div class="smac-meta" style="font-size:9px;margin:6px 0 10px;line-height:1.5;">'
+                f'Carbon Mapper observed plumes, checked as of {cm_link["as_of"]} — if the map '
+                'above doesn\'t load, use the button below.</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                f'<a href="{cm_link["url"]}" target="_blank" style="text-decoration:none;">'
+                f'<div class="smac-pill" style="display:block;text-align:center;margin-bottom:18px;cursor:pointer;">'
+                f'🛰️ Open plume map on Carbon Mapper →</div></a>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                f'<a href="{CARBON_MAPPER_PORTAL_URL}" target="_blank" style="text-decoration:none;">'
+                f'<div class="smac-pill" style="display:block;text-align:center;margin-bottom:18px;cursor:pointer;">'
+                f'🛰️ Explore Carbon Mapper →</div></a>',
+                unsafe_allow_html=True,
+            )
 
         # ---- Question Scope (CLEAR-aligned: locks Context/Time/Evidence before answering) ----
         st.markdown('<div class="smac-eyebrow">Question scope</div>', unsafe_allow_html=True)
