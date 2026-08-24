@@ -15,6 +15,9 @@ from utils.data_loader import (
 )
 from utils.policy_content import POLICY, PATHWAYS, GWP100, GWP20
 from utils.rag import rag_search, format_rag_context
+from utils.llm import has_llm, enrich_narrative_blocks
+
+LLM_TARGET_LABELS = {"Summary", "Policy Context", "Recommended Mitigation Pathway"}
 
 
 @dataclass
@@ -303,9 +306,8 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
 
     # ---------- REFERENCE LIBRARY (local RAG) ----------
     # Uses the SAME sidebar selections (jurisdiction, output type) as filters
-    # before ranking — this is the retrieval step that will carry over once
-    # the backend swaps to a real LLM: same filters, same corpus, just a
-    # generative model instead of these scripted blocks doing the writing.
+    # before ranking. rag_hits also feeds the optional LLM enrichment below —
+    # same filters, same corpus, whether a generative model is wired in or not.
     rag_hits = rag_search(
         user_text,
         iso=iso,
@@ -313,10 +315,39 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
         output_type=ctx.output,
         k=3,
     )
+    rag_context = format_rag_context(rag_hits)
+
+    # ---------- OPTIONAL LLM ENRICHMENT ----------
+    # If ANTHROPIC_API_KEY is set, rewrite the narrative blocks (not the
+    # numbers) using the same facts + RAG excerpts, grounded in the user's
+    # actual question. No key configured, or the call fails for any reason
+    # (network, rate limit, bad JSON) -> blocks stay exactly as scripted
+    # above. See utils/llm.py.
+    if has_llm():
+        target_blocks = {b.label: b.content for b in blocks if b.label in LLM_TARGET_LABELS}
+        if target_blocks:
+            facts = {
+                "jurisdiction": subject,
+                "country": country_name,
+                f"{CURRENT_YEAR} total CH4 (t)": fmt_int(y_now),
+                "year-over-year change (%)": f"{yoy:+.2f}" if yoy == yoy else "n/a",
+                f"{n_years}-year drift since 2021 (%)": f"{drift:+.2f}" if drift == drift else "n/a",
+                "top 3 subunits": ", ".join(top3_names) if top3_names else "n/a",
+                "top 3 share of national total (%)": f"{top3_share:.1f}",
+            }
+            enriched = enrich_narrative_blocks(
+                target_blocks, user_text=user_text, facts=facts,
+                rag_context=rag_context, jurisdiction_label=subject,
+            )
+            if enriched:
+                for b in blocks:
+                    if b.label in enriched:
+                        b.content = enriched[b.label]
+
     if rag_hits:
         blocks.append(ChatBlock(
             "Reference Library",
-            format_rag_context(rag_hits),
+            rag_context,
         ))
 
     response = MethaneResponse(blocks=blocks, chart_subject=subject)

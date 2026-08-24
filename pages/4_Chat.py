@@ -14,6 +14,7 @@ from utils.data_loader import (
     CURRENT_YEAR, DATA_RANGE_LABEL, display_name,
 )
 from utils.chat_engine import MethaneContext, build_methane_response, ChatBlock
+from utils.llm import has_llm
 from utils.charts import time_series_plotly
 
 
@@ -175,6 +176,8 @@ loc_display = display_name(loc)
 output_label = {"data": "Data summary", "trend": "Trend analysis", "policy": "Policy analysis",
                 "pathway": "Mitigation pathway", "method": "Method explanation"}[st.session_state.chat_output]
 
+llm_status = "AI-enriched · grounded in real data" if has_llm() else "scripted · grounded in real data"
+
 st.markdown(
     f"""
     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;margin-bottom:8px;">
@@ -187,7 +190,7 @@ st.markdown(
       </div>
       <div class="smac-meta" style="font-size:10px;">
         <span style="display:inline-block;width:6px;height:6px;background:var(--good);border-radius:50%;margin-right:6px;"></span>
-        methane specialist · grounded in real data
+        methane specialist · {llm_status}
       </div>
     </div>
     """,
