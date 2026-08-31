@@ -18,7 +18,7 @@ from utils.data_loader import (
     top_point_sources, fmt_int, fmt_mt, pct_change, display_name,
 )
 from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans, get_carbon_mapper_link, CARBON_MAPPER_PORTAL_URL
-from utils.charts import time_series_plotly, SECTOR_COLORS
+from utils.charts import time_series_plotly, SECTOR_COLORS, jurisdiction_map_plotly
 from utils.rag import rag_search
 
 inject_theme()
@@ -145,6 +145,13 @@ st.markdown(
     'colored by country &nbsp;·&nbsp; A–Z by country, then by jurisdiction</div>',
     unsafe_allow_html=True,
 )
+
+st.plotly_chart(
+    jurisdiction_map_plotly(height=340),
+    use_container_width=True,
+    config={"displayModeBar": False},
+)
+st.markdown("<br>", unsafe_allow_html=True)
 
 # Build the per-button color/active-state CSS once, then render real st.button widgets
 # inside st.container(key=...) wrappers — this is the supported way to give each
@@ -377,12 +384,15 @@ st.markdown(
 
 cm_link = get_carbon_mapper_link(iso, loc)
 if cm_link:
-    import streamlit.components.v1 as components
-    components.iframe(cm_link["url"], height=480)
+    st.plotly_chart(
+        jurisdiction_map_plotly(highlight=(iso, loc), height=340),
+        use_container_width=True,
+        config={"displayModeBar": False},
+    )
     st.markdown(
         '<div class="smac-meta" style="font-size:9px;margin:6px 0 10px;line-height:1.5;">'
-        "if the map above doesn't load (some browsers block embedded third-party maps), "
-        "use the button below to open it directly</div>",
+        "general location, for orientation — Carbon Mapper's own dashboard can't be embedded "
+        "here, so open it directly for the actual plume imagery</div>",
         unsafe_allow_html=True,
     )
     st.markdown(

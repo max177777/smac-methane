@@ -10,6 +10,9 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+from utils.data_loader import COUNTRY_META, COUNTRY_COLORS
+from utils.policy_content import all_jurisdiction_coords, get_jurisdiction_coords
+
 
 # Palette (matches the SMAC brand: white base, mint-green accent)
 PAPER = "#ffffff"
@@ -298,4 +301,67 @@ def sector_pies_plotly(df_long: pd.DataFrame, height: int = 300) -> go.Figure:
     )
     # subplot titles -> serif, ink
     fig.update_annotations(font=dict(size=13, family="Quicksand, sans-serif", color=INK))
+    return fig
+
+
+def jurisdiction_map_plotly(highlight: tuple[str, str] | None = None, height: int = 420,
+                            map_style: str = "carto-positron") -> go.Figure:
+    """
+    Our own map of the 36 SMAC jurisdictions — replaces the Google Maps /
+    Carbon Mapper iframe embeds (Carbon Mapper's dashboard can't be embedded
+    in an iframe). Uses free OpenStreetMap/Carto tiles via Plotly's
+    Scattermapbox — no Mapbox token or external service required.
+
+    highlight=None: shows all 36 jurisdictions, colored by country, zoomed to
+        fit the whole roster — the overview map.
+    highlight=(iso, location): shows just that one jurisdiction, zoomed in
+        close — the per-jurisdiction focused map (used on the SMAC page
+        header and the Chat sidebar).
+    """
+    coords = all_jurisdiction_coords()
+    df = pd.DataFrame(coords)
+    df["country"] = df["iso3"].map(lambda i: COUNTRY_META[i]["name"])
+    df["color"] = df["iso3"].map(lambda i: COUNTRY_COLORS.get(i, MOSS))
+    df["label"] = df["location"] + ", " + df["country"]
+
+    fig = go.Figure()
+
+    if highlight:
+        h_iso, h_loc = highlight
+        point = get_jurisdiction_coords(h_iso, h_loc)
+        if point is None:
+            point = (0, 0)
+        lat, lon = point
+        fig.add_trace(go.Scattermap(
+            lat=[lat], lon=[lon], mode="markers",
+            marker=dict(size=22, color=COUNTRY_COLORS.get(h_iso, MOSS)),
+            text=[f"{h_loc}, {COUNTRY_META[h_iso]['name']}"],
+            hovertemplate="<b>%{text}</b><extra></extra>",
+        ))
+        center = dict(lat=lat, lon=lon)
+        zoom = 6
+    else:
+        for iso, sub in df.groupby("iso3"):
+            fig.add_trace(go.Scattermap(
+                lat=sub["lat"], lon=sub["lon"], mode="markers",
+                marker=dict(size=11, color=sub["color"].iloc[0]),
+                text=sub["label"], name=COUNTRY_META[iso]["name"],
+                hovertemplate="<b>%{text}</b><extra></extra>",
+            ))
+        center = dict(lat=float(df["lat"].mean()), lon=float(df["lon"].mean()))
+        zoom = 1
+
+    fig.update_layout(
+        height=height,
+        margin=dict(l=0, r=0, t=0, b=0),
+        map=dict(style=map_style, center=center, zoom=zoom),
+        showlegend=highlight is None,
+        legend=dict(
+            orientation="h", yanchor="bottom", y=1.01, xanchor="left", x=0,
+            font=dict(size=9, family="Quicksand, sans-serif", color=INK_SOFT),
+        ),
+        paper_bgcolor=PAPER,
+        hoverlabel=dict(bgcolor=PAPER, bordercolor=INK,
+                        font=dict(family="Quicksand, sans-serif", color=INK)),
+    )
     return fig

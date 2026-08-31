@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import re
 """
 Policy, sector, and pathway content for the 11 pilot countries.
 Curated, literature-derived. Used by the country profile, dashboard,
@@ -408,6 +410,34 @@ CARBON_MAPPER_LINKS: dict[tuple[str, str], dict] = {
 }
 
 CARBON_MAPPER_PORTAL_URL = "https://data.carbonmapper.org/"
+
+_COORD_RE = re.compile(r"#([\d.]+)/(-?[\d.]+)/(-?[\d.]+)")
+
+
+def get_jurisdiction_coords(iso: str, location: str) -> tuple[float, float] | None:
+    """(lat, lon) for a jurisdiction, parsed from its Carbon Mapper link's
+    map-recenter hash fragment (#zoom/lat/lon) — reuses that data rather than
+    maintaining a second, separate coordinate list. Returns None if there's
+    no Carbon Mapper link for this jurisdiction."""
+    link = CARBON_MAPPER_LINKS.get((iso, location))
+    if not link:
+        return None
+    m = _COORD_RE.search(link["url"])
+    if not m:
+        return None
+    _, lat, lon = m.groups()
+    return float(lat), float(lon)
+
+
+def all_jurisdiction_coords() -> list[dict]:
+    """(iso, location, lat, lon) for every jurisdiction that has a Carbon
+    Mapper link — the data source for the SMAC-members overview map."""
+    out = []
+    for (iso, location) in CARBON_MAPPER_LINKS:
+        coords = get_jurisdiction_coords(iso, location)
+        if coords:
+            out.append({"iso3": iso, "location": location, "lat": coords[0], "lon": coords[1]})
+    return out
 
 
 def get_carbon_mapper_link(iso: str, location: str) -> dict | None:

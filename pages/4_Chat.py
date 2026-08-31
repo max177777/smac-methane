@@ -15,7 +15,7 @@ from utils.data_loader import (
 )
 from utils.chat_engine import MethaneContext, build_methane_response, ChatBlock
 from utils.llm import has_llm
-from utils.charts import time_series_plotly
+from utils.charts import time_series_plotly, jurisdiction_map_plotly
 from utils.policy_content import get_carbon_mapper_link, CARBON_MAPPER_PORTAL_URL
 
 
@@ -125,12 +125,15 @@ def methane_sidebar():
         st.markdown('<div class="smac-eyebrow">Satellite data</div>', unsafe_allow_html=True)
         cm_link = get_carbon_mapper_link(iso, loc)
         if cm_link:
-            import streamlit.components.v1 as components
-            components.iframe(cm_link["url"], height=200)
+            st.plotly_chart(
+                jurisdiction_map_plotly(highlight=(iso, loc), height=180),
+                use_container_width=True,
+                config={"displayModeBar": False},
+            )
             st.markdown(
                 '<div class="smac-meta" style="font-size:9px;margin:6px 0 10px;line-height:1.5;">'
-                f'Carbon Mapper observed plumes, checked as of {cm_link["as_of"]} — if the map '
-                'above doesn\'t load, use the button below.</div>',
+                f'general location — Carbon Mapper checked for plumes here as of {cm_link["as_of"]}.'
+                '</div>',
                 unsafe_allow_html=True,
             )
             st.markdown(
