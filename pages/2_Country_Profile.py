@@ -17,7 +17,7 @@ from utils.data_loader import (
     smac_wide_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
     top_point_sources, fmt_int, fmt_mt, pct_change, display_name,
 )
-from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans, get_carbon_mapper_link, CARBON_MAPPER_PORTAL_URL
+from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans, get_carbon_mapper_link, CARBON_MAPPER_PORTAL_URL, get_climate_trace_detail_link
 from utils.charts import time_series_plotly, SECTOR_COLORS, jurisdiction_map_plotly
 from utils.rag import rag_search
 
@@ -145,13 +145,6 @@ st.markdown(
     'colored by country &nbsp;·&nbsp; A–Z by country, then by jurisdiction</div>',
     unsafe_allow_html=True,
 )
-
-st.plotly_chart(
-    jurisdiction_map_plotly(height=340),
-    use_container_width=True,
-    config={"displayModeBar": False},
-)
-st.markdown("<br>", unsafe_allow_html=True)
 
 # Build the per-button color/active-state CSS once, then render real st.button widgets
 # inside st.container(key=...) wrappers — this is the supported way to give each
@@ -381,6 +374,22 @@ st.markdown(
     "the inventory estimate and a direct observation agree, and where they don't</div>",
     unsafe_allow_html=True,
 )
+
+# EXPERIMENTAL: testing whether climatetrace.org's own per-jurisdiction detail
+# pages embed via iframe (unlike Carbon Mapper's dashboard). Only wired up for
+# Buenos Aires so far — check after deploy whether this actually renders or
+# shows blank (some sites block embedding via X-Frame-Options/CSP, which
+# can't be detected without a real browser).
+ct_detail_link = get_climate_trace_detail_link(iso, loc)
+if ct_detail_link:
+    import streamlit.components.v1 as components
+    components.iframe(ct_detail_link, height=600)
+    st.markdown(
+        '<div class="smac-meta" style="font-size:9px;margin:6px 0 14px;line-height:1.5;">'
+        "experimental embed of Climate TRACE's own detail page — if this shows blank, the "
+        "site is blocking embedding and we'll fall back to the map + link below</div>",
+        unsafe_allow_html=True,
+    )
 
 cm_link = get_carbon_mapper_link(iso, loc)
 if cm_link:

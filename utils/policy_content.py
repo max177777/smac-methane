@@ -411,6 +411,18 @@ CARBON_MAPPER_LINKS: dict[tuple[str, str], dict] = {
 
 CARBON_MAPPER_PORTAL_URL = "https://data.carbonmapper.org/"
 
+# climatetrace.org's own per-jurisdiction detail pages — TESTING whether these
+# embed via iframe (unlike Carbon Mapper's dashboard, which doesn't). Only
+# populated for jurisdictions we've been given a confirmed link for; expand
+# once we know the ID scheme or get more links from the team.
+CLIMATE_TRACE_DETAIL_LINKS: dict[tuple[str, str], str] = {
+    ("ARG", "Buenos Aires"): "https://climatetrace.org/air-pollution/ghs-fua_4215",
+}
+
+
+def get_climate_trace_detail_link(iso: str, location: str) -> str | None:
+    return CLIMATE_TRACE_DETAIL_LINKS.get((iso, location))
+
 _COORD_RE = re.compile(r"#([\d.]+)/(-?[\d.]+)/(-?[\d.]+)")
 
 
