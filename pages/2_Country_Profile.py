@@ -18,7 +18,7 @@ from utils.data_loader import (
     top_point_sources, fmt_int, fmt_mt, pct_change, display_name,
 )
 from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans, get_climate_trace_detail_link
-from utils.charts import time_series_plotly, SECTOR_COLORS
+from utils.charts import time_series_plotly, SECTOR_COLORS, jurisdiction_map_plotly
 from utils.rag import rag_search
 
 inject_theme()
@@ -29,36 +29,47 @@ def _slug(iso: str, loc: str) -> str:
 
 
 # ============== ABOUT SMAC (mirrors smacmethane.org) ==============
-eyebrow("Subnational Methane Action Coalition")
-st.markdown("<h1>Leading the world toward <em>fast methane action</em>.</h1>", unsafe_allow_html=True)
-st.markdown(
-    '<p style="font-family:Inter,sans-serif;font-size:17px;line-height:1.65;'
-    'color:var(--ink-soft);max-width:680px;margin-bottom:20px;">'
-    "Worldwide, states and provinces have the authority and expertise to slash methane "
-    "emissions and combat climate change. Members of the Subnational Methane Action "
-    "Coalition (SMAC) are leading the way."
-    "</p>",
-    unsafe_allow_html=True,
-)
+hero_l, hero_r = st.columns([1.3, 1], gap="large")
 
-btn_cols = st.columns([1, 1, 4])
-with btn_cols[0]:
+with hero_l:
+    eyebrow("Subnational Methane Action Coalition")
+    st.markdown("<h1>Leading the world toward <em>fast methane action</em>.</h1>", unsafe_allow_html=True)
     st.markdown(
-        '<a href="https://www.smacmethane.org/benefits" target="_blank" style="text-decoration:none;">'
-        '<span class="smac-pill" style="display:block;text-align:center;padding:10px 22px;font-size:15px;">Benefits</span></a>',
+        '<p style="font-family:Inter,sans-serif;font-size:17px;line-height:1.65;'
+        'color:var(--ink-soft);max-width:680px;margin-bottom:20px;">'
+        "Worldwide, states and provinces have the authority and expertise to slash methane "
+        "emissions and combat climate change. Members of the Subnational Methane Action "
+        "Coalition (SMAC) are leading the way."
+        "</p>",
         unsafe_allow_html=True,
     )
-with btn_cols[1]:
-    if st.button("Join", key="smac_join_btn", type="primary"):
-        st.switch_page("pages/6_Contact.py")
 
-st.markdown(
-    '<div style="margin-top:18px;">'
-    '<a href="https://www.smacmethane.org/s/SMAC_Letter-from-California_2025-1-yg86.pdf" target="_blank" '
-    'style="font-family:Quicksand,sans-serif;font-size:13px;font-weight:700;color:var(--mint-deep);text-decoration:none;">'
-    '📄 An Invitation from California →</a></div>',
-    unsafe_allow_html=True,
-)
+    btn_cols = st.columns([1, 1, 4])
+    with btn_cols[0]:
+        st.markdown(
+            '<a href="https://www.smacmethane.org/benefits" target="_blank" style="text-decoration:none;">'
+            '<span class="smac-pill" style="display:block;text-align:center;padding:10px 22px;font-size:15px;">Benefits</span></a>',
+            unsafe_allow_html=True,
+        )
+    with btn_cols[1]:
+        if st.button("Join", key="smac_join_btn", type="primary"):
+            st.switch_page("pages/6_Contact.py")
+
+    st.markdown(
+        '<div style="margin-top:18px;">'
+        '<a href="https://www.smacmethane.org/s/SMAC_Letter-from-California_2025-1-yg86.pdf" target="_blank" '
+        'style="font-family:Quicksand,sans-serif;font-size:13px;font-weight:700;color:var(--mint-deep);text-decoration:none;">'
+        '📄 An Invitation from California →</a></div>',
+        unsafe_allow_html=True,
+    )
+
+with hero_r:
+    st.markdown('<div class="smac-meta" style="margin-bottom:6px;">36 SMAC jurisdictions worldwide</div>', unsafe_allow_html=True)
+    st.plotly_chart(
+        jurisdiction_map_plotly(height=280, show_legend=False),
+        use_container_width=True,
+        config={"displayModeBar": False},
+    )
 
 st.markdown("<br><br>", unsafe_allow_html=True)
 
