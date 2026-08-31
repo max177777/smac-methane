@@ -15,8 +15,8 @@ from utils.data_loader import (
 )
 from utils.chat_engine import MethaneContext, build_methane_response, ChatBlock
 from utils.llm import has_llm
-from utils.charts import time_series_plotly, jurisdiction_map_plotly
-from utils.policy_content import get_carbon_mapper_link, CARBON_MAPPER_PORTAL_URL
+from utils.charts import time_series_plotly
+from utils.policy_content import get_climate_trace_detail_link
 
 
 inject_theme()
@@ -123,30 +123,21 @@ def methane_sidebar():
 
         # ---- Satellite data ----
         st.markdown('<div class="smac-eyebrow">Satellite data</div>', unsafe_allow_html=True)
-        cm_link = get_carbon_mapper_link(iso, loc)
-        if cm_link:
-            st.plotly_chart(
-                jurisdiction_map_plotly(highlight=(iso, loc), height=180),
-                use_container_width=True,
-                config={"displayModeBar": False},
-            )
+        ct_detail_link = get_climate_trace_detail_link(iso, loc)
+        if ct_detail_link:
+            import streamlit.components.v1 as components
+            components.iframe(ct_detail_link, height=220)
             st.markdown(
-                '<div class="smac-meta" style="font-size:9px;margin:6px 0 10px;line-height:1.5;">'
-                f'general location — Carbon Mapper checked for plumes here as of {cm_link["as_of"]}.'
-                '</div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                f'<a href="{cm_link["url"]}" target="_blank" style="text-decoration:none;">'
-                f'<div class="smac-pill" style="display:block;text-align:center;margin-bottom:18px;cursor:pointer;">'
-                f'🛰️ Open plume map on Carbon Mapper →</div></a>',
+                f'<div class="smac-meta" style="font-size:9px;margin:6px 0 10px;line-height:1.5;">'
+                f'<a href="{ct_detail_link}" target="_blank" style="color:var(--mint-deep);">'
+                f'open full detail page on Climate TRACE →</a></div>',
                 unsafe_allow_html=True,
             )
         else:
             st.markdown(
-                f'<a href="{CARBON_MAPPER_PORTAL_URL}" target="_blank" style="text-decoration:none;">'
+                f'<a href="https://climatetrace.org/air-pollution" target="_blank" style="text-decoration:none;">'
                 f'<div class="smac-pill" style="display:block;text-align:center;margin-bottom:18px;cursor:pointer;">'
-                f'🛰️ Explore Carbon Mapper →</div></a>',
+                f'🛰️ Explore Climate TRACE →</div></a>',
                 unsafe_allow_html=True,
             )
 

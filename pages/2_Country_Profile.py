@@ -17,8 +17,8 @@ from utils.data_loader import (
     smac_wide_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
     top_point_sources, fmt_int, fmt_mt, pct_change, display_name,
 )
-from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans, get_carbon_mapper_link, CARBON_MAPPER_PORTAL_URL, get_climate_trace_detail_link
-from utils.charts import time_series_plotly, SECTOR_COLORS, jurisdiction_map_plotly
+from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans, get_climate_trace_detail_link
+from utils.charts import time_series_plotly, SECTOR_COLORS
 from utils.rag import rag_search
 
 inject_theme()
@@ -364,65 +364,35 @@ else:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ============== SATELLITE DATA (Carbon Mapper) ==============
+# ============== SATELLITE DATA (Climate TRACE detail page) ==============
 eyebrow("Satellite data")
 st.markdown(f"<h3>Observed plumes for {loc_display}</h3>", unsafe_allow_html=True)
 st.markdown(
     '<div class="smac-meta" style="margin-bottom:14px;">'
-    "the sources above are modeled from activity data; Carbon Mapper's satellite/aircraft "
-    "instruments observe individual methane plumes directly — pairing the two shows where "
-    "the inventory estimate and a direct observation agree, and where they don't</div>",
+    "the sources above are modeled from activity data; Climate TRACE's own detail page below "
+    "shows satellite-observed air pollution directly — pairing the two shows where the "
+    "inventory estimate and a direct observation agree, and where they don't</div>",
     unsafe_allow_html=True,
 )
 
-# EXPERIMENTAL: testing whether climatetrace.org's own per-jurisdiction detail
-# pages embed via iframe (unlike Carbon Mapper's dashboard). Only wired up for
-# Buenos Aires so far — check after deploy whether this actually renders or
-# shows blank (some sites block embedding via X-Frame-Options/CSP, which
-# can't be detected without a real browser).
 ct_detail_link = get_climate_trace_detail_link(iso, loc)
 if ct_detail_link:
     import streamlit.components.v1 as components
     components.iframe(ct_detail_link, height=600)
     st.markdown(
-        '<div class="smac-meta" style="font-size:9px;margin:6px 0 14px;line-height:1.5;">'
-        "experimental embed of Climate TRACE's own detail page — if this shows blank, the "
-        "site is blocking embedding and we'll fall back to the map + link below</div>",
-        unsafe_allow_html=True,
-    )
-
-cm_link = get_carbon_mapper_link(iso, loc)
-if cm_link:
-    st.plotly_chart(
-        jurisdiction_map_plotly(highlight=(iso, loc), height=340),
-        use_container_width=True,
-        config={"displayModeBar": False},
-    )
-    st.markdown(
-        '<div class="smac-meta" style="font-size:9px;margin:6px 0 10px;line-height:1.5;">'
-        "general location, for orientation — Carbon Mapper's own dashboard can't be embedded "
-        "here, so open it directly for the actual plume imagery</div>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        f'<a href="{cm_link["url"]}" target="_blank" style="text-decoration:none;">'
-        f'<div class="smac-card" style="padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">'
-        f'<div><div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:14px;color:var(--ink);">'
-        f'🛰️ Open {loc_display}\'s plume data on Carbon Mapper →</div>'
-        f'<div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">'
-        f'checked as of {cm_link["as_of"]}'
-        f'</div></div></div></a>',
+        f'<div class="smac-meta" style="font-size:9px;margin:6px 0 0;line-height:1.5;">'
+        f'if the panel above doesn\'t load, <a href="{ct_detail_link}" target="_blank" '
+        f'style="color:var(--mint-deep);">open it directly on Climate TRACE →</a></div>',
         unsafe_allow_html=True,
     )
 else:
     st.markdown(
-        f'<a href="{CARBON_MAPPER_PORTAL_URL}" target="_blank" style="text-decoration:none;">'
+        f'<a href="https://climatetrace.org/air-pollution" target="_blank" style="text-decoration:none;">'
         f'<div class="smac-card" style="padding:16px 20px;">'
         f'<div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:14px;color:var(--ink);">'
-        f'🛰️ Explore global plume data on Carbon Mapper →</div>'
+        f'🛰️ Explore air pollution data on Climate TRACE →</div>'
         f'<div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">'
-        f'a {loc_display}-specific saved view isn\'t linked yet — this opens the general portal, '
-        f'where you can search for {loc_display} directly</div>'
+        f'a {loc_display}-specific detail page isn\'t linked yet</div>'
         f'</div></a>',
         unsafe_allow_html=True,
     )

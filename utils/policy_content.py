@@ -411,12 +411,46 @@ CARBON_MAPPER_LINKS: dict[tuple[str, str], dict] = {
 
 CARBON_MAPPER_PORTAL_URL = "https://data.carbonmapper.org/"
 
-# climatetrace.org's own per-jurisdiction detail pages — TESTING whether these
-# embed via iframe (unlike Carbon Mapper's dashboard, which doesn't). Only
-# populated for jurisdictions we've been given a confirmed link for; expand
-# once we know the ID scheme or get more links from the team.
+# climatetrace.org's own per-jurisdiction detail pages — these DO embed via
+# iframe (unlike Carbon Mapper's dashboard), confirmed across all 36
+# jurisdictions. Keyed exactly like CARBON_MAPPER_LINKS.
 CLIMATE_TRACE_DETAIL_LINKS: dict[tuple[str, str], str] = {
     ("ARG", "Buenos Aires"): "https://climatetrace.org/air-pollution/ghs-fua_4215",
+    ("ARG", "Chubut"): "https://climatetrace.org/air-pollution/ghs-fua_3701",
+    ("ARG", "Córdoba"): "https://climatetrace.org/air-pollution/ghs-fua_2285",
+    ("BOL", "Santa Cruz"): "https://climatetrace.org/air-pollution/ghs-fua_1570",
+    ("BRA", "Espírito Santo"): "https://climatetrace.org/air-pollution/ghs-fua_7015",
+    ("BRA", "Goiás"): "https://climatetrace.org/air-pollution/ghs-fua_6583",
+    ("BRA", "Minas Gerais"): "https://climatetrace.org/air-pollution/ghs-fua_6804",
+    ("BRA", "Pernambuco"): "https://climatetrace.org/air-pollution/ghs-fua_7418",
+    ("BRA", "Piauí"): "https://climatetrace.org/air-pollution/ghs-fua_7075",
+    ("BRA", "Rio de Janeiro"): "https://climatetrace.org/air-pollution/ghs-fua_6961",
+    ("BRA", "Rio Grande do Sul"): "https://climatetrace.org/air-pollution/ghs-fua_5593",
+    ("BRA", "Sergipe"): "https://climatetrace.org/air-pollution/ghs-fua_7353",
+    ("CAN", "Alberta"): "https://climatetrace.org/air-pollution/ghs-fua_1572",
+    ("CAN", "British Columbia"): "https://climatetrace.org/air-pollution/ghs-fua_375",
+    ("CAN", "Québec"): "https://climatetrace.org/air-pollution/ghs-fua_3789",
+    ("CHN", "Beijing"): "https://climatetrace.org/air-pollution/ghs-fua_7704",
+    ("DEU", "Baden-Württemberg"): "https://climatetrace.org/air-pollution/ghs-fua_2988",
+    ("IND", "Delhi [New Delhi]"): "https://climatetrace.org/air-pollution/ghs-fua_7466",
+    ("IND", "Punjab"): "https://climatetrace.org/air-pollution/ghs-fua_5698",
+    ("IDN", "Palembang City"): "https://climatetrace.org/air-pollution/ghs-fua_4395",
+    ("IDN", "Jawa Barat"): "https://climatetrace.org/air-pollution/ghs-fua_5107",
+    ("ITA", "Emilia-Romagna"): "https://climatetrace.org/air-pollution/ghs-fua_3157",
+    ("ITA", "Lombardia"): "https://climatetrace.org/air-pollution/ghs-fua_1943",
+    ("MEX", "Jalisco"): "https://climatetrace.org/air-pollution/ghs-fua_2837",
+    ("MEX", "Querétaro"): "https://climatetrace.org/air-pollution/ghs-fua_4906",
+    ("MEX", "Yucatán"): "https://climatetrace.org/air-pollution/ghs-fua_6139",
+    ("NGA", "Cross River"): "https://climatetrace.org/air-pollution/ghs-fua_7025",
+    ("NGA", "Enugu"): "https://climatetrace.org/air-pollution/ghs-fua_6032",
+    ("ZAF", "Gauteng"): "https://climatetrace.org/air-pollution/ghs-fua_3337",
+    ("ZAF", "Western Cape"): "https://climatetrace.org/air-pollution/ghs-fua_189",
+    ("KOR", "Chungcheongnam-do"): "https://climatetrace.org/air-pollution/ghs-fua_1206",
+    ("KOR", "Gyeonggi-do"): "https://climatetrace.org/air-pollution/ghs-fua_94",
+    ("ESP", "Andalucía"): "https://climatetrace.org/air-pollution/ghs-fua_2008",
+    ("USA", "California"): "https://climatetrace.org/air-pollution/ghs-fua_1642",
+    ("USA", "Colorado"): "https://climatetrace.org/air-pollution/ghs-fua_5315",
+    ("USA", "Maryland"): "https://climatetrace.org/air-pollution/ghs-fua_7123",
 }
 
 
