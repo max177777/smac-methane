@@ -305,18 +305,18 @@ def sector_pies_plotly(df_long: pd.DataFrame, height: int = 300) -> go.Figure:
 
 
 def jurisdiction_map_plotly(highlight: tuple[str, str] | None = None, height: int = 420,
-                            map_style: str = "carto-positron") -> go.Figure:
+                            map_style: str = "carto-positron", show_legend: bool = True) -> go.Figure:
     """
     Our own map of the 36 SMAC jurisdictions — replaces the Google Maps /
-    Carbon Mapper iframe embeds (Carbon Mapper's dashboard can't be embedded
-    in an iframe). Uses free OpenStreetMap/Carto tiles via Plotly's
-    Scattermapbox — no Mapbox token or external service required.
+    Carbon Mapper iframe embeds. No Mapbox token or external service required.
 
-    highlight=None: shows all 36 jurisdictions, colored by country, zoomed to
-        fit the whole roster — the overview map.
+    highlight=None: shows all 36 jurisdictions, colored by country, on a
+        vector-drawn world map (Scattergeo) — renders cleanly at any size,
+        including small sidebar widths, with no tile-repeat artifacts (which
+        is what tile-based maps do at very low zoom in a wide container).
     highlight=(iso, location): shows just that one jurisdiction, zoomed in
-        close — the per-jurisdiction focused map (used on the SMAC page
-        header and the Chat sidebar).
+        close on real map tiles (Scattermap/OpenStreetMap) — the
+        per-jurisdiction focused map (used on the SMAC page header).
     """
     coords = all_jurisdiction_coords()
     df = pd.DataFrame(coords)
@@ -338,27 +338,41 @@ def jurisdiction_map_plotly(highlight: tuple[str, str] | None = None, height: in
             text=[f"{h_loc}, {COUNTRY_META[h_iso]['name']}"],
             hovertemplate="<b>%{text}</b><extra></extra>",
         ))
-        center = dict(lat=lat, lon=lon)
-        zoom = 6
-    else:
-        for iso, sub in df.groupby("iso3"):
-            fig.add_trace(go.Scattermap(
-                lat=sub["lat"], lon=sub["lon"], mode="markers",
-                marker=dict(size=11, color=sub["color"].iloc[0]),
-                text=sub["label"], name=COUNTRY_META[iso]["name"],
-                hovertemplate="<b>%{text}</b><extra></extra>",
-            ))
-        center = dict(lat=float(df["lat"].mean()), lon=float(df["lon"].mean()))
-        zoom = 1
+        fig.update_layout(
+            height=height,
+            margin=dict(l=0, r=0, t=0, b=0),
+            map=dict(style=map_style, center=dict(lat=lat, lon=lon), zoom=6),
+            showlegend=False,
+            paper_bgcolor=PAPER,
+            hoverlabel=dict(bgcolor=PAPER, bordercolor=INK,
+                            font=dict(family="Quicksand, sans-serif", color=INK)),
+        )
+        return fig
 
+    # Overview: vector world map (no tiles, so no tile-repeat artifacts at
+    # small sizes / low zoom) — one trace per country for a clean legend.
+    for iso, sub in df.groupby("iso3"):
+        fig.add_trace(go.Scattergeo(
+            lat=sub["lat"], lon=sub["lon"], mode="markers",
+            marker=dict(size=8, color=sub["color"].iloc[0], line=dict(width=0.5, color="#ffffff")),
+            text=sub["label"], name=COUNTRY_META[iso]["name"],
+            hovertemplate="<b>%{text}</b><extra></extra>",
+        ))
+    fig.update_geos(
+        projection_type="natural earth",
+        showland=True, landcolor="#e7ede9",
+        showocean=True, oceancolor="#f4f8f6",
+        showcountries=True, countrycolor="#d5ddd8",
+        showframe=False,
+        bgcolor=PAPER,
+    )
     fig.update_layout(
         height=height,
         margin=dict(l=0, r=0, t=0, b=0),
-        map=dict(style=map_style, center=center, zoom=zoom),
-        showlegend=highlight is None,
+        showlegend=show_legend,
         legend=dict(
             orientation="h", yanchor="bottom", y=1.01, xanchor="left", x=0,
-            font=dict(size=9, family="Quicksand, sans-serif", color=INK_SOFT),
+            font=dict(size=8, family="Quicksand, sans-serif", color=INK_SOFT),
         ),
         paper_bgcolor=PAPER,
         hoverlabel=dict(bgcolor=PAPER, bordercolor=INK,

@@ -15,7 +15,7 @@ from utils.data_loader import (
 )
 from utils.chat_engine import MethaneContext, build_methane_response, ChatBlock
 from utils.llm import has_llm
-from utils.charts import time_series_plotly
+from utils.charts import time_series_plotly, jurisdiction_map_plotly
 from utils.policy_content import get_climate_trace_detail_link
 
 
@@ -122,21 +122,28 @@ def methane_sidebar():
         )
 
         # ---- Satellite data ----
+        # The Climate TRACE detail-page iframe is too tall for the sidebar, so
+        # here we show our own compact overview map of all 36 SMAC
+        # jurisdictions instead, with a link out to the selected one's own
+        # detail page for the actual satellite imagery.
         st.markdown('<div class="smac-eyebrow">Satellite data</div>', unsafe_allow_html=True)
+        st.plotly_chart(
+            jurisdiction_map_plotly(height=170, show_legend=False),
+            use_container_width=True,
+            config={"displayModeBar": False},
+        )
         ct_detail_link = get_climate_trace_detail_link(iso, loc)
         if ct_detail_link:
-            import streamlit.components.v1 as components
-            components.iframe(ct_detail_link, height=220)
             st.markdown(
-                f'<div class="smac-meta" style="font-size:9px;margin:6px 0 10px;line-height:1.5;">'
-                f'<a href="{ct_detail_link}" target="_blank" style="color:var(--mint-deep);">'
-                f'open full detail page on Climate TRACE →</a></div>',
+                f'<a href="{ct_detail_link}" target="_blank" style="text-decoration:none;">'
+                f'<div class="smac-pill" style="display:block;text-align:center;margin:8px 0 18px;cursor:pointer;">'
+                f'🛰️ Open {loc_display}\'s detail page on Climate TRACE →</div></a>',
                 unsafe_allow_html=True,
             )
         else:
             st.markdown(
                 f'<a href="https://climatetrace.org/air-pollution" target="_blank" style="text-decoration:none;">'
-                f'<div class="smac-pill" style="display:block;text-align:center;margin-bottom:18px;cursor:pointer;">'
+                f'<div class="smac-pill" style="display:block;text-align:center;margin:8px 0 18px;cursor:pointer;">'
                 f'🛰️ Explore Climate TRACE →</div></a>',
                 unsafe_allow_html=True,
             )
