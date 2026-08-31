@@ -56,42 +56,40 @@ with hero_l:
             st.switch_page("pages/6_Contact.py")
 
     st.markdown(
-        '<div style="margin-top:18px;">'
+        '<div style="margin-top:18px;margin-bottom:28px;">'
         '<a href="https://www.smacmethane.org/s/SMAC_Letter-from-California_2025-1-yg86.pdf" target="_blank" '
         'style="font-family:Quicksand,sans-serif;font-size:13px;font-weight:700;color:var(--mint-deep);text-decoration:none;">'
         '📄 An Invitation from California →</a></div>',
         unsafe_allow_html=True,
     )
 
+    # ---- The Methane Imperative ---- (kept in the same column as the hero so
+    # the map on the right can span the full combined height)
+    eyebrow("The Methane Imperative")
+    st.markdown(
+        '<p style="font-family:Inter,sans-serif;font-size:15px;line-height:1.7;'
+        'color:var(--ink-soft);max-width:720px;margin-bottom:14px;">'
+        "Methane is a colorless, combustible gas that has caused nearly one-third of "
+        "Earth's warming. In the short term, one ton of methane traps 80 times more heat "
+        "than one ton of carbon dioxide. Since captured methane can be used for fuel, "
+        "methane solutions are often profitable."
+        "</p>"
+        '<p style="font-family:Inter,sans-serif;font-size:15px;line-height:1.7;'
+        'color:var(--ink-soft);max-width:720px;margin-bottom:8px;">'
+        "States and provinces are uniquely positioned to lead the fight against methane "
+        "emissions. SMAC provides a platform that helps governments gain access to "
+        "technical and policy resources while learning from each other. Joining SMAC is "
+        "always free."
+        "</p>",
+        unsafe_allow_html=True,
+    )
+
 with hero_r:
-    st.markdown('<div class="smac-meta" style="margin-bottom:6px;">36 SMAC jurisdictions worldwide</div>', unsafe_allow_html=True)
     st.plotly_chart(
-        jurisdiction_map_plotly(height=280, show_legend=False),
+        jurisdiction_map_plotly(height=560, show_legend=False),
         use_container_width=True,
         config={"displayModeBar": False},
     )
-
-st.markdown("<br><br>", unsafe_allow_html=True)
-
-# ---- The Methane Imperative ----
-eyebrow("The Methane Imperative")
-st.markdown(
-    '<p style="font-family:Inter,sans-serif;font-size:15px;line-height:1.7;'
-    'color:var(--ink-soft);max-width:720px;margin-bottom:14px;">'
-    "Methane is a colorless, combustible gas that has caused nearly one-third of "
-    "Earth's warming. In the short term, one ton of methane traps 80 times more heat "
-    "than one ton of carbon dioxide. Since captured methane can be used for fuel, "
-    "methane solutions are often profitable."
-    "</p>"
-    '<p style="font-family:Inter,sans-serif;font-size:15px;line-height:1.7;'
-    'color:var(--ink-soft);max-width:720px;margin-bottom:8px;">'
-    "States and provinces are uniquely positioned to lead the fight against methane "
-    "emissions. SMAC provides a platform that helps governments gain access to "
-    "technical and policy resources while learning from each other. Joining SMAC is "
-    "always free."
-    "</p>",
-    unsafe_allow_html=True,
-)
 
 st.markdown(
     '<div style="border-top:1px solid var(--line);border-bottom:1px solid var(--line);'
