@@ -1,9 +1,11 @@
 """
 Chat page — Methane Specialist only.
-Sidebar drives a structured, data-grounded 5-block response: pick a SMAC
-jurisdiction (single A-Z list, no country-first step) + an output type. Kept
-intentionally simple so these same two selections can later drive a RAG
-retrieval step once more source material is added.
+Sidebar picks a SMAC jurisdiction (single A-Z list, no country-first step) +
+year + sector, which act as retrieval filters for the local RAG (utils/rag.py)
+and as grounding facts for the response. When an LLM key is configured, the
+model writes a genuine, question-responsive answer — RAG only supplies
+material, it doesn't lock the reply into a fixed template. Without a key,
+falls back to deterministic scripted templates (see utils/chat_engine.py).
 """
 
 import streamlit as st
@@ -27,8 +29,6 @@ if "chat_iso" not in st.session_state:
     st.session_state.chat_iso = "USA"
 if "chat_location" not in st.session_state:
     st.session_state.chat_location = "California"
-if "chat_output" not in st.session_state:
-    st.session_state.chat_output = "data"
 if "chat_year" not in st.session_state:
     st.session_state.chat_year = "all"
 if "chat_sector" not in st.session_state:
@@ -39,8 +39,8 @@ if "messages_methane" not in st.session_state:
          "type": "welcome",
          "content": (
              "I am the SMAC Methane Specialist. I use your sidebar selections "
-             "(jurisdiction and output type) to generate structured, "
-             "data-grounded reasoning based on Climate TRACE methane data.\n\n"
+             "(jurisdiction, year, and sector) to ground my answers in real "
+             "Climate TRACE methane data and SMAC's document library.\n\n"
              "Use the chips below to explore common questions, or ask your own."
          )}
     ]
@@ -100,8 +100,8 @@ def methane_sidebar():
             label_visibility="collapsed",
             key="sb_jurisdiction",
             help="Every SMAC member/observer jurisdiction, alphabetised — this selection "
-                 "(plus output type below) is what will drive retrieval once this chat is "
-                 "connected to a fuller RAG knowledge base.",
+                 "(plus year and sector below) filters what gets retrieved from SMAC's "
+                 "document library and grounds the answer.",
         )
         row = flat[flat["key"] == picked_key].iloc[0]
         if row["location"] != st.session_state.chat_location or row["iso3_country"] != st.session_state.chat_iso:
@@ -180,23 +180,6 @@ def methane_sidebar():
             st.session_state.chat_sector = sector
             st.rerun()
 
-        output_options = {
-            "data": "Data summary",
-            "trend": "Trend analysis",
-            "policy": "Policy analysis",
-            "pathway": "Mitigation pathway",
-            "method": "Method explanation",
-        }
-        output = st.selectbox(
-            "Output type", options=list(output_options.keys()),
-            format_func=lambda x: output_options[x],
-            index=list(output_options.keys()).index(st.session_state.chat_output),
-            key="sb_output",
-        )
-        if output != st.session_state.chat_output:
-            st.session_state.chat_output = output
-            st.rerun()
-
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("Reset conversation", use_container_width=True):
             st.session_state.messages_methane = st.session_state.messages_methane[:1]  # keep welcome
@@ -210,8 +193,6 @@ methane_sidebar()
 iso = st.session_state.chat_iso
 loc = st.session_state.chat_location
 loc_display = display_name(loc)
-output_label = {"data": "Data summary", "trend": "Trend analysis", "policy": "Policy analysis",
-                "pathway": "Mitigation pathway", "method": "Method explanation"}[st.session_state.chat_output]
 year_label = "All years" if st.session_state.chat_year == "all" else st.session_state.chat_year
 sector_label = "All sectors" if st.session_state.chat_sector == "all" else st.session_state.chat_sector
 
@@ -228,8 +209,6 @@ st.markdown(
         <strong style="color:var(--ink);">{year_label}</strong>
         <span style="color:var(--copper);margin:0 8px;">/</span>
         <strong style="color:var(--ink);">{sector_label}</strong>
-        <span style="color:var(--copper);margin:0 8px;">/</span>
-        <strong style="color:var(--ink);">{output_label}</strong>
       </div>
       <div class="smac-meta" style="font-size:10px;">
         <span style="display:inline-block;width:6px;height:6px;background:var(--good);border-radius:50%;margin-right:6px;"></span>
@@ -326,7 +305,6 @@ if final_input:
         iso=st.session_state.chat_iso,
         location=st.session_state.chat_location,
         metric="ch4",
-        output=st.session_state.chat_output,
         year=st.session_state.chat_year,
         sector=st.session_state.chat_sector,
     )

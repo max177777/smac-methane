@@ -72,6 +72,80 @@ def _extract_json(text: str) -> dict | None:
     return None
 
 
+OPEN_ANSWER_SYSTEM_PROMPT = """You are the SMAC Methane Specialist, a data-grounded assistant \
+for the Subnational Methane Action Coalition (SMAC). You help subnational governments \
+understand their methane emissions and plan mitigation action.
+
+You are answering a real, specific question from the user — not filling in a fixed template. \
+Write the answer that actually responds to what they asked, organized however best serves \
+that question (short prose, a few bullets, a brief structure with your own headers if useful \
+— whatever fits, don't force unrelated sections in just to be thorough).
+
+Rules:
+- Use ONLY the facts and reference excerpts provided to you. Never invent a number, date, \
+policy name, or citation that isn't given to you.
+- If the reference excerpts are flagged as general/not jurisdiction-specific, don't present \
+them as this jurisdiction's own data — you can still draw on them for general best-practice \
+framing if relevant, but say so.
+- If the facts and references don't fully answer the question, say plainly what's missing \
+rather than guessing or padding.
+- Keep the tone concise, analytical, and non-promotional — this is a policy research tool, \
+not marketing copy. Roughly 150-350 words unless the question genuinely needs more.
+- Never fabricate a source, a real named individual's quote, or a regulatory claim.
+- Output plain markdown — no JSON, no preamble like "Here's the answer", just the response \
+itself."""
+
+
+def generate_open_answer(
+    user_text: str,
+    facts: dict,
+    rag_context: str,
+    jurisdiction_label: str,
+) -> str | None:
+    """
+    A free-form answer to the user's actual question, grounded in `facts`
+    (computed numbers, never touched otherwise) and `rag_context` (retrieved
+    reference excerpts). Unlike enrich_narrative_blocks, this does NOT force
+    the response into a fixed set of labeled sections — RAG here only
+    supplies material, it doesn't dictate the answer's shape.
+    Returns None if no key configured or the call fails for any reason
+    (caller falls back to the scripted templates).
+    """
+    if not user_text.strip() or not has_llm():
+        return None
+
+    import anthropic
+
+    facts_str = "\n".join(f"- {k}: {v}" for k, v in facts.items())
+    user_prompt = f"""Jurisdiction: {jurisdiction_label}
+User's question: "{user_text}"
+
+Computed facts (ground truth — also shown to the user in a data card alongside your answer):
+{facts_str}
+
+Reference excerpts retrieved from SMAC's document library:
+{rag_context if rag_context else "(none retrieved for this query)"}
+
+Answer the user's question directly."""
+
+    try:
+        client = anthropic.Anthropic(timeout=TIMEOUT_SEC)
+        resp = client.messages.create(
+            model=MODEL,
+            max_tokens=MAX_TOKENS,
+            system=OPEN_ANSWER_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": user_prompt}],
+        )
+        text = "".join(
+            block.text for block in resp.content if getattr(block, "type", None) == "text"
+        ).strip()
+        return text or None
+    except Exception:
+        # network error, bad key, rate limit, timeout, etc. — fail silently,
+        # caller falls back to the scripted templates
+        return None
+
+
 def enrich_narrative_blocks(
     original_blocks: dict[str, str],
     user_text: str,

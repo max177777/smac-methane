@@ -16,7 +16,7 @@ from utils.data_loader import (
 )
 from utils.policy_content import POLICY, PATHWAYS, GWP100, GWP20
 from utils.rag import rag_search, format_rag_context
-from utils.llm import has_llm, enrich_narrative_blocks
+from utils.llm import has_llm, generate_open_answer, enrich_narrative_blocks
 
 LLM_TARGET_LABELS = {"Summary", "Policy Context", "Recommended Mitigation Pathway"}
 
@@ -26,7 +26,7 @@ class MethaneContext:
     iso: str
     location: str  # "__all__" or specific name
     metric: str    # "ch4" | "gwp100" | "gwp20"
-    output: str    # "data" | "trend" | "policy" | "pathway" | "method"
+    output: str = "data"   # only used as a fallback template selector when no LLM is available
     year: str = "all"      # "all" or a specific year as string, e.g. "2024"
     sector: str = "all"    # "all" or one of data_loader.SECTOR_ORDER
 
@@ -74,7 +74,6 @@ def _detect_mode_from_text(user_text: str, current_output: str) -> str:
 # METHANE SPECIALIST RESPONSE
 # ============================================================
 def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneResponse:
-    mode = _detect_mode_from_text(user_text, ctx.output)
     mult, unit, metric_label = _metric_factor(ctx.metric)
     iso = ctx.iso
     meta = COUNTRY_META[iso]
@@ -129,215 +128,15 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
                 f"{target_year} — **{sec_tonnes / y_now * 100:.1f}%** of {subject}'s total."
             )
 
-    blocks: list[ChatBlock] = []
-
-    # ---------- DATA ----------
-    if mode == "data":
-        if is_loc:
-            share_of_nation = y_now / total * 100 if total else 0
-            summary = (
-                f"In {target_year}, **{subject}** emitted **{fmt_int(y_now * mult)} {unit}** "
-                f"of methane (under the *{metric_label}* framing). That is "
-                f"**{share_of_nation:.2f}%** of {country_name}'s national CH₄ total."
-            )
-            insight = (
-                f"- 2021 baseline: **{fmt_int(y21 * mult)} {unit}**\n"
-                f"- {target_year - 1}: **{fmt_int(y_prior * mult)} {unit}**\n"
-                f"- {target_year}: **{fmt_int(y_now * mult)} {unit}**\n"
-                f"- Year-over-year: **{yoy:+.2f}%** ({'rising' if yoy > 0 else 'falling'})\n"
-                f"- {n_years}-year drift: **{drift:+.2f}%**"
-            )
-        else:
-            summary = (
-                f"In {target_year}, **{country_name}** emitted **{fmt_int(y_now * mult)} {unit}** "
-                f"of methane. The top three subnational units "
-                f"({', '.join(top3_names)}) together explain **{top3_share:.1f}%** "
-                f"of the national footprint."
-            )
-            top5 = rank.head(5)
-            insight = f"Top subnational units ({target_year} CH₄, tonnes):\n\n" + "\n".join(
-                f"- **{r.location}** — {fmt_int(r.ch4_tonnes_year)} t ({r.share:.1f}%)"
-                for r in top5.itertuples()
-            )
-
-        blocks.append(ChatBlock("Summary", summary))
-        if sector_insight:
-            insight = insight + f"\n- {sector_insight}"
-        blocks.append(ChatBlock("Key Data Insight", insight))
-        blocks.append(ChatBlock("Policy Context", POLICY[iso]["summary"]))
-        path = PATHWAYS.get(iso, [])
-        if path:
-            actions = " · ".join(f"*{a}*" for a in path[0]["actions"][:3])
-            blocks.append(ChatBlock(
-                "Recommended Mitigation Pathway",
-                f"Sequence by abatement density. Highest-density action set in **{path[0]['sector']}**: {actions}."
-            ))
-        blocks.append(ChatBlock(
-            "Method · Uncertainty",
-            f"Data: Climate TRACE · monthly subnational methane · {DATA_RANGE_LABEL} series. "
-            f"Metric framing: {metric_label} (multiplier ×{mult:g}). Uncertainty band ≈ ±15-25% at subunit level.",
-            is_method=True
-        ))
-
-    # ---------- TREND ----------
-    elif mode == "trend":
-        peak_idx = monthly["ch4_tonnes"].idxmax()
-        trough_idx = monthly["ch4_tonnes"].idxmin()
-        peak = monthly.loc[peak_idx]
-        trough = monthly.loc[trough_idx]
-        month_name = lambda m: ["", "January", "February", "March", "April", "May", "June",
-                                "July", "August", "September", "October", "November", "December"][int(m)]
-
-        summary = (
-            f"Across {DATA_RANGE_LABEL}, **{subject}** shows a **{'rising' if drift > 0 else 'falling'}** "
-            f"trajectory of **{drift:+.2f}%** in CH₄. The most recent year-on-year change is "
-            f"**{yoy:+.2f}%**."
-        )
-        insight = (
-            f"- Peak month: **{month_name(peak['month'])} {int(peak['year'])}** — "
-            f"{fmt_int(peak['ch4_tonnes'])} t CH₄\n"
-            f"- Low month: **{month_name(trough['month'])} {int(trough['year'])}** — "
-            f"{fmt_int(trough['ch4_tonnes'])} t CH₄\n"
-            f"- Range ratio (peak/trough): **{peak['ch4_tonnes'] / trough['ch4_tonnes']:.2f}×**\n"
-            f"- Annual average drift: **{drift / max(n_years, 1):+.2f}% / year**"
-        )
-        if drift > 0:
-            policy_ctx = ("A rising trajectory means current policy is not bending the curve. "
-                          "Subnational instruments may need binding targets, not voluntary measures.")
-        else:
-            policy_ctx = ("A falling trajectory does not mean the job is done — sustained "
-                          "reduction requires verification, not self-reporting.")
-
-        blocks.append(ChatBlock("Summary", summary))
-        blocks.append(ChatBlock("Key Data Insight", insight))
-        blocks.append(ChatBlock("Policy Context", policy_ctx))
-        path = PATHWAYS.get(iso, [])
-        if path:
-            blocks.append(ChatBlock(
-                "Recommended Mitigation Pathway",
-                " · ".join(f"*{a}*" for a in path[0]["actions"])
-            ))
-        blocks.append(ChatBlock(
-            "Method · Uncertainty",
-            "Trend computed on raw Climate TRACE monthly aggregates. Seasonality not "
-            "deseasonalised in this view; underlying signal is the inter-annual change.",
-            is_method=True,
-        ))
-
-    # ---------- POLICY ----------
-    elif mode == "policy":
-        p = POLICY[iso]
-        blocks.append(ChatBlock(
-            "Summary",
-            f"{country_name}'s methane policy stack combines federal mandates with "
-            f"subnational implementation. Coverage is uneven — strongest in the dominant sector, "
-            f"thinner in agricultural and waste streams."
-        ))
-        top3_total = rank.head(3)["ch4_tonnes_year"].sum()
-        blocks.append(ChatBlock(
-            "Key Data Insight",
-            f"In {target_year}, **{', '.join(top3_names)}** together produced "
-            f"**{fmt_int(top3_total)} t CH₄** — about **{top3_share:.1f}%** of national methane. "
-            f"Yet only a subset of {subunit_type}s have binding instruments beyond the federal floor."
-        ))
-        policy_text = "\n\n".join(f"**{n}.** {d}" for n, d in p["policies"])
-        blocks.append(ChatBlock("Policy Context", policy_text))
-        path = PATHWAYS.get(iso, [])
-        if path:
-            actions = " · ".join(f"*{a}*" for a in path[0]["actions"])
-            blocks.append(ChatBlock(
-                "Recommended Mitigation Pathway",
-                f"Priority gap: align {subunit_type} rules to the dominant emitter. {actions}."
-            ))
-        blocks.append(ChatBlock(
-            "Method · Uncertainty",
-            f"Policy text retrieved from official registers. Anti-greenwashing flag: "
-            f"{path[0]['flag'] if path else '—'}.",
-            is_method=True,
-        ))
-
-    # ---------- PATHWAY ----------
-    elif mode == "pathway":
-        path = PATHWAYS.get(iso, [])
-        if not path:
-            blocks.append(ChatBlock("Summary", f"No pathway data for {country_name} in this prototype."))
-        else:
-            blocks.append(ChatBlock(
-                "Summary",
-                f"Mitigation pathway for {subject} is sequenced by abatement density: "
-                f"tackle **{path[0]['sector']}** first (highest tonnes-per-dollar), "
-                f"then **{path[1]['sector']}**, then **{path[2]['sector']}**."
-            ))
-            insight = "Sector-by-sector pathway:\n\n" + "\n".join(
-                f"- **{x['sector']}.** {' · '.join(x['actions'])}"
-                for x in path
-            )
-            blocks.append(ChatBlock("Key Data Insight", insight))
-            blocks.append(ChatBlock(
-                "Policy Context",
-                f"Each pathway must clear a greenwashing audit before it counts toward national "
-                f"pledges. {POLICY[iso]['summary']}"
-            ))
-            blocks.append(ChatBlock(
-                "Recommended Mitigation Pathway",
-                f"Highest-priority near-term action: **{path[0]['actions'][0]}** in the "
-                f"{path[0]['sector']} sector. Pair with verification (satellite, third-party audit) "
-                f"to preserve credibility."
-            ))
-            flags = " / ".join(x["flag"] for x in path)
-            blocks.append(ChatBlock(
-                "Method · Uncertainty",
-                f"Pathway logic uses IEA Methane Tracker abatement curves + IPCC AR6 WG3 Ch.6 "
-                f"(energy) and Ch.7 (AFOLU). Greenwashing checks: {flags}.",
-                is_method=True,
-            ))
-
-    # ---------- METHOD ----------
-    else:  # method
-        blocks.append(ChatBlock(
-            "Summary",
-            "Methane (CH₄) is short-lived but extremely potent. Converting CH₄ to CO₂-equivalent "
-            "depends on the time horizon — that choice changes which sectors look most urgent."
-        ))
-        insight = (
-            f"For {subject}'s {fmt_int(y_now)} t CH₄ in {target_year}:\n\n"
-            f"- **GWP100 (×{GWP100}):** ≈ {fmt_int(y_now * GWP100)} t CO₂e — comparable to long-term "
-            f"climate accounting.\n"
-            f"- **GWP20 (×{GWP20}):** ≈ {fmt_int(y_now * GWP20)} t CO₂e — reflects near-term warming "
-            f"pressure relevant to 1.5°C pathways.\n\n"
-            f"The GWP20 framing roughly **triples** methane's apparent weight versus GWP100."
-        )
-        blocks.append(ChatBlock("Key Data Insight", insight))
-        blocks.append(ChatBlock(
-            "Policy Context",
-            "Most national inventories report under GWP100 (UNFCCC convention). Subnational "
-            "decision-making is increasingly using GWP20 to justify near-term methane action — "
-            "but switching framings without disclosure is itself a greenwashing risk."
-        ))
-        blocks.append(ChatBlock(
-            "Recommended Mitigation Pathway",
-            "Report both GWP100 and GWP20 side-by-side. Prioritise fast-mitigation, low-cost "
-            "sources (oil & gas leaks, landfill gas) where GWP20 framing materially changes the "
-            "cost-benefit."
-        ))
-        blocks.append(ChatBlock(
-            "Method · Uncertainty",
-            f"IPCC AR6 WG1 Ch.7 Table 7.15 · GWP100 = 27.2 (non-fossil CH₄), GWP20 = 79.7. "
-            f"Values rounded for display. SMAC always discloses which GWP horizon is in use to "
-            f"prevent metric-switching greenwashing.",
-            is_method=True,
-        ))
-
-    # ---------- REFERENCE LIBRARY (local RAG) ----------
-    # Uses the SAME sidebar selections (jurisdiction, output type, sector) as
-    # filters before ranking. rag_hits also feeds the optional LLM enrichment
-    # below — same filters, same corpus, whether a generative model is wired
-    # in or not.
+    # ---------- REFERENCE LIBRARY RETRIEVAL (local RAG) ----------
+    # Runs BEFORE any answer is written — RAG's job here is purely to find
+    # material (filtered by jurisdiction + sector), not to dictate the shape
+    # of the response. Both the open-ended LLM answer and the scripted
+    # fallback below use the same retrieved excerpts.
     rag_hits = rag_search(
         user_text,
         iso=iso,
         location=ctx.location if is_loc else None,
-        output_type=ctx.output,
         sector=sector_filter,
         k=3,
     )
@@ -356,34 +155,246 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
     else:
         llm_rag_context = rag_context
 
-    # ---------- OPTIONAL LLM ENRICHMENT ----------
-    # If ANTHROPIC_API_KEY is set, rewrite the narrative blocks (not the
-    # numbers) using the same facts + RAG excerpts, grounded in the user's
-    # actual question. No key configured, or the call fails for any reason
-    # (network, rate limit, bad JSON) -> blocks stay exactly as scripted
-    # above. See utils/llm.py.
-    if has_llm():
-        target_blocks = {b.label: b.content for b in blocks if b.label in LLM_TARGET_LABELS}
-        if target_blocks:
-            facts = {
-                "jurisdiction": subject,
-                "country": country_name,
-                f"{target_year} total CH4 (t)": fmt_int(y_now),
-                "year-over-year change (%)": f"{yoy:+.2f}" if yoy == yoy else "n/a",
-                f"{n_years}-year drift since 2021 (%)": f"{drift:+.2f}" if drift == drift else "n/a",
-                "top 3 subunits": ", ".join(top3_names) if top3_names else "n/a",
-                "top 3 share of national total (%)": f"{top3_share:.1f}",
-                "sector focus (user-selected, only discuss this if set)": sector_filter or "none — discuss all sectors",
-            }
-            enriched = enrich_narrative_blocks(
-                target_blocks, user_text=user_text, facts=facts,
-                rag_context=llm_rag_context, jurisdiction_label=subject,
-            )
-            if enriched:
-                for b in blocks:
-                    if b.label in enriched:
-                        b.content = enriched[b.label]
+    blocks: list[ChatBlock] = []
 
+    # ---------- PRIMARY: open-ended LLM answer ----------
+    # Actually responds to what the user asked, instead of filling in a fixed
+    # 5-box template. RAG excerpts + computed facts are the only grounding —
+    # the MODEL decides how to organize the answer, not us.
+    answer = None
+    if has_llm():
+        facts = {
+            "jurisdiction": subject,
+            "country": country_name,
+            f"{target_year} total CH4 (t)": fmt_int(y_now),
+            "year-over-year change (%)": f"{yoy:+.2f}" if yoy == yoy else "n/a",
+            f"{n_years}-year drift since 2021 (%)": f"{drift:+.2f}" if drift == drift else "n/a",
+            "top 3 subunits nationally": ", ".join(top3_names) if top3_names else "n/a",
+            "top 3 share of national total (%)": f"{top3_share:.1f}",
+        }
+        if sector_insight:
+            facts["sector-specific insight"] = sector_insight
+        answer = generate_open_answer(
+            user_text, facts=facts, rag_context=llm_rag_context, jurisdiction_label=subject,
+        )
+
+    if answer:
+        blocks.append(ChatBlock("Answer", answer))
+        insight = (
+            f"- {target_year} total: **{fmt_int(y_now * mult)} {unit}**\n"
+            f"- Year-over-year: **{yoy:+.2f}%**\n"
+            f"- {n_years}-year drift: **{drift:+.2f}%**"
+        )
+        if sector_insight:
+            insight += f"\n- {sector_insight}"
+        blocks.append(ChatBlock("Key Data Insight", insight))
+
+    else:
+        # ---------- FALLBACK: scripted templates ----------
+        # No API key configured, or the call failed for any reason — fall
+        # back to the deterministic 5-block templates, same as before this
+        # feature existed. Mode is auto-detected from the question text only
+        # (there's no sidebar "output type" selector anymore).
+        mode = _detect_mode_from_text(user_text, "data")
+
+        # ---------- DATA ----------
+        if mode == "data":
+            if is_loc:
+                share_of_nation = y_now / total * 100 if total else 0
+                summary = (
+                    f"In {target_year}, **{subject}** emitted **{fmt_int(y_now * mult)} {unit}** "
+                    f"of methane (under the *{metric_label}* framing). That is "
+                    f"**{share_of_nation:.2f}%** of {country_name}'s national CH₄ total."
+                )
+                insight = (
+                    f"- 2021 baseline: **{fmt_int(y21 * mult)} {unit}**\n"
+                    f"- {target_year - 1}: **{fmt_int(y_prior * mult)} {unit}**\n"
+                    f"- {target_year}: **{fmt_int(y_now * mult)} {unit}**\n"
+                    f"- Year-over-year: **{yoy:+.2f}%** ({'rising' if yoy > 0 else 'falling'})\n"
+                    f"- {n_years}-year drift: **{drift:+.2f}%**"
+                )
+            else:
+                summary = (
+                    f"In {target_year}, **{country_name}** emitted **{fmt_int(y_now * mult)} {unit}** "
+                    f"of methane. The top three subnational units "
+                    f"({', '.join(top3_names)}) together explain **{top3_share:.1f}%** "
+                    f"of the national footprint."
+                )
+                top5 = rank.head(5)
+                insight = f"Top subnational units ({target_year} CH₄, tonnes):\n\n" + "\n".join(
+                    f"- **{r.location}** — {fmt_int(r.ch4_tonnes_year)} t ({r.share:.1f}%)"
+                    for r in top5.itertuples()
+                )
+
+            blocks.append(ChatBlock("Summary", summary))
+            if sector_insight:
+                insight = insight + f"\n- {sector_insight}"
+            blocks.append(ChatBlock("Key Data Insight", insight))
+            blocks.append(ChatBlock("Policy Context", POLICY[iso]["summary"]))
+            path = PATHWAYS.get(iso, [])
+            if path:
+                actions = " · ".join(f"*{a}*" for a in path[0]["actions"][:3])
+                blocks.append(ChatBlock(
+                    "Recommended Mitigation Pathway",
+                    f"Sequence by abatement density. Highest-density action set in **{path[0]['sector']}**: {actions}."
+                ))
+            blocks.append(ChatBlock(
+                "Method · Uncertainty",
+                f"Data: Climate TRACE · monthly subnational methane · {DATA_RANGE_LABEL} series. "
+                f"Metric framing: {metric_label} (multiplier ×{mult:g}). Uncertainty band ≈ ±15-25% at subunit level.",
+                is_method=True
+            ))
+
+        # ---------- TREND ----------
+        elif mode == "trend":
+            peak_idx = monthly["ch4_tonnes"].idxmax()
+            trough_idx = monthly["ch4_tonnes"].idxmin()
+            peak = monthly.loc[peak_idx]
+            trough = monthly.loc[trough_idx]
+            month_name = lambda m: ["", "January", "February", "March", "April", "May", "June",
+                                    "July", "August", "September", "October", "November", "December"][int(m)]
+
+            summary = (
+                f"Across {DATA_RANGE_LABEL}, **{subject}** shows a **{'rising' if drift > 0 else 'falling'}** "
+                f"trajectory of **{drift:+.2f}%** in CH₄. The most recent year-on-year change is "
+                f"**{yoy:+.2f}%**."
+            )
+            insight = (
+                f"- Peak month: **{month_name(peak['month'])} {int(peak['year'])}** — "
+                f"{fmt_int(peak['ch4_tonnes'])} t CH₄\n"
+                f"- Low month: **{month_name(trough['month'])} {int(trough['year'])}** — "
+                f"{fmt_int(trough['ch4_tonnes'])} t CH₄\n"
+                f"- Range ratio (peak/trough): **{peak['ch4_tonnes'] / trough['ch4_tonnes']:.2f}×**\n"
+                f"- Annual average drift: **{drift / max(n_years, 1):+.2f}% / year**"
+            )
+            if drift > 0:
+                policy_ctx = ("A rising trajectory means current policy is not bending the curve. "
+                              "Subnational instruments may need binding targets, not voluntary measures.")
+            else:
+                policy_ctx = ("A falling trajectory does not mean the job is done — sustained "
+                              "reduction requires verification, not self-reporting.")
+
+            blocks.append(ChatBlock("Summary", summary))
+            blocks.append(ChatBlock("Key Data Insight", insight))
+            blocks.append(ChatBlock("Policy Context", policy_ctx))
+            path = PATHWAYS.get(iso, [])
+            if path:
+                blocks.append(ChatBlock(
+                    "Recommended Mitigation Pathway",
+                    " · ".join(f"*{a}*" for a in path[0]["actions"])
+                ))
+            blocks.append(ChatBlock(
+                "Method · Uncertainty",
+                "Trend computed on raw Climate TRACE monthly aggregates. Seasonality not "
+                "deseasonalised in this view; underlying signal is the inter-annual change.",
+                is_method=True,
+            ))
+
+        # ---------- POLICY ----------
+        elif mode == "policy":
+            p = POLICY[iso]
+            blocks.append(ChatBlock(
+                "Summary",
+                f"{country_name}'s methane policy stack combines federal mandates with "
+                f"subnational implementation. Coverage is uneven — strongest in the dominant sector, "
+                f"thinner in agricultural and waste streams."
+            ))
+            top3_total = rank.head(3)["ch4_tonnes_year"].sum()
+            blocks.append(ChatBlock(
+                "Key Data Insight",
+                f"In {target_year}, **{', '.join(top3_names)}** together produced "
+                f"**{fmt_int(top3_total)} t CH₄** — about **{top3_share:.1f}%** of national methane. "
+                f"Yet only a subset of {subunit_type}s have binding instruments beyond the federal floor."
+            ))
+            policy_text = "\n\n".join(f"**{n}.** {d}" for n, d in p["policies"])
+            blocks.append(ChatBlock("Policy Context", policy_text))
+            path = PATHWAYS.get(iso, [])
+            if path:
+                actions = " · ".join(f"*{a}*" for a in path[0]["actions"])
+                blocks.append(ChatBlock(
+                    "Recommended Mitigation Pathway",
+                    f"Priority gap: align {subunit_type} rules to the dominant emitter. {actions}."
+                ))
+            blocks.append(ChatBlock(
+                "Method · Uncertainty",
+                f"Policy text retrieved from official registers. Anti-greenwashing flag: "
+                f"{path[0]['flag'] if path else '—'}.",
+                is_method=True,
+            ))
+
+        # ---------- PATHWAY ----------
+        elif mode == "pathway":
+            path = PATHWAYS.get(iso, [])
+            if not path:
+                blocks.append(ChatBlock("Summary", f"No pathway data for {country_name} in this prototype."))
+            else:
+                blocks.append(ChatBlock(
+                    "Summary",
+                    f"Mitigation pathway for {subject} is sequenced by abatement density: "
+                    f"tackle **{path[0]['sector']}** first (highest tonnes-per-dollar), "
+                    f"then **{path[1]['sector']}**, then **{path[2]['sector']}**."
+                ))
+                insight = "Sector-by-sector pathway:\n\n" + "\n".join(
+                    f"- **{x['sector']}.** {' · '.join(x['actions'])}"
+                    for x in path
+                )
+                blocks.append(ChatBlock("Key Data Insight", insight))
+                blocks.append(ChatBlock(
+                    "Policy Context",
+                    f"Each pathway must clear a greenwashing audit before it counts toward national "
+                    f"pledges. {POLICY[iso]['summary']}"
+                ))
+                blocks.append(ChatBlock(
+                    "Recommended Mitigation Pathway",
+                    f"Highest-priority near-term action: **{path[0]['actions'][0]}** in the "
+                    f"{path[0]['sector']} sector. Pair with verification (satellite, third-party audit) "
+                    f"to preserve credibility."
+                ))
+                flags = " / ".join(x["flag"] for x in path)
+                blocks.append(ChatBlock(
+                    "Method · Uncertainty",
+                    f"Pathway logic uses IEA Methane Tracker abatement curves + IPCC AR6 WG3 Ch.6 "
+                    f"(energy) and Ch.7 (AFOLU). Greenwashing checks: {flags}.",
+                    is_method=True,
+                ))
+
+        # ---------- METHOD ----------
+        else:  # method
+            blocks.append(ChatBlock(
+                "Summary",
+                "Methane (CH₄) is short-lived but extremely potent. Converting CH₄ to CO₂-equivalent "
+                "depends on the time horizon — that choice changes which sectors look most urgent."
+            ))
+            insight = (
+                f"For {subject}'s {fmt_int(y_now)} t CH₄ in {target_year}:\n\n"
+                f"- **GWP100 (×{GWP100}):** ≈ {fmt_int(y_now * GWP100)} t CO₂e — comparable to long-term "
+                f"climate accounting.\n"
+                f"- **GWP20 (×{GWP20}):** ≈ {fmt_int(y_now * GWP20)} t CO₂e — reflects near-term warming "
+                f"pressure relevant to 1.5°C pathways.\n\n"
+                f"The GWP20 framing roughly **triples** methane's apparent weight versus GWP100."
+            )
+            blocks.append(ChatBlock("Key Data Insight", insight))
+            blocks.append(ChatBlock(
+                "Policy Context",
+                "Most national inventories report under GWP100 (UNFCCC convention). Subnational "
+                "decision-making is increasingly using GWP20 to justify near-term methane action — "
+                "but switching framings without disclosure is itself a greenwashing risk."
+            ))
+            blocks.append(ChatBlock(
+                "Recommended Mitigation Pathway",
+                "Report both GWP100 and GWP20 side-by-side. Prioritise fast-mitigation, low-cost "
+                "sources (oil & gas leaks, landfill gas) where GWP20 framing materially changes the "
+                "cost-benefit."
+            ))
+            blocks.append(ChatBlock(
+                "Method · Uncertainty",
+                f"IPCC AR6 WG1 Ch.7 Table 7.15 · GWP100 = 27.2 (non-fossil CH₄), GWP20 = 79.7. "
+                f"Values rounded for display. SMAC always discloses which GWP horizon is in use to "
+                f"prevent metric-switching greenwashing.",
+                is_method=True,
+            ))
+
+    # ---------- REFERENCE LIBRARY (local RAG) ----------
     if rag_hits:
         if has_dedicated_refs:
             blocks.append(ChatBlock("Reference Library", rag_context))
