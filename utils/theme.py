@@ -363,12 +363,21 @@ hr { border-color: var(--line-soft) !important; }
 }
 
 /* dark accent band - full-bleed, used sparingly per smacmethane.org's design.
-   Targets Streamlit's auto-generated class from st.container(key="smac-dark-band"). */
+   Targets Streamlit's auto-generated class from st.container(key="smac-dark-band").
+   Uses the standard "break out of a centered max-width container" trick
+   (100vw + calc(50% - 50vw) margins) instead of a fixed -100px offset — a
+   fixed offset only reaches the true page edge when the viewport happens to
+   match the container's max-width; on wider screens it falls short and
+   leaves a visible white gap. This version reaches the edge at any width. */
 .st-key-smac-dark-band {
   background: var(--dark);
-  margin: 32px -100px 0;
-  padding: 56px 100px;
+  margin-top: 32px;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  width: 100vw;
+  padding: 56px calc(50vw - 50% + 40px);
   border-radius: 0;
+  box-sizing: border-box;
 }
 .st-key-smac-dark-band h1, .st-key-smac-dark-band h2,
 .st-key-smac-dark-band h3, .st-key-smac-dark-band h4 { color: #ffffff !important; }
@@ -432,7 +441,6 @@ footer { visibility: hidden; }
   [data-testid="stMetricValue"] { font-size: 1.7rem !important; }
 
   .st-key-smac-dark-band {
-    margin: 24px -1rem 0 !important;
     padding: 36px 1.2rem !important;
   }
 }

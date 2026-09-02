@@ -85,8 +85,9 @@ with hero_l:
     )
 
 with hero_r:
+    st.markdown('<div style="height:48px;"></div>', unsafe_allow_html=True)
     st.plotly_chart(
-        jurisdiction_map_plotly(height=560, show_legend=False),
+        jurisdiction_map_plotly(height=500, show_legend=False),
         use_container_width=True,
         config={"displayModeBar": False},
     )
