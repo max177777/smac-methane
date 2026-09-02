@@ -342,6 +342,19 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
         k=3,
     )
     rag_context = format_rag_context(rag_hits)
+    has_dedicated_refs = is_loc and any(h["location"] == ctx.location for h in rag_hits)
+    if rag_hits and not has_dedicated_refs:
+        # Flag this for the LLM too — without this, the model has no way to know
+        # these excerpts are generic/from a different jurisdiction, and could
+        # blend them into the answer as if they were {subject}'s own data.
+        llm_rag_context = (
+            f"NOTE: none of the excerpts below are specific to {subject} — they're "
+            f"the closest general matches from the reference library. Do not present "
+            f"them as {subject}'s own data or documents; you may still draw on them "
+            f"for general best-practice framing if relevant.\n\n{rag_context}"
+        )
+    else:
+        llm_rag_context = rag_context
 
     # ---------- OPTIONAL LLM ENRICHMENT ----------
     # If ANTHROPIC_API_KEY is set, rewrite the narrative blocks (not the
@@ -364,7 +377,7 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
             }
             enriched = enrich_narrative_blocks(
                 target_blocks, user_text=user_text, facts=facts,
-                rag_context=rag_context, jurisdiction_label=subject,
+                rag_context=llm_rag_context, jurisdiction_label=subject,
             )
             if enriched:
                 for b in blocks:
@@ -372,10 +385,14 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
                         b.content = enriched[b.label]
 
     if rag_hits:
-        blocks.append(ChatBlock(
-            "Reference Library",
-            rag_context,
-        ))
+        if has_dedicated_refs:
+            blocks.append(ChatBlock("Reference Library", rag_context))
+        else:
+            note = (
+                f"*No dedicated documents for {subject} yet — these are the closest "
+                f"matches from our general reference library, not {subject}-specific.*\n\n"
+            )
+            blocks.append(ChatBlock("Reference Library (general)", note + rag_context))
 
     response = MethaneResponse(blocks=blocks, chart_subject=subject)
     response.chart_df = monthly
