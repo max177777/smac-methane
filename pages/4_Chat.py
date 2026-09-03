@@ -17,7 +17,10 @@ from utils.data_loader import (
 )
 from utils.chat_engine import MethaneContext, build_methane_response, ChatBlock
 from utils.llm import has_llm
-from utils.charts import time_series_plotly, jurisdiction_map_plotly
+from utils.charts import (
+    time_series_plotly, jurisdiction_map_plotly, sector_bar_plotly,
+    sector_trend_plotly, horizontal_bar_altair, yoy_bar_altair,
+)
 from utils.policy_content import get_climate_trace_detail_link
 
 
@@ -244,8 +247,40 @@ def render_methane_message(msg: dict):
             else:
                 st.markdown(block.content)
 
-        # inline mini chart
-        if msg.get("chart_df") is not None:
+        # inline charts — picked to match the question (see _select_charts in chat_engine)
+        charts = msg.get("charts")
+        if charts:
+            for i, ch in enumerate(charts):
+                st.markdown(
+                    f'<div class="smac-meta" style="margin-top:14px;font-size:10px;">'
+                    f'{ch.caption}</div>',
+                    unsafe_allow_html=True,
+                )
+                ckey = f"chart_{msg.get('id')}_{i}"
+                if ch.kind == "timeseries":
+                    st.plotly_chart(time_series_plotly(ch.data, height=220),
+                                    use_container_width=True,
+                                    config={"displayModeBar": False}, key=ckey)
+                elif ch.kind == "sector_bar":
+                    st.plotly_chart(sector_bar_plotly(ch.data, height=260),
+                                    use_container_width=True,
+                                    config={"displayModeBar": False}, key=ckey)
+                elif ch.kind == "ranking_bar":
+                    st.altair_chart(
+                        horizontal_bar_altair(ch.data, "location", "ch4_tonnes_year",
+                                              value_label="CH₄ (t)", height=260),
+                        use_container_width=True, key=ckey)
+                elif ch.kind == "yoy_bar":
+                    st.altair_chart(
+                        yoy_bar_altair(ch.data, "location", "yoy_pct", height=260),
+                        use_container_width=True, key=ckey)
+                elif ch.kind == "sector_trend":
+                    st.plotly_chart(sector_trend_plotly(ch.data, height=280),
+                                    use_container_width=True,
+                                    config={"displayModeBar": False}, key=ckey)
+
+        # legacy single-chart path (messages created before multi-chart support)
+        elif msg.get("chart_df") is not None:
             st.markdown(
                 f'<div class="smac-meta" style="margin-top:14px;font-size:10px;">'
                 f'{msg["chart_subject"]} · monthly CH₄ tonnes · {DATA_RANGE_LABEL}</div>',
@@ -313,6 +348,7 @@ if final_input:
         "role": "assistant",
         "type": "structured",
         "blocks": resp.blocks,
+        "charts": resp.charts,
         "chart_df": resp.chart_df,
         "chart_subject": resp.chart_subject,
         "id": len(st.session_state.messages_methane),

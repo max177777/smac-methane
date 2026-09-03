@@ -11,8 +11,8 @@ from dataclasses import dataclass
 
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_ORDER, country_yearly, country_monthly, location_monthly,
-    location_yearly_ranking, location_sectors, SECTOR_ORDER, fmt_int, pct_change,
-    CURRENT_YEAR, DATA_RANGE_LABEL,
+    location_yearly_ranking, location_sectors, sector_yearly_series, SECTOR_ORDER,
+    fmt_int, pct_change, CURRENT_YEAR, DATA_RANGE_LABEL,
 )
 from utils.policy_content import POLICY, PATHWAYS, GWP100, GWP20
 from utils.rag import rag_search, format_rag_context
@@ -40,10 +40,20 @@ class ChatBlock:
 
 
 @dataclass
+class ChatChart:
+    """One visualization attached to a response. `kind` tells the page which
+    renderer to use; `data` is whatever that renderer needs."""
+    kind: str          # "timeseries" | "sector_bar" | "ranking_bar" | "yoy_bar" | "sector_trend"
+    caption: str
+    data: object = None
+
+
+@dataclass
 class MethaneResponse:
     blocks: list[ChatBlock]
-    chart_df = None  # filled by builder
+    chart_df = None  # legacy single time series — kept for backwards compatibility
     chart_subject: str = ""
+    charts: list = None  # list[ChatChart], picked to match the question
 
 
 # ============================================================
@@ -68,6 +78,80 @@ def _detect_mode_from_text(user_text: str, current_output: str) -> str:
     if re.search(r"trend|over time|grow|increas|decreas|monthly|seasonal", t):
         return "trend"
     return current_output
+
+
+def _select_charts(user_text: str, *, iso: str, location: str | None, is_loc: bool,
+                   monthly, rank, target_year: int, subject: str,
+                   sector_filter: str | None) -> list:
+    """
+    Pick the visualizations that actually fit the question. Everything here is
+    built from data we already have loaded — no new data sources. Falls back to
+    the monthly time series so there's always at least one chart.
+    """
+    t = user_text.lower()
+    charts: list[ChatChart] = []
+
+    wants_sector = bool(re.search(
+        r"sector|source|where.*from|breakdown|compos|landfill|agricultur|waste|"
+        r"oil|gas|livestock|manure|energy|industr|transport", t))
+    wants_ranking = bool(re.search(
+        r"top|rank|biggest|largest|highest|worst|compare.*(state|province|region|jurisdiction)|"
+        r"which .*(state|province|region|jurisdiction)", t))
+    wants_trend = bool(re.search(
+        r"trend|over time|change|grow|increas|decreas|rising|falling|monthly|"
+        r"season|year.over.year|yoy|history|since", t))
+
+    # --- sector composition, when the question is about sources/sectors ---
+    if wants_sector and is_loc:
+        sec = location_sectors(iso, location, target_year)
+        sec = sec[sec["total_emission"] > 0]
+        if not sec.empty:
+            charts.append(ChatChart(
+                kind="sector_bar",
+                caption=f"{subject} · CH₄ by sector · {target_year}",
+                data=sec,
+            ))
+
+    # --- subnational ranking, when the question is comparative ---
+    if wants_ranking and not rank.empty and len(rank) > 1:
+        top = rank.head(10)[["location", "ch4_tonnes_year"]].copy()
+        charts.append(ChatChart(
+            kind="ranking_bar",
+            caption=f"Top {len(top)} subnational emitters in {COUNTRY_META[iso]['name']} · {target_year}",
+            data=top,
+        ))
+
+    # --- year-over-year movers, for "who changed most" style questions ---
+    if wants_ranking and wants_trend and not rank.empty and "yoy_pct" in rank.columns:
+        movers = rank.dropna(subset=["yoy_pct"]).head(10)[["location", "yoy_pct"]].copy()
+        if len(movers) > 1:
+            charts.append(ChatChart(
+                kind="yoy_bar",
+                caption=f"Year-over-year change by subnational unit · {target_year}",
+                data=movers,
+            ))
+
+    # --- sector composition over time, when asking how the mix shifted ---
+    if wants_sector and wants_trend and is_loc:
+        trend_df = sector_yearly_series(iso, location)
+        trend_df = trend_df[trend_df["ch4_tonnes"] > 0]
+        if not trend_df.empty:
+            charts.append(ChatChart(
+                kind="sector_trend",
+                caption=f"{subject} · sector composition over time",
+                data=trend_df,
+            ))
+
+    # --- always keep the monthly series if nothing else fired, or if the
+    #     question is explicitly about the trend ---
+    if wants_trend or not charts:
+        charts.insert(0, ChatChart(
+            kind="timeseries",
+            caption=f"{subject} · monthly CH₄ tonnes · {DATA_RANGE_LABEL}",
+            data=monthly,
+        ))
+
+    return charts[:3]  # cap so a reply never turns into a wall of charts
 
 
 # ============================================================
@@ -407,6 +491,11 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
 
     response = MethaneResponse(blocks=blocks, chart_subject=subject)
     response.chart_df = monthly
+    response.charts = _select_charts(
+        user_text, iso=iso, location=ctx.location if is_loc else None, is_loc=is_loc,
+        monthly=monthly, rank=rank, target_year=target_year, subject=subject,
+        sector_filter=sector_filter,
+    )
     return response
 
 

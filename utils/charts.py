@@ -379,3 +379,65 @@ def jurisdiction_map_plotly(highlight: tuple[str, str] | None = None, height: in
                         font=dict(family="Quicksand, sans-serif", color=INK)),
     )
     return fig
+
+
+def sector_bar_plotly(sec_df: pd.DataFrame, height: int = 260) -> go.Figure:
+    """Horizontal bar of one jurisdiction's sector breakdown for a single year.
+    sec_df must have columns: sector, total_emission (as returned by
+    data_loader.location_sectors). Sorted ascending so the biggest sector
+    lands at the top of the rendered chart."""
+    d = sec_df.sort_values("total_emission", ascending=True)
+    fig = go.Figure(go.Bar(
+        x=d["total_emission"], y=d["sector"], orientation="h",
+        marker_color=[SECTOR_COLORS.get(s, INK_SOFT) for s in d["sector"]],
+        hovertemplate="<b>%{y}</b><br>%{x:,.0f} t CH₄<extra></extra>",
+    ))
+    fig.update_layout(
+        height=height, margin=dict(l=10, r=10, t=10, b=10),
+        plot_bgcolor=PAPER, paper_bgcolor=PAPER,
+        font=dict(family="Inter, sans-serif", size=12, color=INK),
+        xaxis=dict(title=dict(text="CH₄ (t)",
+                              font=dict(size=10, family="Quicksand, sans-serif", color=INK_SOFT)),
+                   showgrid=True, gridcolor=LINE_SOFT, gridwidth=0.5, zeroline=False,
+                   tickfont=dict(size=10, family="Quicksand, sans-serif", color=INK_SOFT),
+                   tickformat=",.0f"),
+        yaxis=dict(showgrid=False,
+                   tickfont=dict(size=11, family="Inter, sans-serif", color=INK)),
+        showlegend=False,
+        hoverlabel=dict(bgcolor=PAPER, bordercolor=INK,
+                        font=dict(family="Quicksand, sans-serif", color=INK)),
+    )
+    return fig
+
+
+def sector_trend_plotly(trend_df: pd.DataFrame, height: int = 280) -> go.Figure:
+    """Stacked bars of sector composition across years for one jurisdiction.
+    trend_df must have columns: year, sector, ch4_tonnes (as returned by
+    data_loader.sector_yearly_series)."""
+    fig = go.Figure()
+    for sector in SECTOR_ORDER:
+        sub = trend_df[trend_df["sector"] == sector].sort_values("year")
+        if sub.empty:
+            continue
+        fig.add_trace(go.Bar(
+            x=sub["year"], y=sub["ch4_tonnes"], name=sector,
+            marker_color=SECTOR_COLORS.get(sector, INK_SOFT),
+            hovertemplate=f"<b>%{{x}}</b><br>{sector}: %{{y:,.0f}} t CH₄<extra></extra>",
+        ))
+    fig.update_layout(
+        barmode="stack", height=height, margin=dict(l=10, r=10, t=10, b=10),
+        plot_bgcolor=PAPER, paper_bgcolor=PAPER,
+        font=dict(family="Inter, sans-serif", size=12, color=INK),
+        xaxis=dict(dtick=1, showgrid=False,
+                   tickfont=dict(size=10, family="Quicksand, sans-serif", color=INK_SOFT)),
+        yaxis=dict(title=dict(text="CH₄ (t)",
+                              font=dict(size=10, family="Quicksand, sans-serif", color=INK_SOFT)),
+                   showgrid=True, gridcolor=LINE_SOFT, gridwidth=0.5, zeroline=False,
+                   tickfont=dict(size=10, family="Quicksand, sans-serif", color=INK_SOFT),
+                   tickformat=",.0f"),
+        legend=dict(orientation="h", y=1.12, x=0,
+                    font=dict(size=9, family="Quicksand, sans-serif")),
+        hoverlabel=dict(bgcolor=PAPER, bordercolor=INK,
+                        font=dict(family="Quicksand, sans-serif", color=INK)),
+    )
+    return fig
