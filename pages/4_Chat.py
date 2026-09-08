@@ -8,6 +8,8 @@ material, it doesn't lock the reply into a fixed template. Without a key,
 falls back to deterministic scripted templates (see utils/chat_engine.py).
 """
 
+import unicodedata
+
 import streamlit as st
 
 from utils.theme import inject_theme
@@ -25,6 +27,14 @@ from utils.policy_content import get_climate_trace_detail_link
 
 
 inject_theme()
+
+
+def _fold_accents(text: str) -> str:
+    """'Córdoba' -> 'Cordoba'. Used to give accented jurisdictions a plain-ASCII
+    search alias, since the selectbox filters on a literal substring match."""
+    return "".join(
+        c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c)
+    )
 
 
 # ============== STATE ==============
@@ -89,11 +99,26 @@ with st.expander("ℹ️  About this data — what it is, and its limits", expan
 # ============== SIDEBAR ==============
 def methane_sidebar():
     with st.sidebar:
-        # ---- Jurisdiction (single A-Z list across all 36 SMAC members) ----
+        # ---- Jurisdiction (searchable, across all 36 SMAC members) ----
+        # st.selectbox is type-to-filter by default, but with 36 options that
+        # affordance isn't obvious — the placeholder makes it discoverable so
+        # people type "Mary" instead of scrolling. filter_mode="contains" is
+        # used over the default fuzzy matching because for place names a plain
+        # substring match is more predictable ("cor" -> Córdoba, not a
+        # scattered subsequence hit).
         st.markdown('<div class="smac-eyebrow">SMAC member</div>', unsafe_allow_html=True)
         flat = list_all_locations_flat()
         key_options = flat["key"].tolist()
-        label_map = dict(zip(flat["key"], flat["label"]))
+        # 9 of the 36 jurisdictions have accented names (Córdoba, Goiás,
+        # Québec, ...). Streamlit's filter is a literal substring match, so a
+        # user typing "cor" on an ordinary keyboard would never find Córdoba.
+        # Append an ASCII alias to those labels only, so both spellings match.
+        def _search_label(row):
+            base = row["label"]
+            folded = _fold_accents(row["location"])
+            return base if folded == row["location"] else f"{base}  ({folded})"
+
+        label_map = {r["key"]: _search_label(r) for _, r in flat.iterrows()}
         current_key = f"{st.session_state.chat_location}||{st.session_state.chat_iso}"
         picked_key = st.selectbox(
             "jurisdiction_select",
@@ -102,9 +127,11 @@ def methane_sidebar():
             format_func=lambda k: label_map[k],
             label_visibility="collapsed",
             key="sb_jurisdiction",
-            help="Every SMAC member/observer jurisdiction, alphabetised — this selection "
-                 "(plus year and sector below) filters what gets retrieved from SMAC's "
-                 "document library and grounds the answer.",
+            placeholder="Search jurisdictions…",
+            filter_mode="contains",
+            help="Type to search any of the 36 SMAC member/observer jurisdictions — "
+                 "this selection (plus year and sector below) filters what gets "
+                 "retrieved from SMAC's document library and grounds the answer.",
         )
         row = flat[flat["key"] == picked_key].iloc[0]
         if row["location"] != st.session_state.chat_location or row["iso3_country"] != st.session_state.chat_iso:
