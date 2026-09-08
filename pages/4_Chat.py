@@ -14,8 +14,8 @@ import streamlit as st
 
 from utils.theme import inject_theme
 from utils.data_loader import (
-    COUNTRY_META, list_all_locations_flat, country_yearly, fmt_mt,
-    CURRENT_YEAR, DATA_RANGE_LABEL, display_name, SECTOR_ORDER,
+    COUNTRY_META, list_all_locations_flat,
+    DATA_RANGE_LABEL, display_name, SECTOR_ORDER,
 )
 from utils.chat_engine import MethaneContext, build_methane_response, ChatBlock
 from utils.llm import has_llm
@@ -142,14 +142,6 @@ def methane_sidebar():
         iso = st.session_state.chat_iso
         loc = st.session_state.chat_location
         loc_display = display_name(loc)
-
-        cy = country_yearly(iso)
-        y_now = float(cy[cy["year"] == CURRENT_YEAR]["ch4_tonnes"].iloc[0]) if CURRENT_YEAR in cy["year"].values else 0
-        st.markdown(
-            f"<div class='smac-meta' style='margin:-2px 0 18px;font-size:10px;'>"
-            f"part of {COUNTRY_META[iso]['name']}</div>",
-            unsafe_allow_html=True,
-        )
 
         # ---- Satellite data ----
         # The Climate TRACE detail-page iframe is too tall for the sidebar, so
