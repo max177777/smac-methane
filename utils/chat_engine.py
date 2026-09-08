@@ -104,8 +104,10 @@ def _mde_inventory_summary(iso: str, location: str | None) -> str | None:
         f"Maryland Department of the Environment (MDE) official state GHG "
         f"inventory, CH4 totals — {series}. This is a SEPARATE, bottom-up "
         f"source from Climate TRACE and covers different years; the two are "
-        f"compiled differently and do not necessarily agree. Only these "
-        f"inventory years exist — there is no MDE figure for other years."
+        f"compiled differently and do not necessarily agree. MDE DOES cover "
+        f"each of the years listed above — if the user asks about one of them, "
+        f"that figure is available and should be given. MDE does not publish "
+        f"figures for years not listed."
     )
 
 
@@ -288,12 +290,12 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
         facts = {
             "jurisdiction": subject,
             "country": country_name,
-            "CH4 total by year, every year this tool covers (Climate TRACE)": series,
-            "data coverage": (
-                f"{DATA_RANGE_LABEL} only — Climate TRACE monthly data. There is NO "
-                f"data here for years before 2021. Do not estimate or back-cast a "
-                f"missing year; say it isn't covered and point to the closest year "
-                f"that is."
+            "SOURCE 1 of N — Climate TRACE, CH4 total by year": series,
+            "Climate TRACE coverage": (
+                f"{DATA_RANGE_LABEL} only. This statement is about Climate TRACE "
+                f"ONLY — other sources listed below may cover other years. Check "
+                f"every source before telling the user a year is unavailable. "
+                f"Never estimate or back-cast a year that no source covers."
             ),
             f"currently selected year ({target_year}) total CH4 (t)": fmt_int(y_now),
             "year-over-year change (%)": f"{yoy:+.2f}" if yoy == yoy else "n/a",
@@ -306,7 +308,7 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
         # knows to offer it rather than claiming nothing pre-2021 exists.
         _mde = _mde_inventory_summary(iso, ctx.location if is_loc else None)
         if _mde:
-            facts["additional source — official state inventory (MDE)"] = _mde
+            facts["SOURCE 2 of N — Maryland MDE official state inventory"] = _mde
         if sector_insight:
             facts["sector-specific insight"] = sector_insight
         answer = generate_open_answer(
