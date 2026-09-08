@@ -57,7 +57,10 @@ POINT_SOURCE_SECTORS = [
     "waste",
 ]
 
-YEAR = 2025          # latest complete year, matches CURRENT_YEAR in data_loader
+YEARS = list(range(2021, 2027))   # 2021..2026, matching DATA_RANGE_LABEL.
+                                  # The page lets users pick any of these, so a
+                                  # single-year fetch would silently fall back to
+                                  # the sub-sector view on every other year.
 GAS = "ch4"          # methane specifically — this is a methane tool
 PAGE_SIZE = 100      # API max
 MAX_ROWS_PER_JURISDICTION = 5000   # CA and Minas Gerais hit the old 1000 cap;
@@ -264,13 +267,13 @@ def build_gadm_map():
 
 # ---------------- PHASE 2: fetch facilities ----------------
 
-def fetch_sources(gadm_id):
-    """Page through /v7/sources for one jurisdiction."""
+def fetch_sources(gadm_id, year):
+    """Page through /v7/sources for one jurisdiction in one year."""
     rows, offset = [], 0
     while offset < MAX_ROWS_PER_JURISDICTION:
         try:
             payload = _get("sources", {
-                "gadmId": gadm_id, "year": YEAR, "gas": GAS,
+                "gadmId": gadm_id, "year": year, "gas": GAS,
                 "sectors": ",".join(POINT_SOURCE_SECTORS),
                 "limit": PAGE_SIZE, "offset": offset,
             })
@@ -294,7 +297,8 @@ def main():
     if not gadm_map:
         sys.exit("No GADM ids resolved — cannot fetch facilities.")
 
-    print("Phase 2: fetching facilities\n")
+    print(f"Phase 2: fetching facilities for {YEARS[0]}-{YEARS[-1]}")
+    print("(this makes a lot of API calls — expect several minutes)\n")
     frames = []
     for iso, roster in MEMBER_ROSTER.items():
         for row in roster:
@@ -302,31 +306,32 @@ def main():
             gid = gadm_map.get(f"{iso}||{loc}")
             if not gid:
                 continue
-            raw = fetch_sources(gid)
-            if not raw:
-                print(f"  {loc} ({iso}): no facilities returned")
-                continue
-            df = pd.json_normalize(raw)
-            keep = {
-                "id": "source_id", "name": "source_name",
-                "assetType": "asset_type", "sourceType": "source_type",
-                "sector": "sector", "subsector": "sub_sector",
-                "emissionsQuantity": "ch4_tonnes",
-                "centroid.latitude": "lat", "centroid.longitude": "lon",
-            }
-            cols = {k: v for k, v in keep.items() if k in df.columns}
-            out = df[list(cols)].rename(columns=cols)
-            out["iso3_country"] = iso
-            out["location"] = loc
-            out["gadm_id"] = gid
-            out["year"] = YEAR
-            frames.append(out)
-            n_pt = (df.get("sourceType") == "point-source").sum() if "sourceType" in df else 0
-            warn = ("  <-- AT CAP, likely truncated: raise MAX_ROWS_PER_JURISDICTION"
-                    if len(raw) >= MAX_ROWS_PER_JURISDICTION else "")
-            print(f"  {loc} ({iso}): {len(out)} facilities "
-                  f"({n_pt} tagged point-source){warn}")
-            time.sleep(SLEEP)
+            per_year = []
+            for year in YEARS:
+                raw = fetch_sources(gid, year)
+                if not raw:
+                    per_year.append(f"{year}:0")
+                    time.sleep(SLEEP)
+                    continue
+                df = pd.json_normalize(raw)
+                keep = {
+                    "id": "source_id", "name": "source_name",
+                    "assetType": "asset_type", "sourceType": "source_type",
+                    "sector": "sector", "subsector": "sub_sector",
+                    "emissionsQuantity": "ch4_tonnes",
+                    "centroid.latitude": "lat", "centroid.longitude": "lon",
+                }
+                cols = {k: v for k, v in keep.items() if k in df.columns}
+                out = df[list(cols)].rename(columns=cols)
+                out["iso3_country"] = iso
+                out["location"] = loc
+                out["gadm_id"] = gid
+                out["year"] = year
+                frames.append(out)
+                capped = "!" if len(raw) >= MAX_ROWS_PER_JURISDICTION else ""
+                per_year.append(f"{year}:{len(out)}{capped}")
+                time.sleep(SLEEP)
+            print(f"  {loc} ({iso}): " + "  ".join(per_year))
 
     if not frames:
         sys.exit("\nNo facilities returned for any jurisdiction.")
@@ -334,18 +339,25 @@ def main():
     result = pd.concat(frames, ignore_index=True)
     result = result.dropna(subset=["ch4_tonnes"])
     result = result.sort_values(
-        ["iso3_country", "location", "ch4_tonnes"], ascending=[True, True, False])
+        ["iso3_country", "location", "year", "ch4_tonnes"],
+        ascending=[True, True, True, False])
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     result.to_csv(OUT_PATH, index=False)
 
-    print(f"\nWrote {len(result)} facilities across "
+    print(f"\nWrote {len(result)} facility-years across "
           f"{result['location'].nunique()} jurisdictions -> {OUT_PATH}")
+    print("\nRows per year:")
+    print(result["year"].value_counts().sort_index().to_string())
+    print("\n('!' next to a count above means that jurisdiction-year hit "
+          "MAX_ROWS_PER_JURISDICTION and may be truncated.)")
     if "sector" in result:
         print("\nBy sector:")
         print(result["sector"].value_counts().to_string())
-    print("\nBiggest single facilities overall:")
-    cols = [c for c in ("source_name", "location", "sector", "ch4_tonnes") if c in result]
-    print(result.nlargest(10, "ch4_tonnes")[cols].to_string(index=False))
+    latest = result[result["year"] == max(YEARS[:-1])]  # last full year
+    if not latest.empty:
+        print(f"\nBiggest single facilities in {max(YEARS[:-1])}:")
+        cols = [c for c in ("source_name", "location", "sector", "ch4_tonnes") if c in result]
+        print(latest.nlargest(10, "ch4_tonnes")[cols].to_string(index=False))
 
 
 if __name__ == "__main__":
