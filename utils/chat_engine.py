@@ -8,6 +8,9 @@ Two modes:
 
 import re
 from dataclasses import dataclass
+from pathlib import Path
+
+import pandas as pd
 
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_ORDER, country_yearly, country_monthly, location_monthly,
@@ -78,6 +81,32 @@ def _detect_mode_from_text(user_text: str, current_output: str) -> str:
     if re.search(r"trend|over time|grow|increas|decreas|monthly|seasonal", t):
         return "trend"
     return current_output
+
+
+_MDE_CSV = Path(__file__).parent.parent / "data" / "MD_official_inventory_ch4.csv"
+
+
+def _mde_inventory_summary(iso: str, location: str | None) -> str | None:
+    """Maryland's own MDE inventory covers 2006-2020 — years Climate TRACE
+    doesn't reach. Surfaced as a fact so the model can offer the nearest
+    available year instead of saying nothing pre-2021 exists."""
+    if iso != "USA" or location != "Maryland" or not _MDE_CSV.exists():
+        return None
+    try:
+        df = pd.read_csv(_MDE_CSV)
+        totals = df.groupby("year")["ch4_tonnes"].sum().sort_index()
+    except Exception:
+        return None
+    if totals.empty:
+        return None
+    series = ", ".join(f"{int(y)}: {v:,.0f} t" for y, v in totals.items())
+    return (
+        f"Maryland Department of the Environment (MDE) official state GHG "
+        f"inventory, CH4 totals — {series}. This is a SEPARATE, bottom-up "
+        f"source from Climate TRACE and covers different years; the two are "
+        f"compiled differently and do not necessarily agree. Only these "
+        f"inventory years exist — there is no MDE figure for other years."
+    )
 
 
 def _select_charts(user_text: str, *, iso: str, location: str | None, is_loc: bool,
@@ -247,15 +276,37 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
     # the MODEL decides how to organize the answer, not us.
     answer = None
     if has_llm():
+        # Pass the FULL year series, not just the selected year. Previously only
+        # the selected year was sent, so when asked about a year we don't cover
+        # the model would say "the dataset only covers <selected year>" — which
+        # understated what's actually here and gave the user a wrong picture of
+        # the tool's coverage.
+        series = ", ".join(
+            f"{int(r.year)}: {fmt_int(r.ch4_tonnes)} t"
+            for r in yearly.sort_values("year").itertuples()
+        )
         facts = {
             "jurisdiction": subject,
             "country": country_name,
-            f"{target_year} total CH4 (t)": fmt_int(y_now),
+            "CH4 total by year, every year this tool covers (Climate TRACE)": series,
+            "data coverage": (
+                f"{DATA_RANGE_LABEL} only — Climate TRACE monthly data. There is NO "
+                f"data here for years before 2021. Do not estimate or back-cast a "
+                f"missing year; say it isn't covered and point to the closest year "
+                f"that is."
+            ),
+            f"currently selected year ({target_year}) total CH4 (t)": fmt_int(y_now),
             "year-over-year change (%)": f"{yoy:+.2f}" if yoy == yoy else "n/a",
             f"{n_years}-year drift since 2021 (%)": f"{drift:+.2f}" if drift == drift else "n/a",
             "top 3 subunits nationally": ", ".join(top3_names) if top3_names else "n/a",
             "top 3 share of national total (%)": f"{top3_share:.1f}",
         }
+        # Maryland additionally has its state's own bottom-up inventory loaded,
+        # covering years Climate TRACE doesn't reach — surface it so the model
+        # knows to offer it rather than claiming nothing pre-2021 exists.
+        _mde = _mde_inventory_summary(iso, ctx.location if is_loc else None)
+        if _mde:
+            facts["additional source — official state inventory (MDE)"] = _mde
         if sector_insight:
             facts["sector-specific insight"] = sector_insight
         answer = generate_open_answer(
