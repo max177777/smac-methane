@@ -324,8 +324,15 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
         # "2025 total / YoY / drift" bolted underneath). Now it only appears
         # when it adds something the answer doesn't already say — the model
         # owns the structure, this is just a verifiable figure receipt.
+        # Suppress when it wouldn't help: either the answer already quotes the
+        # figure, or the user asked about a DIFFERENT year than the one selected
+        # (asking about 2006 and getting a 2025 card bolted underneath is the
+        # template residue this card is supposed to avoid).
         already_stated = fmt_int(y_now * mult) in answer
-        if not already_stated:
+        asked_years = {int(m.group(0))
+                       for m in re.finditer(r"\b(?:19|20)\d{2}\b", user_text)}
+        asks_other_year = bool(asked_years) and target_year not in asked_years
+        if not already_stated and not asks_other_year:
             insight = (
                 f"- {target_year} total: **{fmt_int(y_now * mult)} {unit}**\n"
                 f"- Year-over-year: **{yoy:+.2f}%**\n"

@@ -31,7 +31,13 @@ _STOPWORDS = {
 
 
 def _tokenize(text: str) -> list[str]:
-    words = re.findall(r"[a-zA-Z][a-zA-Z0-9\-]{1,}", text.lower())
+    # Must allow tokens that START with a digit. The original pattern required
+    # a leading letter, which silently dropped every bare number — so a query
+    # like "emissions in 2006" tokenised to [emissions] and could never match
+    # the chunk that literally says "2006", making year-specific retrieval
+    # impossible. Applied to both the corpus and the query, so they stay
+    # consistent (the index is built from this function at load time).
+    words = re.findall(r"[a-zA-Z0-9][a-zA-Z0-9\-]{1,}", text.lower())
     return [w for w in words if w not in _STOPWORDS]
 
 
