@@ -10,7 +10,7 @@ from utils.data_loader import (
     MEMBER_ROSTER, total_member_counts, total_months_of_data, load_subsector_raw,
     country_monthly, country_yearly, fmt_mt, pct_change,
 )
-from utils.charts import sparkline_plotly
+from utils.charts import sparkline_plotly, jurisdiction_map_plotly
 
 
 inject_theme()
@@ -99,6 +99,117 @@ with col2:
         unsafe_allow_html=True,
     )
 
+st.markdown("---")
+
+# ============== ABOUT SMAC (mirrors smacmethane.org) ==============
+# Moved here from the SMAC Explorer page: members arriving at the data page
+# already know what SMAC is and want their numbers, so the "what is SMAC"
+# framing belongs on the front page instead.
+smac_l, smac_r = st.columns([1.3, 1], gap="large")
+
+with smac_l:
+    eyebrow("Subnational Methane Action Coalition")
+    st.markdown("<h2 style='font-size:2.2rem;'>Leading the world toward <em>fast methane action</em>.</h2>",
+                unsafe_allow_html=True)
+    st.markdown(
+        '<p style="font-family:Inter,sans-serif;font-size:16px;line-height:1.65;'
+        'color:var(--ink-soft);max-width:640px;margin-bottom:18px;">'
+        "Worldwide, states and provinces have the authority and expertise to slash methane "
+        "emissions and combat climate change. Members of the Subnational Methane Action "
+        "Coalition (SMAC) are leading the way."
+        "</p>",
+        unsafe_allow_html=True,
+    )
+
+    smac_btns = st.columns([1, 1, 4])
+    with smac_btns[0]:
+        st.markdown(
+            '<a href="https://www.smacmethane.org/benefits" target="_blank" style="text-decoration:none;">'
+            '<span class="smac-pill" style="display:block;text-align:center;padding:10px 22px;font-size:15px;">Benefits</span></a>',
+            unsafe_allow_html=True,
+        )
+    with smac_btns[1]:
+        if st.button("Join", key="smac_join_btn", type="primary"):
+            st.switch_page("pages/6_Contact.py")
+
+    st.markdown(
+        '<div style="margin-top:16px;margin-bottom:26px;">'
+        '<a href="https://www.smacmethane.org/s/SMAC_Letter-from-California_2025-1-yg86.pdf" target="_blank" '
+        'style="font-family:Quicksand,sans-serif;font-size:13px;font-weight:700;color:var(--mint-deep);text-decoration:none;">'
+        '\U0001F4C4 An Invitation from California \u2192</a></div>',
+        unsafe_allow_html=True,
+    )
+
+    eyebrow("The Methane Imperative")
+    st.markdown(
+        '<p style="font-family:Inter,sans-serif;font-size:15px;line-height:1.7;'
+        'color:var(--ink-soft);max-width:680px;margin-bottom:14px;">'
+        "Methane is a colorless, combustible gas that has caused nearly one-third of "
+        "Earth's warming. In the short term, one ton of methane traps 80 times more heat "
+        "than one ton of carbon dioxide. Since captured methane can be used for fuel, "
+        "methane solutions are often profitable."
+        "</p>"
+        '<p style="font-family:Inter,sans-serif;font-size:15px;line-height:1.7;'
+        'color:var(--ink-soft);max-width:680px;margin-bottom:8px;">'
+        "States and provinces are uniquely positioned to lead the fight against methane "
+        "emissions. SMAC provides a platform that helps governments gain access to "
+        "technical and policy resources while learning from each other. Joining SMAC is "
+        "always free."
+        "</p>",
+        unsafe_allow_html=True,
+    )
+
+with smac_r:
+    st.markdown('<div style="height:48px;"></div>', unsafe_allow_html=True)
+    st.plotly_chart(
+        jurisdiction_map_plotly(height=500, show_legend=False),
+        use_container_width=True,
+        config={"displayModeBar": False},
+    )
+
+st.markdown(
+    '<div style="border-top:1px solid var(--line);border-bottom:1px solid var(--line);'
+    'padding:18px 0;margin:18px 0;display:flex;gap:48px;flex-wrap:wrap;">'
+    '<div><div style="font-family:Quicksand,sans-serif;font-size:28px;font-weight:700;">375M+</div>'
+    '<div class="smac-meta" style="font-size:11px;">combined population of SMAC members</div></div>'
+    '<div><div style="font-family:Quicksand,sans-serif;font-size:28px;font-weight:700;">US$4.6T+</div>'
+    '<div class="smac-meta" style="font-size:11px;">combined GDP of SMAC members</div></div>'
+    '</div>',
+    unsafe_allow_html=True,
+)
+
+with dark_band():
+    eyebrow("What SMAC does")
+    st.markdown("<h2 style='font-size:2.2rem;margin-bottom:8px;'>Methane policy, <em>simplified</em>.</h2>",
+                unsafe_allow_html=True)
+    st.markdown(
+        '<p style="font-family:Inter,sans-serif;font-size:15px;line-height:1.65;'
+        'color:rgba(255,255,255,0.75);max-width:680px;margin-bottom:28px;">'
+        "Each jurisdiction has different needs. Whether a government is new to methane "
+        "efforts or already a world leader, SMAC helps officials craft strong methane "
+        "policies and gain global recognition for their efforts."
+        "</p>",
+        unsafe_allow_html=True,
+    )
+    smac_functions = [
+        ("Identifying Solutions", "Through an extensive network of methane experts, SMAC helps governments build customized methane strategies to meet their needs."),
+        ("Supporting Monitoring", "Through SMAC, governments identify key sources of methane, including through low-cost technologies and publicly available satellite data."),
+        ("Deploying Projects", "Working alongside industry, SMAC tracks and facilitates innovative methane initiatives at oil and gas operations, farms, landfills, and other facilities."),
+        ("Building Model Policies", "SMAC builds international collaborations to exchange model policies, laws, and rules."),
+        ("Promoting Environmental Justice", "Through SMAC, governments are positioned to maximize the social, economic, and health benefits of methane action."),
+    ]
+    func_cols = st.columns(2)
+    for i, (title, desc) in enumerate(smac_functions):
+        with func_cols[i % 2]:
+            st.markdown(
+                f'<div style="display:flex;gap:12px;margin-bottom:22px;align-items:flex-start;">'
+                f'<span style="width:9px;height:9px;border-radius:50%;background:var(--mint);flex-shrink:0;margin-top:7px;"></span>'
+                f'<div><div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:15px;color:#ffffff;margin-bottom:4px;">{title}</div>'
+                f'<div style="font-size:13px;line-height:1.55;color:rgba(255,255,255,0.72);">{desc}</div></div></div>',
+                unsafe_allow_html=True,
+            )
+
+st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("---")
 
 # ============== MEMBERS ==============

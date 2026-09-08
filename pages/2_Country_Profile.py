@@ -1,24 +1,24 @@
 """
-SMAC page — jurisdiction (not country) profile.
-Every button is one actual SMAC member/observer subnational unit, color-coded by
-country, sorted alphabetically by country then by jurisdiction. Shows that
-jurisdiction's KPIs, time series, real sector breakdown, top emission sources, and a
-quick-bullet Methane Action Plan built from those top sources.
+SMAC Explorer — the data page.
+Leads straight into jurisdiction selection: pick a SMAC member/observer and get
+its KPIs, time series, sector breakdown, top emitting facilities, and a
+Methane Action Plan. The "what is SMAC" material lives on the Overview page —
+members coming here already know what SMAC is, they're here for their numbers.
 """
 
 import re
 
 import streamlit as st
 
-from utils.theme import inject_theme, eyebrow, dark_band, render_footer
+from utils.theme import inject_theme, eyebrow, render_footer
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_COLORS, CURRENT_YEAR, DATA_RANGE_LABEL,
     all_member_locations, member_status, location_yearly, location_monthly,
     smac_wide_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
     top_point_sources, top_facility_sources, fmt_int, fmt_mt, pct_change, display_name,
 )
-from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans, get_climate_trace_detail_link
-from utils.charts import time_series_plotly, SECTOR_COLORS, jurisdiction_map_plotly
+from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans
+from utils.charts import time_series_plotly, SECTOR_COLORS
 from utils.rag import rag_search
 
 inject_theme()
@@ -28,115 +28,6 @@ def _slug(iso: str, loc: str) -> str:
     return "jc-" + re.sub(r"[^a-z0-9]+", "-", f"{iso}-{loc}".lower()).strip("-")
 
 
-# ============== ABOUT SMAC (mirrors smacmethane.org) ==============
-hero_l, hero_r = st.columns([1.3, 1], gap="large")
-
-with hero_l:
-    eyebrow("Subnational Methane Action Coalition")
-    st.markdown("<h1>Leading the world toward <em>fast methane action</em>.</h1>", unsafe_allow_html=True)
-    st.markdown(
-        '<p style="font-family:Inter,sans-serif;font-size:17px;line-height:1.65;'
-        'color:var(--ink-soft);max-width:680px;margin-bottom:20px;">'
-        "Worldwide, states and provinces have the authority and expertise to slash methane "
-        "emissions and combat climate change. Members of the Subnational Methane Action "
-        "Coalition (SMAC) are leading the way."
-        "</p>",
-        unsafe_allow_html=True,
-    )
-
-    btn_cols = st.columns([1, 1, 4])
-    with btn_cols[0]:
-        st.markdown(
-            '<a href="https://www.smacmethane.org/benefits" target="_blank" style="text-decoration:none;">'
-            '<span class="smac-pill" style="display:block;text-align:center;padding:10px 22px;font-size:15px;">Benefits</span></a>',
-            unsafe_allow_html=True,
-        )
-    with btn_cols[1]:
-        if st.button("Join", key="smac_join_btn", type="primary"):
-            st.switch_page("pages/6_Contact.py")
-
-    st.markdown(
-        '<div style="margin-top:18px;margin-bottom:28px;">'
-        '<a href="https://www.smacmethane.org/s/SMAC_Letter-from-California_2025-1-yg86.pdf" target="_blank" '
-        'style="font-family:Quicksand,sans-serif;font-size:13px;font-weight:700;color:var(--mint-deep);text-decoration:none;">'
-        '📄 An Invitation from California →</a></div>',
-        unsafe_allow_html=True,
-    )
-
-    # ---- The Methane Imperative ---- (kept in the same column as the hero so
-    # the map on the right can span the full combined height)
-    eyebrow("The Methane Imperative")
-    st.markdown(
-        '<p style="font-family:Inter,sans-serif;font-size:15px;line-height:1.7;'
-        'color:var(--ink-soft);max-width:720px;margin-bottom:14px;">'
-        "Methane is a colorless, combustible gas that has caused nearly one-third of "
-        "Earth's warming. In the short term, one ton of methane traps 80 times more heat "
-        "than one ton of carbon dioxide. Since captured methane can be used for fuel, "
-        "methane solutions are often profitable."
-        "</p>"
-        '<p style="font-family:Inter,sans-serif;font-size:15px;line-height:1.7;'
-        'color:var(--ink-soft);max-width:720px;margin-bottom:8px;">'
-        "States and provinces are uniquely positioned to lead the fight against methane "
-        "emissions. SMAC provides a platform that helps governments gain access to "
-        "technical and policy resources while learning from each other. Joining SMAC is "
-        "always free."
-        "</p>",
-        unsafe_allow_html=True,
-    )
-
-with hero_r:
-    st.markdown('<div style="height:48px;"></div>', unsafe_allow_html=True)
-    st.plotly_chart(
-        jurisdiction_map_plotly(height=500, show_legend=False),
-        use_container_width=True,
-        config={"displayModeBar": False},
-    )
-
-st.markdown(
-    '<div style="border-top:1px solid var(--line);border-bottom:1px solid var(--line);'
-    'padding:18px 0;margin:18px 0;display:flex;gap:48px;flex-wrap:wrap;">'
-    '<div><div style="font-family:Quicksand,sans-serif;font-size:28px;font-weight:700;">375M+</div>'
-    '<div class="smac-meta" style="font-size:11px;">combined population of SMAC members</div></div>'
-    '<div><div style="font-family:Quicksand,sans-serif;font-size:28px;font-weight:700;">US$4.6T+</div>'
-    '<div class="smac-meta" style="font-size:11px;">combined GDP of SMAC members</div></div>'
-    '</div>',
-    unsafe_allow_html=True,
-)
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-# ---- Methane policy, simplified ----
-with dark_band():
-    eyebrow("What SMAC does")
-    st.markdown("<h2 style='font-size:2.2rem;margin-bottom:8px;'>Methane policy, <em>simplified</em>.</h2>", unsafe_allow_html=True)
-    st.markdown(
-        '<p style="font-family:Inter,sans-serif;font-size:15px;line-height:1.65;'
-        'color:rgba(255,255,255,0.75);max-width:680px;margin-bottom:28px;">'
-        "Each jurisdiction has different needs. Whether a government is new to methane "
-        "efforts or already a world leader, SMAC helps officials craft strong methane "
-        "policies and gain global recognition for their efforts."
-        "</p>",
-        unsafe_allow_html=True,
-    )
-    smac_functions = [
-        ("Identifying Solutions", "Through an extensive network of methane experts, SMAC helps governments build customized methane strategies to meet their needs."),
-        ("Supporting Monitoring", "Through SMAC, governments identify key sources of methane, including through low-cost technologies and publicly available satellite data."),
-        ("Deploying Projects", "Working alongside industry, SMAC tracks and facilitates innovative methane initiatives at oil and gas operations, farms, landfills, and other facilities."),
-        ("Building Model Policies", "SMAC builds international collaborations to exchange model policies, laws, and rules."),
-        ("Promoting Environmental Justice", "Through SMAC, governments are positioned to maximize the social, economic, and health benefits of methane action."),
-    ]
-    func_cols = st.columns(2)
-    for i, (title, desc) in enumerate(smac_functions):
-        with func_cols[i % 2]:
-            st.markdown(
-                f'<div style="display:flex;gap:12px;margin-bottom:22px;align-items:flex-start;">'
-                f'<span style="width:9px;height:9px;border-radius:50%;background:var(--mint);flex-shrink:0;margin-top:7px;"></span>'
-                f'<div><div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:15px;color:#ffffff;margin-bottom:4px;">{title}</div>'
-                f'<div style="font-size:13px;line-height:1.55;color:rgba(255,255,255,0.72);">{desc}</div></div></div>',
-                unsafe_allow_html=True,
-            )
-
-st.markdown("<br>", unsafe_allow_html=True)
 
 # ============== JURISDICTION SELECTOR ==============
 all_locs = all_member_locations()  # [(iso, location), ...] sorted by country, then location
@@ -429,40 +320,6 @@ else:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ============== SATELLITE DATA (Climate TRACE detail page) ==============
-eyebrow("Satellite data")
-st.markdown(f"<h3>Observed plumes for {loc_display}</h3>", unsafe_allow_html=True)
-st.markdown(
-    '<div class="smac-meta" style="margin-bottom:14px;">'
-    "the sources above are modeled from activity data; Climate TRACE's own detail page below "
-    "shows satellite-observed air pollution directly — pairing the two shows where the "
-    "inventory estimate and a direct observation agree, and where they don't</div>",
-    unsafe_allow_html=True,
-)
-
-ct_detail_link = get_climate_trace_detail_link(iso, loc)
-if ct_detail_link:
-    import streamlit.components.v1 as components
-    components.iframe(ct_detail_link, height=600)
-    st.markdown(
-        f'<div class="smac-meta" style="font-size:9px;margin:6px 0 0;line-height:1.5;">'
-        f'if the panel above doesn\'t load, <a href="{ct_detail_link}" target="_blank" '
-        f'style="color:var(--mint-deep);">open it directly on Climate TRACE →</a></div>',
-        unsafe_allow_html=True,
-    )
-else:
-    st.markdown(
-        f'<a href="https://climatetrace.org/air-pollution" target="_blank" style="text-decoration:none;">'
-        f'<div class="smac-card" style="padding:16px 20px;">'
-        f'<div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:14px;color:var(--ink);">'
-        f'🛰️ Explore air pollution data on Climate TRACE →</div>'
-        f'<div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">'
-        f'a {loc_display}-specific detail page isn\'t linked yet</div>'
-        f'</div></a>',
-        unsafe_allow_html=True,
-    )
-
-st.markdown("<br>", unsafe_allow_html=True)
 
 # ============== TOP SECTORS + METHANE ACTION PLAN ==============
 eyebrow("Top sectors")

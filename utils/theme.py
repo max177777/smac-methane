@@ -12,6 +12,8 @@ All original class names (smac-eyebrow, smac-meta, smac-struct-label,
 smac-method-block, smac-flag) are preserved, so existing pages keep working untouched.
 """
 
+from itertools import count
+
 import streamlit as st
 
 
@@ -369,7 +371,7 @@ hr { border-color: var(--line-soft) !important; }
    fixed offset only reaches the true page edge when the viewport happens to
    match the container's max-width; on wider screens it falls short and
    leaves a visible white gap. This version reaches the edge at any width. */
-.st-key-smac-dark-band {
+[class*="st-key-smac-dark-band"] {
   background: var(--dark);
   margin-top: 32px;
   margin-left: calc(50% - 50vw);
@@ -379,11 +381,11 @@ hr { border-color: var(--line-soft) !important; }
   border-radius: 0;
   box-sizing: border-box;
 }
-.st-key-smac-dark-band h1, .st-key-smac-dark-band h2,
-.st-key-smac-dark-band h3, .st-key-smac-dark-band h4 { color: #ffffff !important; }
-.st-key-smac-dark-band em, .st-key-smac-dark-band i { color: var(--mint) !important; }
-.st-key-smac-dark-band .smac-eyebrow { color: var(--mint) !important; }
-.st-key-smac-dark-band .smac-eyebrow::before { background: var(--mint) !important; }
+[class*="st-key-smac-dark-band"] h1, [class*="st-key-smac-dark-band"] h2,
+[class*="st-key-smac-dark-band"] h3, [class*="st-key-smac-dark-band"] h4 { color: #ffffff !important; }
+[class*="st-key-smac-dark-band"] em, [class*="st-key-smac-dark-band"] i { color: var(--mint) !important; }
+[class*="st-key-smac-dark-band"] .smac-eyebrow { color: var(--mint) !important; }
+[class*="st-key-smac-dark-band"] .smac-eyebrow::before { background: var(--mint) !important; }
 
 /* custom scrollbar */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -440,7 +442,7 @@ footer { visibility: hidden; }
   [data-testid="stMetric"] { padding: 14px 16px; }
   [data-testid="stMetricValue"] { font-size: 1.7rem !important; }
 
-  .st-key-smac-dark-band {
+  [class*="st-key-smac-dark-band"] {
     padding: 36px 1.2rem !important;
   }
 }
@@ -513,10 +515,11 @@ def dot_logo(size: int = 40):
     st.markdown(svg, unsafe_allow_html=True)
 
 
+_dark_band_counter = count()
+
+
 def dark_band():
-    """Return a styled container for a full-bleed dark accent band (use for one section
-    per page, not the whole site — smacmethane.org itself is white-based with a black
-    band reserved for a couple of sections). Usage:
+    """Return a styled container for a full-bleed dark accent band. Usage:
 
         with dark_band():
             eyebrow("Methodology")
@@ -529,8 +532,13 @@ def dark_band():
     NOT actually nest the elements in between; they render as two broken, empty
     tags instead. st.container(key=...) is the supported way to get one real
     parent element that its children actually render inside of.
+
+    Keys must be unique within a page, so each call gets its own suffix — the
+    Overview page uses two bands ("What SMAC does" and "Methodology"), and a
+    fixed key would raise a duplicate-key error on the second one. The CSS
+    matches on the shared class prefix, so all of them stay styled.
     """
-    return st.container(key="smac-dark-band")
+    return st.container(key=f"smac-dark-band-{next(_dark_band_counter)}")
 
 
 def thinking():
