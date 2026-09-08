@@ -587,3 +587,57 @@ def top_point_sources(iso: str, location: str, year: int = CURRENT_YEAR,
     top.attrs["jurisdiction_total"] = float(jurisdiction_total)
     top.attrs["top_n_share_pct"] = float(top["share"].sum())
     return top
+
+
+# ============== TRUE POINT SOURCES (individual facilities) ==============
+# top_point_sources() above ranks SUB-SECTORS ("solid-waste-disposal"), because
+# that's the granularity of SMAC_ch4_subsectors.csv. What follows ranks actual
+# named FACILITIES (a specific landfill, a specific oil & gas site) — which is
+# what an action plan needs in order to name who to call.
+#
+# Data comes from Climate TRACE's public /v7/sources endpoint, fetched offline
+# by scripts/fetch_point_sources.py and committed as a CSV. The app never calls
+# that API at request time (it's a beta API that asks for low volume).
+#
+# If the CSV isn't present, has_facility_sources() is False and the SMAC page
+# falls back to the sub-sector view — so this degrades cleanly rather than
+# breaking the page.
+
+POINT_SOURCE_PATH = Path(__file__).parent.parent / "data" / "SMAC_point_sources.csv"
+
+
+def has_facility_sources() -> bool:
+    return POINT_SOURCE_PATH.exists()
+
+
+@st.cache_data(show_spinner=False)
+def load_facility_sources() -> pd.DataFrame:
+    if not POINT_SOURCE_PATH.exists():
+        return pd.DataFrame()
+    return pd.read_csv(POINT_SOURCE_PATH)
+
+
+@st.cache_data(show_spinner=False)
+def top_facility_sources(iso: str, location: str, year: int = CURRENT_YEAR,
+                          top_n: int = 20) -> pd.DataFrame:
+    """Top N individual emitting FACILITIES for one jurisdiction/year.
+    Columns: source_name, sector, sub_sector, ch4_tonnes, share, lat, lon.
+    Returns an empty frame if no facility data is available for this
+    jurisdiction — caller should fall back to top_point_sources()."""
+    df = load_facility_sources()
+    empty = pd.DataFrame(columns=["source_name", "sector", "sub_sector", "ch4_tonnes", "share"])
+    if df.empty:
+        return empty
+    sub = df[(df["iso3_country"] == iso) & (df["location"] == location)]
+    if "year" in sub.columns:
+        sub = sub[sub["year"] == year]
+    if sub.empty:
+        return empty
+
+    agg = sub.sort_values("ch4_tonnes", ascending=False).reset_index(drop=True)
+    total = agg["ch4_tonnes"].sum()
+    agg["share"] = (agg["ch4_tonnes"] / total * 100) if total > 0 else 0.0
+    top = agg.head(top_n).copy()
+    top.attrs["jurisdiction_total"] = float(total)
+    top.attrs["top_n_share_pct"] = float(top["share"].sum())
+    return top

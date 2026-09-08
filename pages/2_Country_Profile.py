@@ -15,7 +15,7 @@ from utils.data_loader import (
     COUNTRY_META, COUNTRY_COLORS, CURRENT_YEAR, DATA_RANGE_LABEL,
     all_member_locations, member_status, location_yearly, location_monthly,
     smac_wide_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
-    top_point_sources, fmt_int, fmt_mt, pct_change, display_name,
+    top_point_sources, top_facility_sources, fmt_int, fmt_mt, pct_change, display_name,
 )
 from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans, get_climate_trace_detail_link
 from utils.charts import time_series_plotly, SECTOR_COLORS, jurisdiction_map_plotly
@@ -336,41 +336,96 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # ============== TOP 20 EMITTING SOURCES ==============
 eyebrow("Top emitting sources")
-top20 = top_point_sources(iso, loc, sel_year, top_n=20)
 
-if top20.empty:
-    st.info(f"No {sel_year} source-level data yet for {loc_display}.")
-else:
-    top_n_share = top20.attrs.get("top_n_share_pct", 0.0)
+# Prefer real named facilities (individual landfills, oil & gas sites) when
+# scripts/fetch_point_sources.py has been run and its CSV committed. Fall back
+# to the sub-sector ranking when it hasn't.
+facilities = top_facility_sources(iso, loc, sel_year, top_n=20)
+
+if not facilities.empty:
+    top_n_share = facilities.attrs.get("top_n_share_pct", 0.0)
     st.markdown(
-        f"<h3>Top {len(top20)} sources ≈ <em>{top_n_share:.1f}%</em> of {loc_display}'s {sel_year} methane</h3>",
+        f"<h3>Top {len(facilities)} facilities ≈ <em>{top_n_share:.1f}%</em> of "
+        f"{loc_display}'s {sel_year} facility-level methane</h3>",
         unsafe_allow_html=True,
     )
     st.markdown(
         '<div class="smac-meta" style="margin-bottom:14px;">'
-        "Climate TRACE's public data for these jurisdictions doesn't include individual named "
-        "facilities with coordinates — there's no point-source ID to rank. What it does have is "
-        "a much finer breakdown than the 8 broad sectors above: 68 activity-level categories "
-        "(e.g. \"oil-and-gas-production\", \"enteric-fermentation-cattle-operation\"). We treat "
-        "each of those as one emitting source and rank them here — the closest faithful read on "
-        "\"top sources\" the underlying data supports, tagged with its parent sector.</div>",
+        "individual emitting assets from Climate TRACE, ranked by methane. Waste, power, "
+        "manufacturing and mineral-extraction rows are genuine single sites (a named landfill, "
+        "a named plant). <strong>Oil &amp; gas rows are often field- or basin-level aggregates</strong> "
+        "rather than one wellpad — e.g. an entry covering a whole production play — so treat "
+        "those as \"where to look\" rather than \"which gate to knock on\". Road transport, "
+        "forestry and most agriculture are excluded entirely, because there an emissions "
+        "source is a road segment or grid cell, not a site.</div>",
         unsafe_allow_html=True,
     )
-    display_top20 = top20[["sub_sector_label", "sector", "total_emission", "share"]].rename(columns={
-        "sub_sector_label": "Emitting source", "sector": "Sector",
-        "total_emission": f"{sel_year} CH₄ (t)", "share": "Share of jurisdiction (%)",
-    })
+    fac_cols = {
+        "source_name": "Facility", "asset_type": "Type", "sector": "Sector",
+        "sub_sector": "Sub-sector",
+        "ch4_tonnes": f"{sel_year} CH₄ (t)", "share": "Share of facility total (%)",
+    }
+    show_cols = {k: v for k, v in fac_cols.items() if k in facilities.columns}
+    display_fac = facilities[list(show_cols)].rename(columns=show_cols)
     st.dataframe(
-        display_top20, hide_index=True, use_container_width=True, height=460,
+        display_fac, hide_index=True, use_container_width=True, height=460,
         column_config={
-            "Emitting source": st.column_config.TextColumn(width="medium"),
-            "Sector": st.column_config.TextColumn(width="medium"),
+            "Facility": st.column_config.TextColumn(width="medium"),
+            "Type": st.column_config.TextColumn(width="small"),
+            "Sector": st.column_config.TextColumn(width="small"),
+            "Sub-sector": st.column_config.TextColumn(width="small"),
             f"{sel_year} CH₄ (t)": st.column_config.NumberColumn(format="%d"),
-            "Share of jurisdiction (%)": st.column_config.ProgressColumn(
-                format="%.2f%%", min_value=0, max_value=float(display_top20["Share of jurisdiction (%)"].max()),
+            "Share of facility total (%)": st.column_config.ProgressColumn(
+                format="%.2f%%", min_value=0,
+                max_value=float(display_fac["Share of facility total (%)"].max())
+                if "Share of facility total (%)" in display_fac else 1.0,
             ),
         },
     )
+    if {"lat", "lon"}.issubset(facilities.columns):
+        pts = facilities.dropna(subset=["lat", "lon"])
+        if not pts.empty:
+            st.markdown(
+                '<div class="smac-meta" style="margin-top:10px;">facility locations</div>',
+                unsafe_allow_html=True,
+            )
+            st.map(pts.rename(columns={"lat": "latitude", "lon": "longitude"})[
+                ["latitude", "longitude"]], size=400)
+
+else:
+    top20 = top_point_sources(iso, loc, sel_year, top_n=20)
+    if top20.empty:
+        st.info(f"No {sel_year} source-level data yet for {loc_display}.")
+    else:
+        top_n_share = top20.attrs.get("top_n_share_pct", 0.0)
+        st.markdown(
+            f"<h3>Top {len(top20)} sources ≈ <em>{top_n_share:.1f}%</em> of {loc_display}'s {sel_year} methane</h3>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            '<div class="smac-meta" style="margin-bottom:14px;">'
+            "these are activity-level categories, not individual facilities. Facility-level data "
+            "for this jurisdiction hasn't been loaded yet — run "
+            "<code>scripts/fetch_point_sources.py</code> to pull named sites from Climate TRACE's "
+            "asset API. Until then, this ranks the 68 activity categories (e.g. "
+            "\"oil-and-gas-production\") that the aggregated dataset does cover.</div>",
+            unsafe_allow_html=True,
+        )
+        display_top20 = top20[["sub_sector_label", "sector", "total_emission", "share"]].rename(columns={
+            "sub_sector_label": "Emitting source", "sector": "Sector",
+            "total_emission": f"{sel_year} CH₄ (t)", "share": "Share of jurisdiction (%)",
+        })
+        st.dataframe(
+            display_top20, hide_index=True, use_container_width=True, height=460,
+            column_config={
+                "Emitting source": st.column_config.TextColumn(width="medium"),
+                "Sector": st.column_config.TextColumn(width="medium"),
+                f"{sel_year} CH₄ (t)": st.column_config.NumberColumn(format="%d"),
+                "Share of jurisdiction (%)": st.column_config.ProgressColumn(
+                    format="%.2f%%", min_value=0, max_value=float(display_top20["Share of jurisdiction (%)"].max()),
+                ),
+            },
+        )
 
 st.markdown("<br>", unsafe_allow_html=True)
 
