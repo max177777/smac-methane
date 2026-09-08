@@ -317,14 +317,24 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
 
     if answer:
         blocks.append(ChatBlock("Answer", answer))
-        insight = (
-            f"- {target_year} total: **{fmt_int(y_now * mult)} {unit}**\n"
-            f"- Year-over-year: **{yoy:+.2f}%**\n"
-            f"- {n_years}-year drift: **{drift:+.2f}%**"
-        )
-        if sector_insight:
-            insight += f"\n- {sector_insight}"
-        blocks.append(ChatBlock("Key Data Insight", insight))
+
+        # The data card used to be appended unconditionally, which left a
+        # template-shaped residue on answers that had nothing to do with the
+        # selected year's headline figures (ask about 2006 and you'd still get
+        # "2025 total / YoY / drift" bolted underneath). Now it only appears
+        # when it adds something the answer doesn't already say — the model
+        # owns the structure, this is just a verifiable figure receipt.
+        already_stated = fmt_int(y_now * mult) in answer
+        if not already_stated:
+            insight = (
+                f"- {target_year} total: **{fmt_int(y_now * mult)} {unit}**\n"
+                f"- Year-over-year: **{yoy:+.2f}%**\n"
+                f"- {n_years}-year drift: **{drift:+.2f}%**"
+            )
+            if sector_insight and sector_insight not in answer:
+                insight += f"\n- {sector_insight}"
+            blocks.append(ChatBlock(
+                f"Figures for {subject}, {target_year}", insight))
 
     else:
         # ---------- FALLBACK: scripted templates ----------
