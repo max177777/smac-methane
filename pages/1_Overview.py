@@ -215,9 +215,23 @@ st.markdown("---")
 # ============== MEMBERS ==============
 n_members, n_observers = total_member_counts()
 eyebrow("Members")
+# The mint <em> styling previously fell on "and N observers", which visually
+# promoted observers above members — the opposite of the actual hierarchy.
 st.markdown(
-    f"<h2 style='font-size:2.2rem;margin-bottom:28px;'>{n_members} members "
-    f"<em>and {n_observers} observers</em>, across {len(COUNTRY_ORDER)} countries.</h2>",
+    f"<h2 style='font-size:2.2rem;margin-bottom:12px;'><em>{n_members} members</em> "
+    f"and {n_observers} observers, across {len(COUNTRY_ORDER)} countries.</h2>",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<p style="font-size:14px;line-height:1.7;color:var(--ink-soft);max-width:720px;'
+    'margin-bottom:26px;">'
+    "<strong>Members</strong> are jurisdictions that have formally joined the coalition and "
+    "committed to its methane goals. <strong>Observers</strong> participate in SMAC "
+    "convenings and have access to its technical and policy resources, but have not made "
+    "that formal commitment — often because a domestic process is still underway. Both "
+    "appear throughout this tool; observer status is labelled wherever a jurisdiction is "
+    "shown."
+    "</p>",
     unsafe_allow_html=True,
 )
 

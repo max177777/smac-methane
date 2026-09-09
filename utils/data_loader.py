@@ -641,3 +641,54 @@ def top_facility_sources(iso: str, location: str, year: int = CURRENT_YEAR,
     top.attrs["jurisdiction_total"] = float(total)
     top.attrs["top_n_share_pct"] = float(top["share"].sum())
     return top
+
+
+@st.cache_data(show_spinner=False)
+def months_in_year(year: int) -> int:
+    """How many months of data exist for a year across the whole dataset.
+    2026 is partial (data ends mid-year), so a naive full-year comparison
+    against it understates emissions badly."""
+    df = load_raw()
+    sub = df[df["year"] == year]
+    return int(sub["month"].nunique()) if not sub.empty else 0
+
+
+@st.cache_data(show_spinner=False)
+def location_yoy_like_for_like(iso: str, location: str | None, year: int) -> dict:
+    """Year-over-year change comparing ONLY the months present in `year`.
+
+    A partial year (2026 currently has 5 months) compared against a full
+    12-month prior year shows a ~58% "drop" that is purely an artefact of the
+    reporting window. This restricts the prior year to the same months, so the
+    comparison means something. Returns:
+        n_months      months of data in `year`
+        is_partial    True when fewer than 12
+        ytd           sum over those months in `year`
+        prior_ytd     sum over the SAME months in year-1
+        yoy_pct       like-for-like % change (nan if no prior data)
+        prior_full    prior year's full-year total, for context
+    """
+    df = load_raw()
+    sub = df[df["iso3_country"] == iso]
+    if location:
+        sub = sub[sub["location"] == location]
+
+    cur = sub[sub["year"] == year]
+    months = sorted(cur["month"].unique().tolist())
+    n = len(months)
+    ytd = float(cur["total_emission"].sum())
+
+    prior = sub[sub["year"] == year - 1]
+    prior_same = prior[prior["month"].isin(months)]
+    prior_ytd = float(prior_same["total_emission"].sum())
+    prior_full = float(prior["total_emission"].sum())
+
+    yoy = ((ytd - prior_ytd) / prior_ytd * 100) if prior_ytd else float("nan")
+    return {
+        "n_months": n,
+        "is_partial": 0 < n < 12,
+        "ytd": ytd,
+        "prior_ytd": prior_ytd,
+        "yoy_pct": yoy,
+        "prior_full": prior_full,
+    }

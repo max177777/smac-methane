@@ -29,10 +29,10 @@ def _sector_mapping():
     examples = {}
     for sec, grp in pairs.groupby("sector"):
         names = sorted(grp["sub_sector"].unique())
-        shown = ", ".join(names[:4])
-        if len(names) > 4:
-            shown += f", +{len(names) - 4} more"
-        examples[sec] = shown
+        # Full list, not a truncated preview — the whole point of this table is
+        # to let someone check how Climate TRACE's taxonomy maps onto ours, and
+        # "+11 more" hides exactly the detail they came to look up.
+        examples[sec] = ", ".join(names)
     return counts, examples, int(pairs["sub_sector"].nunique())
 
 
@@ -71,7 +71,7 @@ st.markdown(
     '<p style="font-size:15px;line-height:1.7;color:var(--ink-soft);max-width:760px;">'
     "Climate TRACE is an independent, nonprofit coalition (satellite operators, universities, "
     "and research labs) that estimates greenhouse gas emissions for essentially every country, "
-    "state/province, and more than 660 million individual facilities and assets worldwide. It "
+    "state/province, and more than 740 million individual facilities and assets worldwide. It "
     "does this by combining satellite imagery, remote sensors, and activity data (production "
     "volumes, land-use change, livestock counts, and similar) with sector-specific emissions "
     "models — it is <strong>inference from indirect signals</strong>, not a network of "

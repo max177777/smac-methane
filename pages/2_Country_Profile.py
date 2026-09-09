@@ -15,6 +15,7 @@ from utils.data_loader import (
     COUNTRY_META, COUNTRY_COLORS, CURRENT_YEAR, DATA_RANGE_LABEL,
     all_member_locations, member_status, location_yearly, location_monthly,
     smac_wide_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
+    location_yoy_like_for_like,
     top_point_sources, top_facility_sources, fmt_int, fmt_mt, pct_change, display_name,
 )
 from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans
@@ -155,14 +156,43 @@ with col2:
 
     kpi_cols = st.columns(2)
     with kpi_cols[0]:
-        yoy_is_nan = yoy != yoy
-        st.metric(
-            f"{sel_year} Total CH₄", f"{fmt_mt(y_now)} Mt",
-            "—" if yoy_is_nan else f"{yoy:+.2f}% YoY",
-            delta_color=("normal" if yoy_is_nan else ("inverse" if yoy > 0 else "normal")),
-            help=f"Total methane {loc_display} emitted in {sel_year}, in million tonnes (Mt). "
-                 f"The small number below is the year-over-year change vs {sel_year - 1}.",
+        # A partial year (2026 currently holds 5 months) compared against a full
+        # 12-month prior year reads as a ~58% collapse that is purely a
+        # reporting-window artefact — for Maryland the like-for-like change is
+        # actually +0.7%. So for partial years we compare the same months only,
+        # and label the card as year-to-date rather than a full-year total.
+        _lfl = location_yoy_like_for_like(iso, loc, sel_year)
+        _partial = _lfl["is_partial"]
+        _yoy = _lfl["yoy_pct"] if _partial else yoy
+        _yoy_is_nan = _yoy != _yoy
+        _n_mo = _lfl["n_months"]
+
+        _label = (f"{sel_year} CH₄ · first {_n_mo} months" if _partial
+                  else f"{sel_year} Total CH₄")
+        _delta = ("—" if _yoy_is_nan else
+                  (f"{_yoy:+.2f}% vs same {_n_mo} months of {sel_year - 1}" if _partial
+                   else f"{_yoy:+.2f}% YoY"))
+        _help = (
+            f"{loc_display} emitted this over the first {_n_mo} months of {sel_year} — "
+            f"the only months reported so far. The change below compares those same "
+            f"{_n_mo} months in {sel_year - 1}, not the full prior year, because "
+            f"comparing a part-year against a full year would show a large false drop."
+            if _partial else
+            f"Total methane {loc_display} emitted in {sel_year}, in million tonnes (Mt). "
+            f"The small number below is the year-over-year change vs {sel_year - 1}."
         )
+        st.metric(
+            _label, f"{fmt_mt(y_now)} Mt", _delta,
+            delta_color=("normal" if _yoy_is_nan else ("inverse" if _yoy > 0 else "normal")),
+            help=_help,
+        )
+        if _partial:
+            st.markdown(
+                f'<div class="smac-meta" style="font-size:10px;margin:-10px 0 12px;">'
+                f'⚠ {sel_year} is a partial year — {_n_mo} of 12 months reported. '
+                f'Totals are not comparable to full years.</div>',
+                unsafe_allow_html=True,
+            )
         with st.container(key="kpi-gwp100"):
             st.metric(
                 f"CO₂e · GWP100 · {sel_year}", f"{fmt_mt(y_now * GWP100)} Mt",
@@ -265,7 +295,7 @@ if not facilities.empty:
             "Type": st.column_config.TextColumn(width="small"),
             "Sector": st.column_config.TextColumn(width="small"),
             "Sub-sector": st.column_config.TextColumn(width="small"),
-            f"{sel_year} CH₄ (t)": st.column_config.NumberColumn(format="%d"),
+            f"{sel_year} CH₄ (t)": st.column_config.NumberColumn(format="localized"),
             "Share of facility total (%)": st.column_config.ProgressColumn(
                 format="%.2f%%", min_value=0,
                 max_value=float(display_fac["Share of facility total (%)"].max())
@@ -311,7 +341,7 @@ else:
             column_config={
                 "Emitting source": st.column_config.TextColumn(width="medium"),
                 "Sector": st.column_config.TextColumn(width="medium"),
-                f"{sel_year} CH₄ (t)": st.column_config.NumberColumn(format="%d"),
+                f"{sel_year} CH₄ (t)": st.column_config.NumberColumn(format="localized"),
                 "Share of jurisdiction (%)": st.column_config.ProgressColumn(
                     format="%.2f%%", min_value=0, max_value=float(display_top20["Share of jurisdiction (%)"].max()),
                 ),
