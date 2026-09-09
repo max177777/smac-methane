@@ -123,21 +123,22 @@ label_b = f"{display_name(loc_b)} ({COUNTRY_META[iso_b]['name']})"
 sec_a = _sector_df(iso_a, loc_a, year_a)
 sec_b = _sector_df(iso_b, loc_b, year_b)
 
-# Both panels share one y-axis scale by default. With independent axes each
-# chart auto-scales to its own maximum, so a jurisdiction emitting a fraction
-# as much still renders a full-height bar — the side-by-side layout invites a
-# visual comparison that the axes then quietly invalidate.
+# Each panel scales to its own maximum by default, so both breakdowns stay
+# readable — pairs can differ by 30x or more (Maryland's largest sector is
+# ~64 kt against Alberta's ~2.3 Mt), and on a shared axis the smaller one is
+# nearly flat and tells you nothing about its own composition.
 #
-# The trade-off is real though: pairs can differ by 30x or more (Maryland's
-# largest sector is ~64 kt against Alberta's ~2.3 Mt), and on a shared axis the
-# smaller one is nearly flat. So this is a toggle, defaulting to the honest
-# scale, rather than a decision made silently for the user either way.
+# The cost is that bar HEIGHTS are then not comparable across the two sides,
+# even though the side-by-side layout invites exactly that reading. The toggle
+# below switches to a shared axis for anyone who wants the absolute comparison;
+# the axis labels always show the real numbers either way.
 _shared_scale = st.checkbox(
     "Use the same scale on both charts",
-    value=True,
-    help="On by default so the two panels are directly comparable. Turn it off to "
-         "read the shape of a much smaller jurisdiction's breakdown — but then the "
-         "bar heights are no longer comparable between the two sides.",
+    value=False,
+    help="Off by default: each chart scales to its own maximum, so you can read the "
+         "shape of each jurisdiction's breakdown even when the two differ by orders "
+         "of magnitude. Turn it on to compare absolute bar heights between the two "
+         "sides — but note a much smaller jurisdiction will then look almost flat.",
 )
 _sector_ymax = max(
     [float(sec_a["total_emission"].max()) if not sec_a.empty else 0,
