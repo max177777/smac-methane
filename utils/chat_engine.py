@@ -111,6 +111,64 @@ def _mde_inventory_summary(iso: str, location: str | None) -> str | None:
     )
 
 
+# Questions about the assistant itself ("how do you work", "what can you do")
+# and bare pleasantries are NOT data questions. Attaching retrieved documents
+# and a time-series chart to them produced the worst output this tool has had —
+# asking "can you explain how you work" returned three pages of county
+# composting guidance and an emissions chart, none of it relevant.
+_META_RE = re.compile(
+    r"\b("
+    r"how (do|does|did) (you|this|it|the (tool|site|chat))\b"
+    r"|what (can|do) (you|this|it) (do|cover|know|use|have)\b"
+    r"|who (are|made) you\b|what are you\b"
+    r"|explain (yourself|how you|what you)\b"
+    r"|your (capabilit|source|limitation|method|data source)"
+    r"|where (do|does) (you|your data|the data) come from\b"
+    r"|are you (an? )?(ai|bot|llm|human)\b"
+    r"|how (accurate|reliable|current) are you\b"
+    r"|^(hi|hey|hello|thanks|thank you|help)\b"
+    r")",
+    re.I,
+)
+
+# Signals that the question is actually about emissions / policy / a place,
+# i.e. the kind of question retrieved documents and a chart genuinely serve.
+_DATA_RE = re.compile(
+    r"\b("
+    r"emission|methane|ch4|co2e|gwp|tonne|ton\b|mt\b|kt\b"
+    r"|sector|source|landfill|waste|agricultur|livestock|manure|enteric"
+    r"|oil|gas|coal|mining|power|industr|transport|building"
+    r"|trend|compare|comparison|rank|top|highest|biggest|largest"
+    r"|policy|policies|regulat|plan|action|mitigat|reduc|target|pledge"
+    r"|inventory|facility|facilities|plant|site"
+    r"|\b(19|20)\d{2}\b"
+    r")",
+    re.I,
+)
+
+
+def _question_intent(user_text: str, *, place_names: tuple[str, ...] = ()) -> str:
+    """'meta' -> about the tool itself; 'data' -> about emissions/policy/places;
+    'other' -> neither (short or ambiguous follow-up). Only 'data' questions get
+    retrieved documents and charts attached.
+
+    `place_names` lets a question that names the jurisdiction count as a data
+    question even with no topic keyword — "tell me about Alberta" has no
+    emissions vocabulary in it but plainly wants the data.
+    """
+    t = (user_text or "").strip()
+    if not t:
+        return "other"
+    if _META_RE.search(t):
+        return "meta"
+    if _DATA_RE.search(t):
+        return "data"
+    low = t.lower()
+    if any(p and p.lower() in low for p in place_names):
+        return "data"
+    return "other"
+
+
 def _select_charts(user_text: str, *, iso: str, location: str | None, is_loc: bool,
                    monthly, rank, target_year: int, subject: str,
                    sector_filter: str | None) -> list:
@@ -175,7 +233,10 @@ def _select_charts(user_text: str, *, iso: str, location: str | None, is_loc: bo
 
     # --- always keep the monthly series if nothing else fired, or if the
     #     question is explicitly about the trend ---
-    if wants_trend or not charts:
+    # Fall back to the monthly series only for questions a chart actually
+    # serves — a question about the tool itself gets no chart at all.
+    if wants_trend or (not charts and _question_intent(
+            user_text, place_names=(subject, COUNTRY_META[iso]["name"])) == "data"):
         charts.insert(0, ChatChart(
             kind="timeseries",
             caption=f"{subject} · monthly CH₄ tonnes · {DATA_RANGE_LABEL}",
@@ -248,13 +309,22 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
     # material (filtered by jurisdiction + sector), not to dictate the shape
     # of the response. Both the open-ended LLM answer and the scripted
     # fallback below use the same retrieved excerpts.
-    rag_hits = rag_search(
-        user_text,
-        iso=iso,
-        location=ctx.location if is_loc else None,
-        sector=sector_filter,
-        k=3,
-    )
+    #
+    # Skipped entirely for questions about the tool itself: retrieval will
+    # always return *something* (BM25 ranks, it doesn't judge relevance), so
+    # without this gate "how do you work" got three pages of county composting
+    # guidance stapled underneath.
+    intent = _question_intent(user_text, place_names=(subject, country_name))
+    if intent == "meta":
+        rag_hits = []
+    else:
+        rag_hits = rag_search(
+            user_text,
+            iso=iso,
+            location=ctx.location if is_loc else None,
+            sector=sector_filter,
+            k=3,
+        )
     rag_context = format_rag_context(rag_hits)
     has_dedicated_refs = is_loc and any(h["location"] == ctx.location for h in rag_hits)
     if rag_hits and not has_dedicated_refs:
@@ -332,7 +402,9 @@ def build_methane_response(user_text: str, ctx: MethaneContext) -> MethaneRespon
         asked_years = {int(m.group(0))
                        for m in re.finditer(r"\b(?:19|20)\d{2}\b", user_text)}
         asks_other_year = bool(asked_years) and target_year not in asked_years
-        if not already_stated and not asks_other_year:
+        # Also skip for questions about the tool itself — a figures card under
+        # "how do you work" is the same template residue as the rest.
+        if not already_stated and not asks_other_year and intent != "meta":
             insight = (
                 f"- {target_year} total: **{fmt_int(y_now * mult)} {unit}**\n"
                 f"- Year-over-year: **{yoy:+.2f}%**\n"
