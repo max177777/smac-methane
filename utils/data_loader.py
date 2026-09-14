@@ -24,6 +24,14 @@ DATA_PATH = Path(__file__).parent.parent / "data" / "SMAC_ch4_summary.csv"
 CURRENT_YEAR = 2025
 DATA_RANGE_LABEL = "2021–2026"
 
+# Which Climate TRACE snapshot this site is serving. Climate TRACE revises
+# historical figures between releases, so a number here can legitimately differ
+# from climatetrace.org today, or from what this site showed a few months ago —
+# stating the snapshot lets people account for that instead of assuming an
+# error. Update these two whenever the data is re-pulled.
+CT_SNAPSHOT_DATE = "31 August 2026"
+CT_API_VERSION = "v7"
+
 # Raw `name` values in the source CSV carry an admin-type suffix ("California State",
 # "Beijing Municipality"). Strip it for display; longest match first so e.g. "Union
 # Territory" doesn't get partially eaten by a shorter suffix.

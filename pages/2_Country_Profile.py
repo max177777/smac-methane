@@ -13,6 +13,7 @@ import streamlit as st
 from utils.theme import inject_theme, eyebrow, render_footer
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_COLORS, CURRENT_YEAR, DATA_RANGE_LABEL,
+    CT_SNAPSHOT_DATE, CT_API_VERSION,
     all_member_locations, member_status, location_yearly, location_monthly,
     smac_wide_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
     location_yoy_like_for_like,
@@ -42,9 +43,16 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<div class="smac-meta" style="margin-bottom:16px;">'
+    '<div class="smac-meta" style="margin-bottom:6px;">'
     'every button below is an actual SMAC member or observer &nbsp;·&nbsp; '
     'colored by country &nbsp;·&nbsp; A–Z by country, then by jurisdiction</div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    f'<div class="smac-meta" style="font-size:10px;margin-bottom:16px;opacity:0.8;">'
+    f'Climate TRACE snapshot: pulled {CT_SNAPSHOT_DATE} via API {CT_API_VERSION}. '
+    f'Climate TRACE revises historical figures between releases, so numbers here may '
+    f'differ from climatetrace.org today or from an earlier visit.</div>',
     unsafe_allow_html=True,
 )
 

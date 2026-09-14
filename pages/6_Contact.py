@@ -48,6 +48,17 @@ contact_card(
 
 st.markdown("<br>", unsafe_allow_html=True)
 
+# ============== IMPLEMENTATION ==============
+eyebrow("Implementation")
+st.markdown("<h3>Climate Group</h3>", unsafe_allow_html=True)
+contact_card(
+    "Jebi Rahman",
+    "Director of Global Implementation, Climate Group",
+    "jrahman@theclimategroup.org",
+)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
 # ============== RESEARCH ==============
 eyebrow("Research")
 st.markdown("<h3>Project Climate, UC Berkeley Law (CLEE)</h3>", unsafe_allow_html=True)

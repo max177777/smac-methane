@@ -8,7 +8,10 @@ a number here as more certain than it actually is.
 import streamlit as st
 
 from utils.theme import inject_theme, eyebrow, render_footer
-from utils.data_loader import SECTOR_ORDER, SECTOR_COLORS, load_subsector_raw
+from utils.data_loader import (
+    SECTOR_ORDER, SECTOR_COLORS, load_subsector_raw,
+    CT_SNAPSHOT_DATE, CT_API_VERSION,
+)
 
 
 inject_theme()
@@ -87,6 +90,54 @@ st.markdown(
 
 st.markdown("<br>", unsafe_allow_html=True)
 
+st.markdown(
+    '<p style="font-size:15px;line-height:1.7;color:var(--ink-soft);max-width:760px;">'
+    "<strong>Three things go into those estimates</strong>, and it's worth being precise "
+    "about the mix rather than calling it all &ldquo;satellite data&rdquo;:"
+    "</p>"
+    '<ul style="font-size:15px;line-height:1.7;color:var(--ink-soft);max-width:760px;">'
+    "<li><strong>Satellite and remote-sensing signals</strong> — direct observation of "
+    "plumes, thermal signatures, land cover and activity indicators.</li>"
+    "<li><strong>Global asset-level data</strong> — the locations of individual facilities, "
+    "their size, their technology and operating characteristics. This is what makes a "
+    "facility-by-facility ranking possible at all, rather than a national total split by "
+    "population or GDP.</li>"
+    "<li><strong>Machine learning and other statistical models</strong> — used to fill gaps "
+    "where direct observation isn't available, and to convert observed activity into an "
+    "emissions estimate.</li>"
+    "</ul>"
+    '<p style="font-size:15px;line-height:1.7;color:var(--ink-soft);max-width:760px;">'
+    "The full sector-by-sector methodology is published openly:"
+    "</p>",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<a href="https://github.com/climatetracecoalition" target="_blank" style="text-decoration:none;">'
+    '<div class="smac-card" style="padding:16px 20px;margin-bottom:20px;max-width:760px;">'
+    '<div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:14px;color:var(--ink);">'
+    'Climate TRACE methodology documentation \u2192</div>'
+    '<div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">'
+    'github.com/climatetracecoalition — the per-sector method docs behind every '
+    'estimate shown in this tool</div>'
+    '</div></a>',
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    f'<p style="font-size:13px;line-height:1.6;color:var(--ink-soft);max-width:760px;'
+    f'border-left:3px solid var(--line);padding-left:14px;">'
+    f"<strong>Which snapshot you're looking at.</strong> The figures on this site were "
+    f"pulled from Climate TRACE on <strong>{CT_SNAPSHOT_DATE}</strong> (API "
+    f"{CT_API_VERSION}). Climate TRACE improves its models continuously and revises "
+    f"historical estimates between releases, so a figure here can legitimately differ from "
+    f"climatetrace.org today, or from what this site showed a few months ago. That's a "
+    f"version difference, not an error in either place."
+    f"</p>",
+    unsafe_allow_html=True,
+)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
 # ============== SECTOR TAXONOMY MAPPING ==============
 eyebrow("Sector taxonomy")
 st.markdown(
@@ -153,11 +204,15 @@ st.markdown(
 )
 st.markdown(
     '<p style="font-size:12px;line-height:1.6;color:var(--ink-soft);max-width:760px;margin-top:12px;">'
-    "One grouping decision worth flagging: Climate TRACE treats mineral extraction "
-    "(coal mining, quarrying, metal ore mining) as its own top-level sector. We fold it into "
-    "<strong>Fossil Fuel Extraction &amp; Mining</strong>, because for methane specifically the "
-    "dominant signal there is coal-mine methane, which sits naturally alongside oil &amp; gas "
-    "fugitives rather than in a separate bucket."
+    "One grouping decision worth flagging: Climate TRACE already classifies "
+    "<em>coal-mining</em> under fossil fuels, so that isn't something we moved — it sits in "
+    "our <strong>Fossil Fuel Extraction &amp; Mining</strong> category exactly where Climate "
+    "TRACE puts it. What we did fold in is Climate TRACE's separate "
+    "<em>mineral-extraction</em> sector (copper, iron, bauxite, quarrying). For methane "
+    "specifically those contribute essentially nothing — together they account for under "
+    "0.02% of the category, and most report zero CH₄ outright — so giving them their own "
+    "top-level slot would add a visual category that is empty in every jurisdiction. If you "
+    "are looking at CO₂ rather than methane, that trade-off would not hold."
     "</p>",
     unsafe_allow_html=True,
 )
@@ -222,13 +277,25 @@ st.markdown(
 )
 st.markdown(
     '<p style="font-size:15px;line-height:1.7;color:var(--ink-soft);max-width:760px;">'
-    "Use this tool to get a directional answer to two questions for your jurisdiction: "
-    "<strong>which sectors dominate our methane profile</strong>, and "
-    "<strong>which subnational units are the largest contributors</strong>. That's enough to "
+    "Use this tool to get a directional answer to three questions for your jurisdiction: "
+    "<strong>which sectors dominate our methane profile</strong>, "
+    "<strong>which subnational units and facilities are the largest contributors</strong>, and "
+    "<strong>where the biggest opportunities for decarbonization are</strong>. That's enough to "
     "tell you where a mitigation strategy or a deeper, verified inventory effort would have "
-    "the most impact. It is deliberately not designed to set binding targets, verify "
-    "compliance, or replace a jurisdiction's own regulatory inventory — for that, pair this "
-    "with facility-level verification and your own reporting processes."
+    "the most impact."
+    "</p>"
+    '<p style="font-size:15px;line-height:1.7;color:var(--ink-soft);max-width:760px;">'
+    "There's a second use worth knowing about. Official inventories are published in "
+    "multi-year cycles, so there is usually a long gap between the last verified figure and "
+    "the present. Because Climate TRACE updates continuously, it can show how emissions have "
+    "moved <strong>between inventories, or while an inventory update is still underway</strong> "
+    "— which means it can give an early read on whether a methane abatement action is working "
+    "before the next official inventory would confirm it."
+    "</p>"
+    '<p style="font-size:15px;line-height:1.7;color:var(--ink-soft);max-width:760px;">'
+    "It is deliberately not designed to set binding targets, verify compliance, or replace a "
+    "jurisdiction's own regulatory inventory — for that, pair this with facility-level "
+    "verification and your own reporting processes."
     "</p>",
     unsafe_allow_html=True,
 )
