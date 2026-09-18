@@ -35,7 +35,7 @@ def _slug(iso: str, loc: str) -> str:
 all_locs = all_member_locations()  # [(iso, location), ...] sorted by country, then location
 
 if "smac_jurisdiction" not in st.session_state:
-    st.session_state.smac_jurisdiction = ("USA", "California")
+    st.session_state.smac_jurisdiction = ("USA", "Maryland")
 
 eyebrow("Explore the data")
 st.markdown(
