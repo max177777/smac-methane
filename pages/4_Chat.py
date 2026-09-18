@@ -38,14 +38,10 @@ def _fold_accents(text: str) -> str:
 
 
 # ============== STATE ==============
-# Start with NO jurisdiction selected, so the picker renders empty with its
-# "Search jurisdictions…" placeholder. A pre-filled value reads as a fixed
-# label rather than a search box, which is why people didn't realise they
-# could type into it.
 if "chat_iso" not in st.session_state:
-    st.session_state.chat_iso = None
+    st.session_state.chat_iso = "USA"
 if "chat_location" not in st.session_state:
-    st.session_state.chat_location = None
+    st.session_state.chat_location = "Maryland"
 if "chat_year" not in st.session_state:
     st.session_state.chat_year = "all"
 if "chat_sector" not in st.session_state:
@@ -123,12 +119,11 @@ def methane_sidebar():
             return base if folded == row["location"] else f"{base}  ({folded})"
 
         label_map = {r["key"]: _search_label(r) for _, r in flat.iterrows()}
-        current_key = (f"{st.session_state.chat_location}||{st.session_state.chat_iso}"
-                       if st.session_state.chat_location else None)
+        current_key = f"{st.session_state.chat_location}||{st.session_state.chat_iso}"
         picked_key = st.selectbox(
             "jurisdiction_select",
             options=key_options,
-            index=key_options.index(current_key) if current_key in key_options else None,
+            index=key_options.index(current_key) if current_key in key_options else 0,
             format_func=lambda k: label_map[k],
             label_visibility="collapsed",
             key="sb_jurisdiction",
@@ -138,15 +133,6 @@ def methane_sidebar():
                  "this selection (plus year and sector below) filters what gets "
                  "retrieved from SMAC's document library and grounds the answer.",
         )
-        if picked_key is None:
-            st.markdown(
-                '<div class="smac-meta" style="font-size:10px;margin:-4px 0 18px;'
-                'line-height:1.5;">Pick a jurisdiction to ground the answers in its '
-                'data — start typing to search.</div>',
-                unsafe_allow_html=True,
-            )
-            return   # nothing else in the sidebar means anything without one
-
         row = flat[flat["key"] == picked_key].iloc[0]
         if row["location"] != st.session_state.chat_location or row["iso3_country"] != st.session_state.chat_iso:
             st.session_state.chat_iso = row["iso3_country"]
@@ -223,25 +209,6 @@ def methane_sidebar():
 
 
 methane_sidebar()
-
-
-# Nothing below can be built without a jurisdiction — the context bar, the
-# grounding facts and the retrieval filters all key off it. Show a short prompt
-# and stop rather than rendering a half-empty page.
-if not st.session_state.chat_iso or not st.session_state.chat_location:
-    st.markdown(
-        '<div style="padding:48px 0;max-width:620px;">'
-        '<div class="smac-eyebrow">Get started</div>'
-        '<h3 style="margin-bottom:10px;">Choose a SMAC jurisdiction.</h3>'
-        '<p style="font-size:14px;line-height:1.7;color:var(--ink-soft);">'
-        'Use the search box in the sidebar — start typing a state, province or region '
-        '(for example <em>Mary</em> for Maryland) and pick it from the list. Answers here '
-        'are grounded in that jurisdiction\'s Climate TRACE data and whatever SMAC '
-        'documents we hold for it, so the chat needs to know which one you mean.'
-        '</p></div>',
-        unsafe_allow_html=True,
-    )
-    st.stop()   # no footer on this page by design — see note above the chat input
 
 
 # ============== UNDER-CONSTRUCTION NOTICE ==============
