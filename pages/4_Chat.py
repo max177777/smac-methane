@@ -15,7 +15,7 @@ import streamlit as st
 from utils.theme import inject_theme
 from utils.data_loader import (
     COUNTRY_META, list_all_locations_flat,
-    DATA_RANGE_LABEL, display_name, SECTOR_ORDER,
+    DATA_RANGE_LABEL, display_name, SECTOR_ORDER, under_construction_note,
 )
 from utils.chat_engine import MethaneContext, build_methane_response, ChatBlock
 from utils.llm import has_llm
@@ -211,6 +211,19 @@ def methane_sidebar():
 methane_sidebar()
 
 
+# ============== UNDER-CONSTRUCTION NOTICE ==============
+# The Explorer page withholds these jurisdictions entirely; the chat still
+# answers (the underlying Climate TRACE numbers are real) but says up front
+# that a fuller official inventory isn't reconciled in yet, so nobody reads a
+# single-source figure as the settled answer.
+_uc_note = under_construction_note(st.session_state.chat_iso, st.session_state.chat_location)
+if _uc_note:
+    st.warning(
+        f"{_uc_note}\n\nAnswers below use Climate TRACE only and don't yet reflect that "
+        f"inventory — treat them as provisional for this jurisdiction.",
+        icon="🚧",
+    )
+
 # ============== CONTEXT BAR ==============
 iso = st.session_state.chat_iso
 loc = st.session_state.chat_location
@@ -315,9 +328,13 @@ def render_methane_message(msg: dict):
 
 # ============== SUGGESTED CHIPS ==============
 def methane_chips():
+    # These are examples of what can be asked, so they shouldn't smuggle in a
+    # judgement. "Why is X so high?" presumes a verdict — high relative to
+    # what? — that the data doesn't support and that reads badly to a
+    # jurisdiction seeing its own name in the sentence.
     return [
         f"Show {loc_display}'s methane trend",
-        f"Why is {loc_display} so high?",
+        f"Which sectors drive {loc_display}'s emissions?",
         f"What policy fits {loc_display}?",
         f"Top emission sources in {loc_display}",
     ]

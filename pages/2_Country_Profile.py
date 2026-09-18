@@ -13,7 +13,7 @@ import streamlit as st
 from utils.theme import inject_theme, eyebrow, render_footer
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_COLORS, CURRENT_YEAR, DATA_RANGE_LABEL,
-    CT_SNAPSHOT_DATE, CT_API_VERSION,
+    CT_SNAPSHOT_DATE, CT_API_VERSION, under_construction_note,
     all_member_locations, member_status, location_yearly, location_monthly,
     smac_wide_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
     location_yoy_like_for_like,
@@ -92,6 +92,54 @@ loc_display = display_name(loc)
 meta = COUNTRY_META[iso]
 status = member_status(iso, loc)
 status_label = {"member": "● SMAC Member", "observer": "○ SMAC Observer"}.get(status, "")
+
+# ============== UNDER CONSTRUCTION GATE ==============
+# Some jurisdictions maintain their own detailed inventory. Until that's
+# reconciled against Climate TRACE, showing the Climate TRACE figure alone
+# would present one of two disagreeing answers as if it were settled.
+_uc = under_construction_note(iso, loc)
+if _uc:
+    st.markdown(
+        f'<div class="smac-meta" style="display:flex;align-items:center;gap:10px;">'
+        f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;'
+        f'background:{COUNTRY_COLORS.get(iso, "#0e9d6c")};"></span>'
+        f'{meta["name"]} &nbsp;·&nbsp; {meta["region"]}</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"<h1 style='font-size:3.4rem;margin-top:8px;margin-bottom:6px;'>{loc_display}</h1>",
+        unsafe_allow_html=True,
+    )
+    if status_label:
+        st.markdown(f'<span class="smac-pill">{status_label}</span>', unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="smac-card" style="padding:26px 30px;border-left:4px solid var(--copper);'
+        f'max-width:780px;">'
+        f'<div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:16px;'
+        f'margin-bottom:8px;">🚧 Under construction</div>'
+        f'<p style="font-size:14.5px;line-height:1.7;color:var(--ink-soft);margin-bottom:12px;">'
+        f'{_uc}</p>'
+        f'<p style="font-size:13px;line-height:1.7;color:var(--ink-soft);margin:0;">'
+        f'We\'ve held this profile back rather than publish the Climate TRACE estimate on its '
+        f'own, because {loc_display} maintains a more granular official inventory and the two '
+        f'do not yet line up. Publishing one without reconciling the other would imply a '
+        f'settled figure that does not exist yet.</p>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(
+        '<div class="smac-meta">'
+        'Work on a jurisdiction inventory we should be reading? See '
+        '<strong>Contact</strong> — we\'d like to hear from you.</div>',
+        unsafe_allow_html=True,
+    )
+    if st.button("Go to Contact →", key="uc_contact"):
+        st.switch_page("pages/6_Contact.py")
+    render_footer()
+    st.stop()
 
 # ============== HEADER ==============
 YEARS = list(range(2021, CURRENT_YEAR + 2))  # includes the partial current-year+1 (2026)

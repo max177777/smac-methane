@@ -30,6 +30,22 @@ DATA_RANGE_LABEL = "2021–2026"
 # stating the snapshot lets people account for that instead of assuming an
 # error. Update these two whenever the data is re-pulled.
 CT_SNAPSHOT_DATE = "31 August 2026"
+
+# Jurisdictions whose profile is intentionally withheld while we reconcile a
+# richer official inventory against the Climate TRACE figures. Showing only the
+# Climate TRACE number for a jurisdiction that maintains its own detailed
+# inventory invites exactly the comparison we can't yet stand behind, so the
+# page says so instead of quietly showing the weaker of two answers.
+UNDER_CONSTRUCTION: dict[tuple[str, str], str] = {
+    ("USA", "California"): (
+        "California methane emissions data is under construction as we homogenize "
+        "Climate TRACE data and California's more detailed emissions inventory."
+    ),
+}
+
+
+def under_construction_note(iso: str, location: str) -> str | None:
+    return UNDER_CONSTRUCTION.get((iso, location))
 CT_API_VERSION = "v7"
 
 # Raw `name` values in the source CSV carry an admin-type suffix ("California State",

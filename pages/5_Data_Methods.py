@@ -300,4 +300,19 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+st.markdown("<br>", unsafe_allow_html=True)
+st.markdown(
+    '<p style="font-size:14px;line-height:1.7;color:var(--ink-soft);max-width:760px;'
+    'border-left:3px solid var(--mint);padding-left:14px;">'
+    "<strong>Think a number here is wrong?</strong> Tell us. Where a jurisdiction publishes "
+    "its own inventory, that is usually the more authoritative figure, and we would rather "
+    "integrate it than have this tool quietly disagree with it. See the "
+    "<strong>Contact</strong> page for how to send a correction or an inventory."
+    "</p>",
+    unsafe_allow_html=True,
+)
+if st.button("Go to Contact →", key="dm_contact"):
+    st.switch_page("pages/6_Contact.py")
+
+
 render_footer()
