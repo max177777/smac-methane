@@ -2,7 +2,7 @@
 SMAC Explorer — the data page.
 Leads straight into jurisdiction selection: pick a SMAC member/observer and get
 its KPIs, time series, sector breakdown, top emitting facilities, and a
-Methane Action Plan. The "what is SMAC" material lives on the Overview page —
+existing action plans. The "what is SMAC" material lives on the Overview page —
 members coming here already know what SMAC is, they're here for their numbers.
 """
 
@@ -16,7 +16,7 @@ from utils.data_loader import (
     CT_SNAPSHOT_DATE, CT_API_VERSION, under_construction_note,
     all_member_locations, member_status, location_yearly, location_monthly,
     smac_wide_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
-    location_yoy_like_for_like,
+    location_yoy_like_for_like, has_location_data, location_subsectors, SECTOR_ORDER,
     top_point_sources, top_facility_sources, fmt_int, fmt_mt, pct_change, display_name,
 )
 from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans
@@ -138,6 +138,40 @@ if _uc:
     )
     if st.button("Go to Contact →", key="uc_contact"):
         st.switch_page("pages/6_Contact.py")
+    render_footer()
+    st.stop()
+
+# ============== DATA PENDING GATE ==============
+# A newly joined member is on the roster before its Climate TRACE rows are
+# merged in (scripts/add_jurisdiction.py). Without this, every KPI below would
+# render as 0.00 Mt — which reads as a real (and absurd) figure, not a gap.
+if not has_location_data(iso, loc):
+    st.markdown(
+        f'<div class="smac-meta" style="display:flex;align-items:center;gap:10px;">'
+        f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;'
+        f'background:{COUNTRY_COLORS.get(iso, "#0e9d6c")};"></span>'
+        f'{meta["name"]} &nbsp;·&nbsp; {meta["region"]}</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"<h1 style='font-size:3.4rem;margin-top:8px;margin-bottom:6px;'>{loc_display}</h1>",
+        unsafe_allow_html=True,
+    )
+    if status_label:
+        st.markdown(f'<span class="smac-pill">{status_label}</span>', unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="smac-card" style="padding:26px 30px;border-left:4px solid var(--mint);'
+        f'max-width:780px;">'
+        f'<div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:16px;'
+        f'margin-bottom:8px;">Welcome to SMAC — data being added</div>'
+        f'<p style="font-size:14.5px;line-height:1.7;color:var(--ink-soft);margin:0;">'
+        f'{loc_display} joined the coalition after our last Climate TRACE data pull '
+        f'({CT_SNAPSHOT_DATE}). Its emissions profile will appear here as soon as its '
+        f'figures are merged in.</p>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
     render_footer()
     st.stop()
 
@@ -311,6 +345,82 @@ with col_b:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
+# ============== SECTOR DRILL-DOWN ==============
+# Requested by Jalisco: the 8 broad categories hide the split that matters
+# for policy inside a sector — above all, how much of Agriculture is enteric
+# fermentation (and on pasture vs. in cattle operations) versus manure or rice.
+# Built from the 68 Climate TRACE sub-sectors already in SMAC_ch4_subsectors.csv.
+if not sec.empty:
+    eyebrow("Inside a sector")
+    _present = [s for s in SECTOR_ORDER
+                if s in set(sec.loc[sec["total_emission"] > 0, "sector"])]
+    _default = "Agriculture" if "Agriculture" in _present else (_present[0] if _present else None)
+    if _default:
+        dd_l, dd_r = st.columns([1, 2.2], gap="large")
+        with dd_l:
+            dd_sector = st.selectbox(
+                "Sector to break down", options=_present,
+                index=_present.index(_default), key="smac_drill_sector",
+            )
+        sub_df = location_subsectors(iso, loc, dd_sector, sel_year)
+        with dd_l:
+            if not sub_df.empty:
+                sec_total = float(sub_df["total_emission"].sum())
+                sec_share = float(sub_df["share_of_total"].sum())
+                st.markdown(
+                    f'<div style="font-family:Quicksand,sans-serif;font-size:26px;font-weight:700;'
+                    f'margin-top:6px;">{fmt_int(sec_total)} t</div>'
+                    f'<div class="smac-meta" style="font-size:11px;">{dd_sector} CH₄ in {sel_year} · '
+                    f'{sec_share:.1f}% of {loc_display}\'s total</div>',
+                    unsafe_allow_html=True,
+                )
+                if dd_sector == "Agriculture":
+                    ent = sub_df[sub_df["sub_sector"].str.startswith("enteric-fermentation")]
+                    if not ent.empty:
+                        st.markdown(
+                            f'<div class="smac-card" style="padding:14px 16px;margin-top:14px;">'
+                            f'<div class="smac-meta" style="font-size:10px;">enteric fermentation</div>'
+                            f'<div style="font-family:Quicksand,sans-serif;font-size:22px;font-weight:700;">'
+                            f'{ent["share_of_sector"].sum():.1f}% <span style="font-size:12px;font-weight:400;'
+                            f'color:var(--ink-soft);">of agriculture</span></div>'
+                            f'<div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">'
+                            f'{fmt_int(ent["total_emission"].sum())} t CH₄ · '
+                            f'{ent["share_of_total"].sum():.1f}% of all {loc_display} methane</div>'
+                            f'</div>',
+                            unsafe_allow_html=True,
+                        )
+        with dd_r:
+            st.markdown(f"<h3>{dd_sector} by sub-sector · {sel_year}</h3>", unsafe_allow_html=True)
+            if sub_df.empty:
+                st.info(f"No {sel_year} sub-sector detail for {dd_sector} in {loc_display}.")
+            else:
+                import plotly.graph_objects as go
+                _d = sub_df.sort_values("total_emission", ascending=True)
+                _fig = go.Figure(go.Bar(
+                    x=_d["total_emission"], y=_d["sub_sector_label"], orientation="h",
+                    marker_color=SECTOR_COLORS.get(dd_sector, "#b9c4bd"),
+                    customdata=_d[["share_of_sector", "share_of_total"]].values,
+                    hovertemplate="<b>%{y}</b><br>%{x:,.0f} t CH₄<br>"
+                                  "%{customdata[0]:.1f}% of sector · %{customdata[1]:.1f}% of total"
+                                  "<extra></extra>",
+                ))
+                _fig.update_layout(
+                    height=max(180, 34 * len(_d) + 50), margin=dict(l=0, r=10, t=6, b=10),
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                    xaxis=dict(title="CH₄ (t)", tickformat=",.0f", gridcolor="#e2e9e5",
+                               tickfont=dict(size=10, family="Quicksand, sans-serif")),
+                    yaxis=dict(tickfont=dict(size=11, family="Inter, sans-serif")),
+                    font=dict(family="Inter, sans-serif"),
+                )
+                st.plotly_chart(_fig, use_container_width=True, config={"displayModeBar": False})
+                st.markdown(
+                    '<div class="smac-meta" style="font-size:10px;">Climate TRACE sub-sectors. '
+                    '"Pasture" vs "operation" separates grazing cattle from cattle in feedlots '
+                    'and dairies — the two call for different mitigation levers.</div>',
+                    unsafe_allow_html=True,
+                )
+    st.markdown("<br>", unsafe_allow_html=True)
+
 # ============== TOP 20 EMITTING SOURCES ==============
 eyebrow("Top emitting sources")
 
@@ -433,7 +543,6 @@ else:
             )
 
     st.markdown("<br>", unsafe_allow_html=True)
-    eyebrow("Methane Action Plan")
 
     official_plans = get_official_plans(iso, loc)
     rag_hits = rag_search(
@@ -443,14 +552,26 @@ else:
     dedicated_hits = [h for h in rag_hits if h["location"] == loc]
     has_dedicated = bool(official_plans) or bool(dedicated_hits)
 
-    if has_dedicated:
-        st.markdown(f"<h3>{loc_display}'s actual methane action plan</h3>", unsafe_allow_html=True)
+    # Wording follows what is actually on file. The old "Methane Action Plan"
+    # label implied SMAC had produced a plan for every jurisdiction, and the
+    # "actual methane action plan" heading overstated documents that are often
+    # broader climate plans (e.g. Maryland's CCAP, Jalisco's PEACC).
+    if official_plans:
+        eyebrow("Existing Action Plans")
+        st.markdown(f"<h3>Published plans and strategies for {loc_display}</h3>",
+                    unsafe_allow_html=True)
+    elif dedicated_hits:
+        eyebrow("Existing Plans & Documents")
+        st.markdown(f"<h3>What {loc_display}'s own documents say</h3>", unsafe_allow_html=True)
     else:
-        st.markdown(f"<h3>Quick actions for {loc_display}, by top source</h3>", unsafe_allow_html=True)
+        eyebrow("Suggested Starting Actions")
+        st.markdown(f"<h3>No published plan on file for {loc_display} — starting points by top source</h3>",
+                    unsafe_allow_html=True)
 
     if official_plans:
         st.markdown(
-            '<div class="smac-meta" style="margin-bottom:10px;">official external plan(s) on file</div>',
+            '<div class="smac-meta" style="margin-bottom:10px;">published by the jurisdiction or its agencies — '
+            'not produced by SMAC</div>',
             unsafe_allow_html=True,
         )
         for p in official_plans:
@@ -482,7 +603,7 @@ else:
     if not has_dedicated:
         st.markdown(
             '<div class="smac-meta" style="margin-bottom:14px;">'
-            f'no dedicated action plan indexed for {loc_display} yet — showing generic '
+            f'we have no published action plan for {loc_display} on file yet — showing generic '
             'best-practice actions for each top sector instead, plus the closest matches '
             'from our general solution-bank library</div>',
             unsafe_allow_html=True,

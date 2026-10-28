@@ -24,4 +24,15 @@ policy guidance for subnational governments.
   automatically — see `scripts/refresh_climatetrace_data.py` for the pipeline
   and its one-time setup checklist.
 
-Source: https://github.com/max177777/smac-methane-app
+Source: https://github.com/max177777/smac-methane
+
+## Adding a new SMAC member (e.g. Catalonia)
+
+1. Add it to `MEMBER_ROSTER` in `utils/data_loader.py` and in
+   `scripts/fetch_point_sources.py` (plus a map pin in `CARBON_MAPPER_LINKS`).
+   Until its data is merged, its page shows a "data being added" notice.
+2. Download the jurisdiction's Climate TRACE CSV and merge it:
+   `python scripts/add_jurisdiction.py --iso ESP --location "Cataluña" <file.csv>`
+3. Fetch its named facilities:
+   `python scripts/fetch_point_sources.py --only "ESP||Cataluña"`
+4. Commit the updated `data/` files and push.

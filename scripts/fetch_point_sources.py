@@ -27,9 +27,18 @@ resulting CSV, deploy. Same pattern as build_subsector_data.py.
 
     python -m pip install pandas requests
     python scripts/fetch_point_sources.py
+
+ADDING ONE NEW JURISDICTION (e.g. Catalonia) without re-fetching everyone:
+
+    python scripts/fetch_point_sources.py --only "ESP||Cataluña"
+
+fetches just that jurisdiction and merges it into the existing CSV (its old
+rows, if any, are replaced). Missing GADM ids are resolved and added to the
+cache; ids already in the cache are left alone.
 """
 
 from pathlib import Path
+import argparse
 import json
 import sys
 import time
@@ -75,6 +84,7 @@ SLEEP = 0.35         # be polite to a beta API
 ADMIN_SEARCH_OVERRIDES = {
     "Delhi [New Delhi]": ["NCT of Delhi", "Delhi [New Delhi]", "New Delhi", "Delhi"],
     "Palembang City": "Palembang",
+    "Cataluña": ["Cataluña", "Catalonia", "Catalunya"],
 }
 
 
@@ -131,6 +141,7 @@ MEMBER_ROSTER: dict[str, list[dict]] = {
     ],
     "ESP": [
         {"location": "Andalucía", "status": "member"},
+        {"location": "Cataluña", "status": "member"},
     ],
     "ITA": [
         {"location": "Lombardia", "status": "observer"},
@@ -241,18 +252,28 @@ def resolve_gadm_id(iso, location):
     return pick.get("id"), pick.get("name")
 
 
-def build_gadm_map():
-    if GADM_CACHE.exists():
-        print(f"Using cached GADM ids from {GADM_CACHE.name} "
-              f"(delete it to re-resolve)\n")
-        return json.loads(GADM_CACHE.read_text(encoding="utf-8"))
-
-    print("Phase 1: resolving GADM ids for each SMAC jurisdiction\n")
+def build_gadm_map(only: set[str] | None = None):
+    """Cached ids are reused; only roster entries missing from the cache are
+    looked up, so adding one member doesn't re-resolve the other 36. Delete
+    the cache file to force a full re-resolve."""
     mapping = {}
+    if GADM_CACHE.exists():
+        mapping = json.loads(GADM_CACHE.read_text(encoding="utf-8"))
+        print(f"Using cached GADM ids from {GADM_CACHE.name} "
+              f"(delete it to re-resolve everything)")
+    todo = {(iso, row["location"]) for iso, roster in MEMBER_ROSTER.items() for row in roster
+            if f"{iso}||{row['location']}" not in mapping
+            and (only is None or f"{iso}||{row['location']}" in only)}
+    if not todo:
+        print()
+        return mapping
+
+    print(f"Phase 1: resolving {len(todo)} GADM id(s) not in the cache\n")
     for iso, roster in MEMBER_ROSTER.items():
-        print(f"{COUNTRY_META[iso]['name']} ({iso})")
         for row in roster:
             loc = row["location"]
+            if (iso, loc) not in todo:
+                continue
             gid, matched = resolve_gadm_id(iso, loc)
             if gid:
                 print(f"    {loc:24s} -> {gid}  ({matched})")
@@ -293,7 +314,19 @@ def fetch_sources(gadm_id, year):
 
 
 def main():
-    gadm_map = build_gadm_map()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--only", action="append", metavar='"ISO||Location"',
+                    help='fetch just these jurisdictions (repeatable) and merge them into '
+                         'the existing CSV, e.g. --only "ESP||Cataluña"')
+    args = ap.parse_args()
+    only = set(args.only) if args.only else None
+    if only:
+        roster_keys = {f"{i}||{r['location']}" for i, rs in MEMBER_ROSTER.items() for r in rs}
+        unknown = only - roster_keys
+        if unknown:
+            sys.exit(f"Not in MEMBER_ROSTER: {sorted(unknown)}")
+
+    gadm_map = build_gadm_map(only)
     if not gadm_map:
         sys.exit("No GADM ids resolved — cannot fetch facilities.")
 
@@ -303,8 +336,11 @@ def main():
     for iso, roster in MEMBER_ROSTER.items():
         for row in roster:
             loc = row["location"]
+            if only is not None and f"{iso}||{loc}" not in only:
+                continue
             gid = gadm_map.get(f"{iso}||{loc}")
             if not gid:
+                print(f"  {loc} ({iso}): no GADM id — skipped")
                 continue
             per_year = []
             for year in YEARS:
@@ -338,6 +374,12 @@ def main():
 
     result = pd.concat(frames, ignore_index=True)
     result = result.dropna(subset=["ch4_tonnes"])
+    if only is not None and OUT_PATH.exists():
+        # merge: keep everyone else's rows, replace the requested jurisdictions
+        old = pd.read_csv(OUT_PATH)
+        old_keys = old["iso3_country"] + "||" + old["location"]
+        old = old[~old_keys.isin(only)]
+        result = pd.concat([old, result], ignore_index=True)
     result = result.sort_values(
         ["iso3_country", "location", "year", "ch4_tonnes"],
         ascending=[True, True, True, False])

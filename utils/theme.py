@@ -573,6 +573,8 @@ def render_footer():
     link_cols = st.columns(6)
     with link_cols[0]:
         st.page_link("pages/1_Overview.py", label="About", icon=None)
+    with link_cols[1]:
+        st.page_link("pages/7_FAQ.py", label="FAQ", icon=None)
     with link_cols[5]:
         st.page_link("pages/6_Contact.py", label="Contact", icon=None)
 

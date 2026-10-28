@@ -68,6 +68,9 @@ def _clean_location_name(raw: str) -> str:
 # (needed for joins/lookups), but the UI shows the right-hand value instead.
 _DISPLAY_NAME_OVERRIDES = {
     "Delhi [New Delhi]": "Delhi",
+    # Climate TRACE / GADM name the region "Cataluña"; the coalition and most
+    # English-language readers know it as Catalonia.
+    "Cataluña": "Catalonia",
 }
 
 
@@ -143,8 +146,8 @@ SECTOR_COLORS = {
     "Buildings (Onsite Fuel Use)": "#b9c4bd",
 }
 
-# Quick-action mitigation bullets per sector category, used to build each jurisdiction's
-# Methane Action Plan from its top emission sources. Generic best-practice actions —
+# Quick-action mitigation bullets per sector category, shown as 'Suggested Starting
+# Actions' when a jurisdiction has no published plan on file — built from its top emission sources. Generic best-practice actions —
 # not jurisdiction-specific policy (that lives in policy_content.py).
 SECTOR_ACTIONS = {
     "Agriculture": [
@@ -220,6 +223,10 @@ MEMBER_ROSTER: dict[str, list[dict]] = {
     ],
     "ESP": [
         {"location": "Andalucía", "status": "member"},
+        # Joined after the Aug 2026 data pull. Its rows are merged in with
+        # scripts/add_jurisdiction.py; until then has_location_data() is False
+        # and the pages show a "data being added" notice instead of zeros.
+        {"location": "Cataluña", "status": "member"},
     ],
     "ITA": [
         {"location": "Lombardia", "status": "observer"},
@@ -303,6 +310,16 @@ def load_raw() -> pd.DataFrame:
     df["year"] = df["date"].dt.year
     df["month"] = df["date"].dt.month
     return df[["iso3_country", "location", "sector", "year", "month", "date", "total_emission"]]
+
+
+@st.cache_data(show_spinner=False)
+def has_location_data(iso: str, location: str) -> bool:
+    """True once a roster jurisdiction actually has rows in the summary CSV.
+    A newly added member (e.g. Catalonia) sits in MEMBER_ROSTER before its
+    data is merged in — pages use this to show a 'data pending' notice rather
+    than a wall of zeros that would read as real figures."""
+    df = load_raw()
+    return bool(((df["iso3_country"] == iso) & (df["location"] == location)).any())
 
 
 @st.cache_data(show_spinner=False)
@@ -611,6 +628,32 @@ def top_point_sources(iso: str, location: str, year: int = CURRENT_YEAR,
     top.attrs["jurisdiction_total"] = float(jurisdiction_total)
     top.attrs["top_n_share_pct"] = float(top["share"].sum())
     return top
+
+
+@st.cache_data(show_spinner=False)
+def location_subsectors(iso: str, location: str, sector: str,
+                        year: int = CURRENT_YEAR) -> pd.DataFrame:
+    """Sub-sector breakdown INSIDE one broad sector, for one jurisdiction/year —
+    e.g. Agriculture split into enteric fermentation (cattle on pasture /
+    cattle in operations / other livestock), manure management, rice, etc.
+    Columns: sub_sector, sub_sector_label, total_emission, share_of_sector (%),
+    share_of_total (% of the jurisdiction's all-sector total). Zero rows dropped."""
+    df = load_subsector_raw()
+    sub = df[(df["iso3_country"] == iso) & (df["location"] == location) & (df["year"] == year)]
+    cols = ["sub_sector", "sub_sector_label", "total_emission", "share_of_sector", "share_of_total"]
+    if sub.empty:
+        return pd.DataFrame(columns=cols)
+    juris_total = float(sub["total_emission"].sum())
+    sec = sub[sub["sector"] == sector]
+    agg = (
+        sec.groupby(["sub_sector", "sub_sector_label"], as_index=False)["total_emission"].sum()
+        .sort_values("total_emission", ascending=False)
+    )
+    agg = agg[agg["total_emission"] > 0].reset_index(drop=True)
+    sec_total = float(agg["total_emission"].sum())
+    agg["share_of_sector"] = agg["total_emission"] / sec_total * 100 if sec_total else 0.0
+    agg["share_of_total"] = agg["total_emission"] / juris_total * 100 if juris_total else 0.0
+    return agg[cols]
 
 
 # ============== TRUE POINT SOURCES (individual facilities) ==============

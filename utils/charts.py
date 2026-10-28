@@ -10,7 +10,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from utils.data_loader import COUNTRY_META, COUNTRY_COLORS
+from utils.data_loader import COUNTRY_META, COUNTRY_COLORS, display_name
 from utils.policy_content import all_jurisdiction_coords, get_jurisdiction_coords
 
 
@@ -322,7 +322,7 @@ def jurisdiction_map_plotly(highlight: tuple[str, str] | None = None, height: in
     df = pd.DataFrame(coords)
     df["country"] = df["iso3"].map(lambda i: COUNTRY_META[i]["name"])
     df["color"] = df["iso3"].map(lambda i: COUNTRY_COLORS.get(i, MOSS))
-    df["label"] = df["location"] + ", " + df["country"]
+    df["label"] = df["location"].map(display_name) + ", " + df["country"]
 
     fig = go.Figure()
 
@@ -335,7 +335,7 @@ def jurisdiction_map_plotly(highlight: tuple[str, str] | None = None, height: in
         fig.add_trace(go.Scattermap(
             lat=[lat], lon=[lon], mode="markers",
             marker=dict(size=22, color=COUNTRY_COLORS.get(h_iso, MOSS)),
-            text=[f"{h_loc}, {COUNTRY_META[h_iso]['name']}"],
+            text=[f"{display_name(h_loc)}, {COUNTRY_META[h_iso]['name']}"],
             hovertemplate="<b>%{text}</b><extra></extra>",
         ))
         fig.update_layout(

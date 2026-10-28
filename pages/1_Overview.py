@@ -8,12 +8,14 @@ from utils.theme import inject_theme, eyebrow, dot_logo, dark_band, render_foote
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_ORDER, all_countries_year_total, CURRENT_YEAR, DATA_RANGE_LABEL,
     MEMBER_ROSTER, total_member_counts, total_months_of_data, load_subsector_raw,
-    country_monthly, country_yearly, fmt_mt, pct_change,
+    country_monthly, country_yearly, fmt_mt, pct_change, display_name,
 )
 from utils.charts import sparkline_plotly, jurisdiction_map_plotly
 
 
 inject_theme()
+
+_n_roster = sum(len(v) for v in MEMBER_ROSTER.values())
 
 # ============== HERO ==============
 col1, col2 = st.columns([1.4, 1], gap="large")
@@ -36,10 +38,10 @@ with col1:
         '<p style="font-family:Inter,sans-serif;font-size:18px;line-height:1.6;'
         'color:var(--ink-soft);max-width:520px;margin-top:24px;font-weight:400;">'
         "The SMAC Methane Inventory Tool tracks methane emissions across every actual "
-        "Subnational Methane Action Coalition member and observer jurisdiction — 36 "
-        "states, provinces, and regions across 15 countries — from 2021 through 2026, "
-        "paired with a chat that reasons through IPCC GWP frameworks and policy "
-        "context."
+        "Subnational Methane Action Coalition member and observer jurisdiction — "
+        f"{_n_roster} states, provinces, and regions across {len(COUNTRY_ORDER)} countries "
+        "— from 2021 through 2026, paired with a chat that reasons through IPCC GWP "
+        "frameworks and policy context."
         "</p>",
         unsafe_allow_html=True,
     )
@@ -64,7 +66,9 @@ with col1:
 
 with col2:
     summary = all_countries_year_total(CURRENT_YEAR)
-    total_loc = int(summary["n_locations"].sum())
+    # Roster count, not "jurisdictions with data rows": a member whose figures
+    # are still being merged in (e.g. Catalonia) is still a member.
+    total_loc = _n_roster
     n_months = total_months_of_data()
     n_subsectors = load_subsector_raw()["sub_sector"].nunique()
 
@@ -98,6 +102,76 @@ with col2:
         """,
         unsafe_allow_html=True,
     )
+
+st.markdown("---")
+
+# ============== HOW TO USE THIS TOOL (page guide) ==============
+# CalEPA feedback: first-time visitors couldn't tell what each page was for.
+# One card per page — what it shows, the question it answers, and a button.
+eyebrow("How to use this tool")
+st.markdown(
+    "<h2 style='font-size:2.2rem;margin-bottom:8px;'>What each page <em>does</em>.</h2>",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<p style="font-size:15px;line-height:1.65;color:var(--ink-soft);max-width:720px;'
+    'margin-bottom:22px;">'
+    "New here? A good first pass is three steps: skim <strong>Data &amp; Methods</strong> "
+    "to see what the numbers can and can't tell you, open <strong>your jurisdiction</strong>, "
+    "then take follow-up questions to the <strong>Chat</strong>."
+    "</p>",
+    unsafe_allow_html=True,
+)
+
+GUIDE = [
+    ("SMAC Members", "pages/2_Country_Profile.py",
+     "Pick any SMAC member or observer to see its methane total and trend, sector mix, "
+     "a sub-sector drill-down (e.g. enteric fermentation), the top 20 emitting "
+     "facilities on a map, and the action plans it has already published.",
+     "How much methane do we emit, and from where?"),
+    ("Comparison", "pages/3_Comparison.py",
+     "Put two jurisdictions — or the same one in two years — side by side: sector "
+     "breakdown, data table, and how the sector mix has shifted since 2021.",
+     "How does our profile differ from a peer's?"),
+    ("Chat", "pages/4_Chat.py",
+     "Ask in plain language. Answers are grounded in the Climate TRACE figures for the "
+     "jurisdiction you select and in SMAC's library of plans and policy documents, "
+     "with the sources shown.",
+     "What policy options fit our largest sources?"),
+    ("Data & Methods", "pages/5_Data_Methods.py",
+     "Where the numbers come from, how Climate TRACE's sectors map to ours, and the "
+     "known limitations — read this before quoting a figure.",
+     "How much should we trust this number?"),
+    ("FAQ", "pages/7_FAQ.py",
+     "Short answers to the questions members ask most — e.g. whether Carbon Mapper "
+     "data is included, why a figure differs from an official inventory.",
+     "Quick answers without reading the full methods."),
+    ("Contact", "pages/6_Contact.py",
+     "Join SMAC, reach the research team, or send a correction or your own inventory "
+     "so we can integrate it.",
+     "A number looks wrong — who do we tell?"),
+]
+GUIDE_PER_ROW = 3
+for row_start in range(0, len(GUIDE), GUIDE_PER_ROW):
+    gcols = st.columns(GUIDE_PER_ROW, gap="medium")
+    for j, (title, page, desc, question) in enumerate(GUIDE[row_start:row_start + GUIDE_PER_ROW]):
+        with gcols[j]:
+            st.markdown(
+                f'<div class="smac-card" style="padding:20px 22px;min-height:230px;">'
+                f'<div style="font-family:Quicksand,sans-serif;font-size:10px;letter-spacing:0.12em;'
+                f'color:var(--ink-soft);margin-bottom:8px;">{row_start + j + 1:02d}</div>'
+                f'<div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:18px;'
+                f'margin-bottom:8px;">{title}</div>'
+                f'<div style="font-size:13px;line-height:1.55;color:var(--ink-soft);'
+                f'margin-bottom:12px;">{desc}</div>'
+                f'<div style="font-size:12px;line-height:1.45;color:var(--mint-deep);'
+                f'font-style:italic;">&ldquo;{question}&rdquo;</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+            if st.button(f"Open {title} →", key=f"guide_{page}", use_container_width=True):
+                st.switch_page(page)
+    st.markdown('<div style="height:14px;"></div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -259,7 +333,7 @@ for col, regions in zip(member_cols, REGION_GROUPS):
                            if row["status"] == "observer" else "")
                     st.markdown(
                         f'<div style="font-size:13.5px;line-height:1.9;color:var(--ink);">'
-                        f'{row["location"]}, {COUNTRY_META[iso]["name"]}{tag}</div>',
+                        f'{display_name(row["location"])}, {COUNTRY_META[iso]["name"]}{tag}</div>',
                         unsafe_allow_html=True,
                     )
         st.markdown('<div style="height:8px;"></div>', unsafe_allow_html=True)

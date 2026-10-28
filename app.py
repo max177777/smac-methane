@@ -21,10 +21,13 @@ st.set_page_config(
 
 overview = st.Page("pages/1_Overview.py", title="Overview", default=True)
 data_methods = st.Page("pages/5_Data_Methods.py", title="Data & Methods")
-country_profile = st.Page("pages/2_Country_Profile.py", title="Subnational Methane Action Coalition")
+# "SMAC Members" (was "Subnational Methane Action Coalition"): a short label that
+# matches the Overview page guide, and leaves room for a separate non-SMAC global page.
+country_profile = st.Page("pages/2_Country_Profile.py", title="SMAC Members")
 comparison = st.Page("pages/3_Comparison.py", title="Comparison")
 chat = st.Page("pages/4_Chat.py", title="Chat")
+faq = st.Page("pages/7_FAQ.py", title="FAQ")
 contact = st.Page("pages/6_Contact.py", title="Contact")
 
-pg = st.navigation([overview, data_methods, country_profile, comparison, chat, contact], position="top")
+pg = st.navigation([overview, data_methods, country_profile, comparison, chat, faq, contact], position="top")
 pg.run()

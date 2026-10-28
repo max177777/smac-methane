@@ -383,6 +383,10 @@ CARBON_MAPPER_LINKS: dict[tuple[str, str], dict] = {
     ("IDN", "Palembang City"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm2-18466#10.61/-2.9795/104.7442", "as_of": "2026-07-06"},
     ("CHN", "Beijing"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-528#7.05/40.255/116.457", "as_of": "2026-07-06"},
     ("ESP", "Andalucía"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-907#6.54/37.346/-4.576", "as_of": "2026-07-06"},
+    # Added with Catalonia's membership. No gadm_composite_id yet (not in the
+    # SMAC Plumes doc) — the location param + recenter hash still land the map
+    # on Catalonia, and the hash is what supplies the overview-map marker.
+    ("ESP", "Cataluña"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&location=Catalonia%2C+Spain#7.2/41.80/1.53", "as_of": "2026-10-28"},
     ("DEU", "Baden-Württemberg"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-907&location=Baden-W%C3%BCrttemberg%2C+Germany#6.94/48.675/9.004", "as_of": "2026-07-06"},
     ("ITA", "Lombardia"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-1393#7.01/45.668/9.964", "as_of": "2026-07-06"},
     ("ITA", "Emilia-Romagna"): {"url": "https://data.carbonmapper.org/?plume_gas=CH4&gadm_composite_id=Gadm1-1409#7.52/44.445/10.978", "as_of": "2026-07-06"},
