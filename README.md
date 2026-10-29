@@ -36,6 +36,9 @@ All Climate TRACE data is pulled locally, then committed:
 It is resumable (re-run to continue) and writes `data/ct_snapshot.json`, which
 sets the snapshot date shown on the site.
 
+The full run also builds `data/global/` (every level-1 admin worldwide) for the
+**Global View** page; until those files are committed the page shows a notice.
+
 ## Adding a new SMAC member (e.g. Catalonia)
 
 1. Add it to `MEMBER_ROSTER` in `utils/data_loader.py` and in

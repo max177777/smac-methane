@@ -13,7 +13,6 @@ Replaces the Aug-2026 snapshot files with one consistent, current release:
     data/global/admins.csv          id, name, country
     data/global/ch4_monthly.csv     monthly totals
     data/global/ch4_sector_year.csv yearly x 8 sector categories
-    data/global/ch4_subsector_year.csv  yearly x sub-sector (non-zero only)
     data/global/top_facilities.csv  top 20 point sources per admin per year
   data/ct_snapshot.json             pull date + API version (shown on the site)
 
@@ -385,7 +384,7 @@ def build_smac(smac: list[tuple[str, str, str]], cache: Path) -> None:
 
 def build_global(admins: pd.DataFrame, cache: Path, facility_years: list[int]) -> None:
     GLOBAL.mkdir(parents=True, exist_ok=True)
-    monthly, secy, suby, top = [], [], [], []
+    monthly, secy, top = [], [], []
     kept = []
     for gid in admins["gadm_id"]:
         f = cache / "emissions" / f"{gid}.json"
@@ -397,13 +396,12 @@ def build_global(admins: pd.DataFrame, cache: Path, facility_years: list[int]) -
         kept.append(gid)
         for y, m, v in e["totals"]:
             monthly.append((gid, y, m, round(v, 3)))
-        sy, ssy = defaultdict(float), defaultdict(float)
+        # The Global View page is deliberately lighter than the SMAC pages: yearly
+        # sector totals only, no sub-sector file (saves ~20 MB in the repo).
+        sy = defaultdict(float)
         for y, m, sec, s, v in e["rows"]:
-            b = broad(s, sec)
-            sy[(y, b)] += v
-            ssy[(y, b, s)] += v
-        secy += [(gid, y, b, round(v, 3)) for (y, b), v in sy.items()]
-        suby += [(gid, y, b, s, round(v, 3)) for (y, b, s), v in ssy.items() if v]
+            sy[(y, broad(s, sec))] += v
+        secy += [(gid, y, b, round(v, 3)) for (y, b), v in sy.items() if v]
         for y in facility_years:
             ff = cache / "facilities_5sectors" / f"{gid}_{y}.json"
             if ff.exists():
@@ -420,8 +418,6 @@ def build_global(admins: pd.DataFrame, cache: Path, facility_years: list[int]) -
         .to_csv(GLOBAL / "ch4_monthly.csv", index=False)
     pd.DataFrame(secy, columns=["gadm_id", "year", "sector", "ch4_tonnes"]) \
         .to_csv(GLOBAL / "ch4_sector_year.csv", index=False)
-    pd.DataFrame(suby, columns=["gadm_id", "year", "sector", "sub_sector", "ch4_tonnes"]) \
-        .to_csv(GLOBAL / "ch4_subsector_year.csv", index=False)
     if top:
         t = pd.DataFrame(top)
         t["ch4_tonnes"] = t["ch4_tonnes"].round(2)

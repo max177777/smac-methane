@@ -129,6 +129,10 @@ GUIDE = [
      "a sub-sector drill-down (e.g. enteric fermentation), the top 20 emitting "
      "facilities on a map, and the action plans it has already published.",
      "How much methane do we emit, and from where?"),
+    ("Global View", "pages/8_Global_View.py",
+     "Not a SMAC member? Type any state, province or region worldwide to see its "
+     "methane total and trend, sector mix, and its top 20 emitting facilities.",
+     "Where does methane come from in our state?"),
     ("Comparison", "pages/3_Comparison.py",
      "Put two jurisdictions — or the same one in two years — side by side: sector "
      "breakdown, data table, and how the sector mix has shifted since 2021.",
