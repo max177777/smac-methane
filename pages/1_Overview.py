@@ -424,6 +424,6 @@ for row_start in range(0, len(COUNTRY_ORDER), cols_per_row):
             # Sparkline
             monthly = country_monthly(iso)
             st.plotly_chart(sparkline_plotly(monthly, height=50), use_container_width=True,
-                            config={"displayModeBar": False})
+                            config={"displayModeBar": False}, key=f"spark_{iso}")
 
 render_footer()

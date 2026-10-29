@@ -30,6 +30,29 @@ DATA_RANGE_LABEL = "2021–2026"
 # stating the snapshot lets people account for that instead of assuming an
 # error. Update these two whenever the data is re-pulled.
 CT_SNAPSHOT_DATE = "31 August 2026"
+CT_API_VERSION = "v7"
+
+# scripts/fetch_climatetrace_all.py writes data/ct_snapshot.json on every pull,
+# so the date shown on the site always matches the data actually deployed.
+# The constants above are only the fallback if that file is missing.
+_SNAPSHOT_FILE = Path(__file__).parent.parent / "data" / "ct_snapshot.json"
+try:
+    import json as _json
+    from datetime import date as _date
+    _snap = _json.loads(_SNAPSHOT_FILE.read_text(encoding="utf-8"))
+    _d = _date.fromisoformat(_snap["pulled"])
+    CT_SNAPSHOT_DATE = f"{_d.day} {_d:%B %Y}"
+    CT_API_VERSION = _snap.get("api_version", CT_API_VERSION)
+    _KEPT_SNAPSHOT = _snap.get("kept_from_earlier_snapshot", {})
+except (OSError, ValueError, KeyError):
+    _KEPT_SNAPSHOT = {}
+
+
+def snapshot_for(iso: str, location: str) -> str:
+    """Snapshot date for one jurisdiction's emissions figures. Usually the site-wide
+    CT_SNAPSHOT_DATE; a jurisdiction whose boundary can't be re-queried (Delhi's
+    urban-area boundary) keeps its figures from an earlier snapshot."""
+    return _KEPT_SNAPSHOT.get(f"{iso}||{location}", CT_SNAPSHOT_DATE)
 
 # Jurisdictions whose profile is intentionally withheld while we reconcile a
 # richer official inventory against the Climate TRACE figures. Showing only the
@@ -46,7 +69,6 @@ UNDER_CONSTRUCTION: dict[tuple[str, str], str] = {
 
 def under_construction_note(iso: str, location: str) -> str | None:
     return UNDER_CONSTRUCTION.get((iso, location))
-CT_API_VERSION = "v7"
 
 # Raw `name` values in the source CSV carry an admin-type suffix ("California State",
 # "Beijing Municipality"). Strip it for display; longest match first so e.g. "Union

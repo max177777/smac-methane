@@ -13,7 +13,7 @@ import streamlit as st
 from utils.theme import inject_theme, eyebrow, render_footer
 from utils.data_loader import (
     COUNTRY_META, COUNTRY_COLORS, CURRENT_YEAR, DATA_RANGE_LABEL,
-    CT_SNAPSHOT_DATE, CT_API_VERSION, under_construction_note,
+    CT_SNAPSHOT_DATE, CT_API_VERSION, under_construction_note, snapshot_for,
     all_member_locations, member_status, location_yearly, location_monthly,
     smac_wide_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
     location_yoy_like_for_like, has_location_data, location_subsectors, SECTOR_ORDER,
@@ -225,6 +225,15 @@ with col1:
         f'🗺 View {loc_display} source map on Climate TRACE →</span></a>',
         unsafe_allow_html=True,
     )
+    _snap_loc = snapshot_for(iso, loc)
+    if _snap_loc != CT_SNAPSHOT_DATE:
+        st.markdown(
+            f'<div class="smac-meta" style="font-size:10px;margin-top:10px;max-width:460px;">'
+            f'Emissions figures for {loc_display} are from the {_snap_loc} Climate TRACE '
+            f'snapshot: they use its urban-area boundary, which the current API can\'t be '
+            f'queried by. Facility data is current ({CT_SNAPSHOT_DATE}).</div>',
+            unsafe_allow_html=True,
+        )
 
 with col2:
     # Hide only the little up/down arrow glyph on these three metrics (their delta

@@ -1,4 +1,9 @@
 """
+NOTE (Oct 2026): the regular refresh is now scripts/fetch_climatetrace_all.py, which
+rebuilds ALL SMAC data files (and the global dataset) from one API release, with the
+same 5-sector facility filter defined here. This script is kept for its roster, GADM
+lookup and POINT_SOURCE_SECTORS (all imported by that one) and for one-off pulls.
+
 Fetches TRUE point sources — individual named facilities (a specific landfill,
 a specific oil & gas site) — from the public Climate TRACE v7 API, and writes
 data/SMAC_point_sources.csv for the app to read.

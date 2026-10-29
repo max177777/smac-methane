@@ -26,13 +26,21 @@ policy guidance for subnational governments.
 
 Source: https://github.com/max177777/smac-methane
 
+## Refreshing the data
+
+All Climate TRACE data is pulled locally, then committed:
+
+    python scripts/fetch_climatetrace_all.py --smac-only   # SMAC pages, ~10 min
+    python scripts/fetch_climatetrace_all.py               # + global dataset, several hours
+
+It is resumable (re-run to continue) and writes `data/ct_snapshot.json`, which
+sets the snapshot date shown on the site.
+
 ## Adding a new SMAC member (e.g. Catalonia)
 
 1. Add it to `MEMBER_ROSTER` in `utils/data_loader.py` and in
    `scripts/fetch_point_sources.py` (plus a map pin in `CARBON_MAPPER_LINKS`).
    Until its data is merged, its page shows a "data being added" notice.
-2. Download the jurisdiction's Climate TRACE CSV and merge it:
-   `python scripts/add_jurisdiction.py --iso ESP --location "Cataluña" <file.csv>`
-3. Fetch its named facilities:
-   `python scripts/fetch_point_sources.py --only "ESP||Cataluña"`
-4. Commit the updated `data/` files and push.
+2. Run `python scripts/fetch_climatetrace_all.py --smac-only` (resolves its GADM
+   id and rebuilds all SMAC files), commit `data/`, push.
+   (`scripts/add_jurisdiction.py` still works if you only have a downloaded CSV.)
