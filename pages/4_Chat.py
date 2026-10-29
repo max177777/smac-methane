@@ -24,6 +24,7 @@ from utils.charts import (
     sector_trend_plotly, horizontal_bar_altair, yoy_bar_altair,
 )
 from utils.policy_content import get_climate_trace_detail_link
+from utils.i18n import t, sector_name, country_name
 
 
 inject_theme()
@@ -48,51 +49,26 @@ if "chat_sector" not in st.session_state:
     st.session_state.chat_sector = "all"
 if "messages_methane" not in st.session_state:
     st.session_state.messages_methane = [
-        {"role": "assistant",
-         "type": "welcome",
-         "content": (
-             "I am the SMAC Methane Specialist. I use your sidebar selections "
-             "(jurisdiction, year, and sector) to ground my answers in real "
-             "Climate TRACE methane data and SMAC's document library.\n\n"
-             "Use the chips below to explore common questions, or ask your own."
-         )}
+        # Text is looked up at render time (chat.welcome), so it follows the
+        # language picker instead of freezing in whatever language was active
+        # when the session started.
+        {"role": "assistant", "type": "welcome", "content": ""}
     ]
 if "pending_question" not in st.session_state:
     st.session_state.pending_question = None
 
 
 # ============== ABOUT THIS DATA (INTRO) ==============
-with st.expander("ℹ️  About this data — what it is, and its limits", expanded=False):
+_PS = 'font-size:14px;line-height:1.7;color:var(--ink-soft);max-width:760px;'
+with st.expander(t("chat.about_title"), expanded=False):
     st.markdown(
-        '<p style="font-size:14px;line-height:1.7;color:var(--ink-soft);max-width:760px;">'
-        "<strong>What we're trying to do:</strong> give each jurisdiction a first-pass, "
-        "directional read on <strong>which sectors and which subnational units are the "
-        "largest sources of methane</strong> — a clearer sense of the major emitters — so "
-        "that a government can prioritise where a real action plan is worth building. This "
-        "is a triage tool, not a certified inventory."
-        "</p>"
-        '<p style="font-size:14px;line-height:1.7;color:var(--ink-soft);max-width:760px;">'
-        "<strong>Where the numbers come from:</strong> Climate TRACE, an independent "
-        "nonprofit coalition that <em>models</em> emissions from satellite imagery, remote "
-        "sensors, and activity data (production volumes, land use, livestock counts) — it "
-        "is inference from indirect signals, not a network of continuous ground monitors."
-        "</p>"
-        '<p style="font-size:14px;line-height:1.7;color:var(--ink-soft);max-width:760px;">'
-        "<strong>Key deficiency to keep in mind:</strong> satellite instruments pass over a "
-        "given location periodically, not continuously — so a satellite-derived estimate is "
-        "closer to a series of snapshots stitched together than to a real-time emissions "
-        "feed. Estimates also carry wider uncertainty for diffuse sources (small-scale "
-        "agriculture, informal waste) than for large point sources (oil &amp; gas "
-        "facilities), and the subnational split itself is a modeled allocation, not a "
-        "jurisdiction's own self-report."
-        "</p>"
-        '<p style="font-size:13px;line-height:1.6;color:var(--ink-soft);max-width:760px;">'
-        "See the full <strong>Data &amp; Methods</strong> page for the complete picture, "
-        "including known limitations."
-        "</p>",
+        f'<p style="{_PS}">{t("chat.about_p1")}</p><p style="{_PS}">{t("chat.about_p2")}</p>'
+        f'<p style="{_PS}">{t("chat.about_p3")}</p>'
+        f'<p style="font-size:13px;line-height:1.6;color:var(--ink-soft);max-width:760px;">'
+        f'{t("chat.about_p4")}</p>',
         unsafe_allow_html=True,
     )
-    if st.button("Open Data & Methods →", key="open_data_methods_from_chat"):
+    if st.button(t("chat.open_methods"), key="open_data_methods_from_chat"):
         st.switch_page("pages/5_Data_Methods.py")
 
 
@@ -106,7 +82,7 @@ def methane_sidebar():
         # used over the default fuzzy matching because for place names a plain
         # substring match is more predictable ("cor" -> Córdoba, not a
         # scattered subsequence hit).
-        st.markdown('<div class="smac-eyebrow">SMAC member</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="smac-eyebrow">{t("chat.sb_member")}</div>', unsafe_allow_html=True)
         flat = list_all_locations_flat()
         key_options = flat["key"].tolist()
         # 9 of the 36 jurisdictions have accented names (Córdoba, Goiás,
@@ -114,7 +90,7 @@ def methane_sidebar():
         # user typing "cor" on an ordinary keyboard would never find Córdoba.
         # Append an ASCII alias to those labels only, so both spellings match.
         def _search_label(row):
-            base = row["label"]
+            base = f'{row["location"]}  ·  {country_name(row["iso3_country"])}'
             folded = _fold_accents(row["location"])
             return base if folded == row["location"] else f"{base}  ({folded})"
 
@@ -127,11 +103,9 @@ def methane_sidebar():
             format_func=lambda k: label_map[k],
             label_visibility="collapsed",
             key="sb_jurisdiction",
-            placeholder="Search jurisdictions…",
+            placeholder=t("chat.sb_search"),
             filter_mode="contains",
-            help="Type to search any of the 36 SMAC member/observer jurisdictions — "
-                 "this selection (plus year and sector below) filters what gets "
-                 "retrieved from SMAC's document library and grounds the answer.",
+            help=t("chat.sb_search_help", n=len(key_options)),
         )
         row = flat[flat["key"] == picked_key].iloc[0]
         if row["location"] != st.session_state.chat_location or row["iso3_country"] != st.session_state.chat_iso:
@@ -148,7 +122,7 @@ def methane_sidebar():
         # here we show our own compact overview map of all 36 SMAC
         # jurisdictions instead, with a link out to the selected one's own
         # detail page for the actual satellite imagery.
-        st.markdown('<div class="smac-eyebrow">Satellite data</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="smac-eyebrow">{t("chat.sb_satellite")}</div>', unsafe_allow_html=True)
         st.plotly_chart(
             jurisdiction_map_plotly(height=170, show_legend=False),
             use_container_width=True,
@@ -159,31 +133,29 @@ def methane_sidebar():
             st.markdown(
                 f'<a href="{ct_detail_link}" target="_blank" style="text-decoration:none;">'
                 f'<div class="smac-pill" style="display:block;text-align:center;margin:8px 0 18px;cursor:pointer;">'
-                f'🛰️ Open {loc_display}\'s detail page on Climate TRACE →</div></a>',
+                f'🛰️ {t("chat.sb_ct_detail", loc=loc_display)} →</div></a>',
                 unsafe_allow_html=True,
             )
         else:
             st.markdown(
                 f'<a href="https://climatetrace.org/air-pollution" target="_blank" style="text-decoration:none;">'
                 f'<div class="smac-pill" style="display:block;text-align:center;margin:8px 0 18px;cursor:pointer;">'
-                f'🛰️ Explore Climate TRACE →</div></a>',
+                f'🛰️ {t("chat.sb_ct_explore")} →</div></a>',
                 unsafe_allow_html=True,
             )
 
         # ---- Question Scope (CLEAR-aligned: locks Context/Time/Evidence before answering) ----
-        st.markdown('<div class="smac-eyebrow">Question scope</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="smac-eyebrow">{t("chat.sb_scope")}</div>', unsafe_allow_html=True)
         st.markdown(
             '<div class="smac-meta" style="font-size:9px;margin:-10px 0 12px;line-height:1.5;">'
-            'pins the year and sector so the answer — and what it retrieves from the document '
-            'library — stays locked to what you actually asked, instead of drifting to '
-            'whatever\'s most recent or most generic.</div>',
+            f'{t("chat.sb_scope_note")}</div>',
             unsafe_allow_html=True,
         )
 
         year_options = ["all"] + [str(y) for y in range(2026, 2020, -1)]
         year = st.selectbox(
-            "Year", options=year_options,
-            format_func=lambda x: "All years (2021–2026)" if x == "all" else x,
+            t("common.year"), options=year_options,
+            format_func=lambda x: t("chat.all_years") if x == "all" else x,
             index=year_options.index(st.session_state.chat_year),
             key="sb_year",
         )
@@ -193,8 +165,8 @@ def methane_sidebar():
 
         sector_options = ["all"] + SECTOR_ORDER
         sector = st.selectbox(
-            "Sector", options=sector_options,
-            format_func=lambda x: "All sectors" if x == "all" else x,
+            t("common.sector"), options=sector_options,
+            format_func=lambda x: t("chat.all_sectors") if x == "all" else sector_name(x),
             index=sector_options.index(st.session_state.chat_sector),
             key="sb_sector",
         )
@@ -203,7 +175,7 @@ def methane_sidebar():
             st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Reset conversation", use_container_width=True):
+        if st.button(t("chat.reset"), use_container_width=True):
             st.session_state.messages_methane = st.session_state.messages_methane[:1]  # keep welcome
             st.rerun()
 
@@ -218,9 +190,10 @@ methane_sidebar()
 # single-source figure as the settled answer.
 _uc_note = under_construction_note(st.session_state.chat_iso, st.session_state.chat_location)
 if _uc_note:
+    from utils.i18n import tk
     st.warning(
-        f"{_uc_note}\n\nAnswers below use Climate TRACE only and don't yet reflect that "
-        f"inventory — treat them as provisional for this jurisdiction.",
+        tk(f"uc.{st.session_state.chat_iso}.{st.session_state.chat_location}", _uc_note)
+        + "\n\n" + t("chat.uc_warning"),
         icon="🚧",
     )
 
@@ -228,18 +201,19 @@ if _uc_note:
 iso = st.session_state.chat_iso
 loc = st.session_state.chat_location
 loc_display = display_name(loc)
-year_label = "All years" if st.session_state.chat_year == "all" else st.session_state.chat_year
-sector_label = "All sectors" if st.session_state.chat_sector == "all" else st.session_state.chat_sector
+year_label = t("chat.all_years_short") if st.session_state.chat_year == "all" else st.session_state.chat_year
+sector_label = (t("chat.all_sectors") if st.session_state.chat_sector == "all"
+                else sector_name(st.session_state.chat_sector))
 
-llm_status = "AI-enriched · grounded in real data" if has_llm() else "scripted · grounded in real data"
+llm_status = t("chat.status_ai") if has_llm() else t("chat.status_scripted")
 
 st.markdown(
     f"""
     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
       <div class="smac-meta" style="font-size:11px;">
-        context: <strong style="color:var(--ink);">{loc_display}</strong>
+        {t("chat.context")}: <strong style="color:var(--ink);">{loc_display}</strong>
         <span style="color:var(--copper);margin:0 8px;">/</span>
-        <strong style="color:var(--ink);">{COUNTRY_META[iso]['name']}</strong>
+        <strong style="color:var(--ink);">{country_name(iso)}</strong>
         <span style="color:var(--copper);margin:0 8px;">/</span>
         <strong style="color:var(--ink);">{year_label}</strong>
         <span style="color:var(--copper);margin:0 8px;">/</span>
@@ -247,7 +221,7 @@ st.markdown(
       </div>
       <div class="smac-meta" style="font-size:10px;">
         <span style="display:inline-block;width:6px;height:6px;background:var(--good);border-radius:50%;margin-right:6px;"></span>
-        methane specialist · {llm_status}
+        {t("chat.specialist")} · {llm_status}
       </div>
     </div>
     """,
@@ -265,7 +239,7 @@ def render_methane_message(msg: dict):
 
     with st.chat_message("assistant"):
         if msg.get("type") == "welcome":
-            st.markdown(msg["content"])
+            st.markdown(t("chat.welcome"))
             return
         # structured blocks
         for block in msg["blocks"]:
@@ -315,7 +289,7 @@ def render_methane_message(msg: dict):
         elif msg.get("chart_df") is not None:
             st.markdown(
                 f'<div class="smac-meta" style="margin-top:14px;font-size:10px;">'
-                f'{msg["chart_subject"]} · monthly CH₄ tonnes · {DATA_RANGE_LABEL}</div>',
+                f'{t("chat.cap_monthly", subject=msg["chart_subject"], range=DATA_RANGE_LABEL)}</div>',
                 unsafe_allow_html=True,
             )
             st.plotly_chart(
@@ -332,12 +306,7 @@ def methane_chips():
     # judgement. "Why is X so high?" presumes a verdict — high relative to
     # what? — that the data doesn't support and that reads badly to a
     # jurisdiction seeing its own name in the sentence.
-    return [
-        f"Show {loc_display}'s methane trend",
-        f"Which sectors drive {loc_display}'s emissions?",
-        f"What policy fits {loc_display}?",
-        f"Top emission sources in {loc_display}",
-    ]
+    return [t(f"chat.chip{i}", loc=loc_display) for i in range(1, 5)]
 
 
 # ============== RENDER MESSAGES ==============
@@ -350,7 +319,7 @@ chip_list = methane_chips()
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown(
     '<div class="smac-meta" style="font-size:10px;margin-bottom:10px;">'
-    '<span style="color:var(--copper);">✦</span>&nbsp; Suggested prompts</div>',
+    f'<span style="color:var(--copper);">✦</span>&nbsp; {t("chat.suggested")}</div>',
     unsafe_allow_html=True,
 )
 chip_cols = st.columns(len(chip_list))
@@ -364,7 +333,7 @@ for i, q in enumerate(chip_list):
 # ============== CHAT INPUT ==============
 # No render_footer() on this page — it sits right above the chat input and gets in
 # the way of the actual chat interaction.
-user_input = st.chat_input("Ask about emissions, policy, or mitigation pathways…")
+user_input = st.chat_input(t("chat.input"))
 
 # Resolve any pending input
 final_input = user_input or st.session_state.pending_question

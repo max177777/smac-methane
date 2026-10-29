@@ -122,6 +122,7 @@ def generate_open_answer(
     facts: dict,
     rag_context: str,
     jurisdiction_label: str,
+    language: str = "English",
 ) -> str | None:
     """
     A free-form answer to the user's actual question, grounded in `facts`
@@ -147,7 +148,7 @@ Computed facts (ground truth — also shown to the user in a data card alongside
 Reference excerpts retrieved from SMAC's document library:
 {rag_context if rag_context else "(none retrieved for this query)"}
 
-Answer the user's question directly."""
+Answer the user's question directly.{_language_instruction(language)}"""
 
     try:
         client = anthropic.Anthropic(timeout=TIMEOUT_SEC)
@@ -165,6 +166,20 @@ Answer the user's question directly."""
         # network error, bad key, rate limit, timeout, etc. — fail silently,
         # caller falls back to the scripted templates
         return None
+
+
+def _language_instruction(language: str) -> str:
+    """The site's language picker decides the answer language — not the language
+    of the facts or excerpts (those are mostly English)."""
+    if not language or language == "English":
+        return ""
+    return (
+        f"\n\nLANGUAGE: Write the entire answer in {language}, whatever language the "
+        f"question or the excerpts are in. Keep numbers, units (t CH₄, Mt, CO₂e, GWP100/GWP20), "
+        f"place names, facility names, document titles and policy names exactly as given. "
+        f"When drawing on an English excerpt, convey it in {language} rather than quoting it "
+        f"at length."
+    )
 
 
 def enrich_narrative_blocks(

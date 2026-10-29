@@ -19,7 +19,7 @@ import streamlit as st
 
 CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&family=Noto+Sans+Devanagari:wght@400;500;700&display=swap');
 
 :root {
   --paper: #ffffff;
@@ -42,7 +42,7 @@ CSS = """
 
 /* base */
 html, body, [class*="css"], .stApp {
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Inter', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif !important;
   background-color: var(--paper) !important;
   color: var(--ink) !important;
   -webkit-font-smoothing: antialiased;
@@ -69,12 +69,12 @@ html, body, [class*="css"], .stApp {
   border-right: 1px solid var(--line);
 }
 [data-testid="stSidebar"] .stMarkdown {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
 }
 
 /* headings - bold rounded display font, matches smacmethane.org */
 h1, h2, h3, h4 {
-  font-family: 'Quicksand', sans-serif !important;
+  font-family: 'Quicksand', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif !important;
   font-weight: 700 !important;
   letter-spacing: -0.01em;
   color: var(--ink) !important;
@@ -90,7 +90,7 @@ hr { border-color: var(--line-soft) !important; }
 
 /* buttons - bright mint pill CTA, matches smacmethane.org */
 .stButton > button {
-  font-family: 'Quicksand', sans-serif !important;
+  font-family: 'Quicksand', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif !important;
   font-size: 15px !important;
   letter-spacing: 0 !important;
   text-transform: none !important;
@@ -129,7 +129,7 @@ hr { border-color: var(--line-soft) !important; }
 
 /* select boxes */
 .stSelectbox label, .stRadio label {
-  font-family: 'Quicksand', sans-serif !important;
+  font-family: 'Quicksand', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif !important;
   font-size: 12px !important;
   letter-spacing: 0.04em !important;
   text-transform: uppercase !important;
@@ -162,7 +162,7 @@ hr { border-color: var(--line-soft) !important; }
   padding: 18px 22px;
 }
 [data-testid="stMetricLabel"] {
-  font-family: 'Quicksand', sans-serif !important;
+  font-family: 'Quicksand', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif !important;
   font-size: 11px !important;
   letter-spacing: 0.08em !important;
   text-transform: uppercase !important;
@@ -170,13 +170,13 @@ hr { border-color: var(--line-soft) !important; }
   font-weight: 600 !important;
 }
 [data-testid="stMetricValue"] {
-  font-family: 'Quicksand', sans-serif !important;
+  font-family: 'Quicksand', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif !important;
   font-weight: 700 !important;
   font-size: 2.1rem !important;
   letter-spacing: -0.01em !important;
 }
 [data-testid="stMetricDelta"] {
-  font-family: 'Quicksand', sans-serif !important;
+  font-family: 'Quicksand', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif !important;
   font-size: 12px !important;
   font-weight: 600 !important;
   letter-spacing: 0 !important;
@@ -188,7 +188,7 @@ hr { border-color: var(--line-soft) !important; }
   border-bottom: 1px solid var(--line);
 }
 .stTabs [data-baseweb="tab"] {
-  font-family: 'Quicksand', sans-serif !important;
+  font-family: 'Quicksand', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif !important;
   font-size: 14px !important;
   letter-spacing: 0 !important;
   text-transform: none !important;
@@ -210,11 +210,11 @@ hr { border-color: var(--line-soft) !important; }
 [data-testid="stDataFrame"], [data-testid="stTable"] {
   border: 1px solid var(--line);
   border-radius: 12px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
 }
 [data-testid="stDataFrame"] thead tr th {
   background: var(--paper-2) !important;
-  font-family: 'Quicksand', sans-serif !important;
+  font-family: 'Quicksand', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif !important;
   font-size: 11px !important;
   text-transform: uppercase !important;
   letter-spacing: 0.06em !important;
@@ -253,7 +253,7 @@ hr { border-color: var(--line-soft) !important; }
 
 /* eyebrow class for section labels */
 .smac-eyebrow {
-  font-family: 'Quicksand', sans-serif;
+  font-family: 'Quicksand', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
   font-size: 13px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -274,7 +274,7 @@ hr { border-color: var(--line-soft) !important; }
 
 /* meta line */
 .smac-meta {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
   font-size: 12px;
   letter-spacing: 0.02em;
   text-transform: none;
@@ -283,7 +283,7 @@ hr { border-color: var(--line-soft) !important; }
 
 /* struct chat blocks */
 .smac-struct-label {
-  font-family: 'Quicksand', sans-serif;
+  font-family: 'Quicksand', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
   font-size: 11px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -303,7 +303,7 @@ hr { border-color: var(--line-soft) !important; }
   background: var(--mint);
 }
 .smac-method-block {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
   font-size: 12.5px;
   color: var(--ink-soft);
   background: var(--paper-2);
@@ -316,7 +316,7 @@ hr { border-color: var(--line-soft) !important; }
 
 /* greenwashing flag */
 .smac-flag {
-  font-family: 'Quicksand', sans-serif;
+  font-family: 'Quicksand', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
   font-size: 12px;
   font-weight: 700;
   color: var(--mint-deep);
@@ -338,7 +338,7 @@ hr { border-color: var(--line-soft) !important; }
 /* pill / tag - matches the rounded mint tags on smacmethane.org */
 .smac-pill {
   display: inline-block;
-  font-family: 'Quicksand', sans-serif;
+  font-family: 'Quicksand', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
   font-size: 11px;
   letter-spacing: 0.02em;
   text-transform: none;
@@ -399,7 +399,7 @@ footer { visibility: hidden; }
 
 /* nicer expander */
 .streamlit-expanderHeader {
-  font-family: 'Quicksand', sans-serif !important;
+  font-family: 'Quicksand', 'Noto Sans SC', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif !important;
   font-size: 13px !important;
   letter-spacing: 0.02em !important;
   text-transform: none !important;
@@ -553,18 +553,17 @@ def render_footer():
     """Site-wide footer — call once at the bottom of every page. Short by design
     (© line + compact link row); the fuller legal text lives in expanders so it
     doesn't need its own nav page, and doesn't bloat every page by default."""
+    from utils.i18n import t, current_lang
     st.markdown("<br><br>", unsafe_allow_html=True)
+    note = ("" if current_lang() == "en" else
+            f'<div style="font-size:11px;color:var(--ink-soft);opacity:0.75;margin-top:4px;">'
+            f'{t("footer.translation_note")}</div>')
     st.markdown(
         '<div style="border-top:1px solid var(--line);padding-top:20px;">'
         '<div style="font-family:Quicksand,sans-serif;font-size:12px;color:var(--ink-soft);line-height:1.6;">'
-        "© 2026 Subnational Methane Action Coalition (SMAC) · Project Climate, "
-        "UC Berkeley Law (CLEE). All rights reserved."
-        "</div>"
+        f'{t("footer.copyright")}</div>'
         '<div style="font-size:11px;color:var(--ink-soft);opacity:0.75;margin-top:4px;max-width:720px;">'
-        "Unless otherwise indicated, original site content, interface, and analyses are "
-        "© 2026 SMAC / CLEE. Third-party datasets, logos, and trademarks (including "
-        "Climate TRACE data) remain the property of their respective owners."
-        "</div>"
+        f'{t("footer.thirdparty")}</div>{note}'
         "</div>",
         unsafe_allow_html=True,
     )
@@ -572,55 +571,14 @@ def render_footer():
     st.markdown('<div style="height:10px;"></div>', unsafe_allow_html=True)
     link_cols = st.columns(6)
     with link_cols[0]:
-        st.page_link("pages/1_Overview.py", label="About", icon=None)
+        st.page_link("pages/1_Overview.py", label=t("footer.about"), icon=None)
     with link_cols[1]:
-        st.page_link("pages/7_FAQ.py", label="FAQ", icon=None)
+        st.page_link("pages/7_FAQ.py", label=t("nav.faq"), icon=None)
     with link_cols[5]:
-        st.page_link("pages/6_Contact.py", label="Contact", icon=None)
+        st.page_link("pages/6_Contact.py", label=t("nav.contact"), icon=None)
 
     exp_cols = st.columns(4)
-    with exp_cols[0]:
-        with st.expander("Data Sources"):
-            st.markdown(
-                "This site incorporates methane emissions data from Climate TRACE, an "
-                "independent third-party coalition, along with contextual policy "
-                "information compiled by the SMAC research team. All third-party data, "
-                "trademarks, and materials remain the property of their respective "
-                "owners and are subject to their original terms, licenses, and "
-                "attribution requirements. Inclusion of third-party data does not imply "
-                "endorsement by or affiliation with the original data providers unless "
-                "explicitly stated. See **Data & Methods** for provenance and known "
-                "limitations."
-            )
-    with exp_cols[1]:
-        with st.expander("AI Disclaimer"):
-            st.markdown(
-                "This site uses AI-assisted tools, including a chat interface, to "
-                "retrieve, summarize, analyze, or generate information about methane "
-                "emissions and policy. AI-generated outputs may contain errors, "
-                "omissions, or outdated information and should not be treated as "
-                "authoritative professional, legal, financial, or policy advice. "
-                "Verify anything important — especially before using it in official "
-                "reporting or decision-making — against the underlying Climate TRACE "
-                "data and cited policy sources."
-            )
-    with exp_cols[2]:
-        with st.expander("Privacy"):
-            st.markdown(
-                "This site may process information you submit — for example, through "
-                "the Chat feature — in order to provide its features. Please don't "
-                "submit confidential, sensitive, or personally identifiable "
-                "information. Where third-party hosting, analytics, or AI services are "
-                "used to operate this site, information may also be processed "
-                "according to those providers' own privacy policies."
-            )
-    with exp_cols[3]:
-        with st.expander("Terms of Use"):
-            st.markdown(
-                "The information and tools on this site are provided for "
-                "informational, research, and educational purposes. While reasonable "
-                "efforts are made to keep data and analysis accurate and current, no "
-                "guarantee is made regarding the completeness, accuracy, reliability, "
-                "or availability of the site or its outputs. Use of this site, and any "
-                "reliance on its content, is at your own discretion and risk."
-            )
+    for col, k in zip(exp_cols, ("sources", "ai", "privacy", "terms")):
+        with col:
+            with st.expander(t(f"footer.{k}_title")):
+                st.markdown(t(f"footer.{k}_body"))

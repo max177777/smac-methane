@@ -22,6 +22,8 @@ from utils.data_loader import (
 from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans
 from utils.charts import time_series_plotly, SECTOR_COLORS
 from utils.rag import rag_search
+from utils.data_loader import SECTOR_ACTIONS
+from utils.i18n import t, tk, sector_name, subsector_name, country_name, region_name
 
 inject_theme()
 
@@ -37,22 +39,18 @@ all_locs = all_member_locations()  # [(iso, location), ...] sorted by country, t
 if "smac_jurisdiction" not in st.session_state:
     st.session_state.smac_jurisdiction = ("USA", "Maryland")
 
-eyebrow("Explore the data")
+eyebrow(t("profile.eyebrow"))
 st.markdown(
-    "<h1 style='font-size:2.4rem;margin-bottom:6px;'>Jurisdictions</h1>",
+    f"<h1 style='font-size:2.4rem;margin-bottom:6px;'>{t('profile.title')}</h1>",
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<div class="smac-meta" style="margin-bottom:6px;">'
-    'every button below is an actual SMAC member or observer &nbsp;·&nbsp; '
-    'colored by country &nbsp;·&nbsp; A–Z by country, then by jurisdiction</div>',
+    f'<div class="smac-meta" style="margin-bottom:6px;">{t("profile.picker_note")}</div>',
     unsafe_allow_html=True,
 )
 st.markdown(
     f'<div class="smac-meta" style="font-size:10px;margin-bottom:16px;opacity:0.8;">'
-    f'Climate TRACE snapshot: pulled {CT_SNAPSHOT_DATE} via API {CT_API_VERSION}. '
-    f'Climate TRACE revises historical figures between releases, so numbers here may '
-    f'differ from climatetrace.org today or from an earlier visit.</div>',
+    f'{t("common.ct_snapshot", date=CT_SNAPSHOT_DATE, api=CT_API_VERSION)}</div>',
     unsafe_allow_html=True,
 )
 
@@ -80,7 +78,7 @@ for row_start in range(0, len(all_locs), PILLS_PER_ROW):
     for i, (iso, loc) in enumerate(row_items):
         with cols[i]:
             with st.container(key=_slug(iso, loc)):
-                label = f"{display_name(loc)} ({COUNTRY_META[iso]['name']})"
+                label = f"{display_name(loc)} ({country_name(iso)})"
                 if st.button(label, key=f"btn-{_slug(iso, loc)}", use_container_width=True):
                     st.session_state.smac_jurisdiction = (iso, loc)
                     st.rerun()
@@ -91,7 +89,8 @@ iso, loc = st.session_state.smac_jurisdiction
 loc_display = display_name(loc)
 meta = COUNTRY_META[iso]
 status = member_status(iso, loc)
-status_label = {"member": "● SMAC Member", "observer": "○ SMAC Observer"}.get(status, "")
+status_label = {"member": t("common.smac_member_pill"),
+                "observer": t("common.smac_observer_pill")}.get(status, "")
 
 # ============== UNDER CONSTRUCTION GATE ==============
 # Some jurisdictions maintain their own detailed inventory. Until that's
@@ -103,7 +102,7 @@ if _uc:
         f'<div class="smac-meta" style="display:flex;align-items:center;gap:10px;">'
         f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;'
         f'background:{COUNTRY_COLORS.get(iso, "#0e9d6c")};"></span>'
-        f'{meta["name"]} &nbsp;·&nbsp; {meta["region"]}</div>',
+        f'{country_name(iso)} &nbsp;·&nbsp; {region_name(meta["region"])}</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
@@ -118,25 +117,17 @@ if _uc:
         f'<div class="smac-card" style="padding:26px 30px;border-left:4px solid var(--copper);'
         f'max-width:780px;">'
         f'<div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:16px;'
-        f'margin-bottom:8px;">🚧 Under construction</div>'
+        f'margin-bottom:8px;">🚧 {t("profile.uc_title")}</div>'
         f'<p style="font-size:14.5px;line-height:1.7;color:var(--ink-soft);margin-bottom:12px;">'
-        f'{_uc}</p>'
+        f'{tk(f"uc.{iso}.{loc}", _uc)}</p>'
         f'<p style="font-size:13px;line-height:1.7;color:var(--ink-soft);margin:0;">'
-        f'We\'ve held this profile back rather than publish the Climate TRACE estimate on its '
-        f'own, because {loc_display} maintains a more granular official inventory and the two '
-        f'do not yet line up. Publishing one without reconciling the other would imply a '
-        f'settled figure that does not exist yet.</p>'
+        f'{t("profile.uc_body", loc=loc_display)}</p>'
         f'</div>',
         unsafe_allow_html=True,
     )
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown(
-        '<div class="smac-meta">'
-        'Work on a jurisdiction inventory we should be reading? See '
-        '<strong>Contact</strong> — we\'d like to hear from you.</div>',
-        unsafe_allow_html=True,
-    )
-    if st.button("Go to Contact →", key="uc_contact"):
+    st.markdown(f'<div class="smac-meta">{t("profile.uc_contact")}</div>', unsafe_allow_html=True)
+    if st.button(t("common.go_contact"), key="uc_contact"):
         st.switch_page("pages/6_Contact.py")
     render_footer()
     st.stop()
@@ -150,7 +141,7 @@ if not has_location_data(iso, loc):
         f'<div class="smac-meta" style="display:flex;align-items:center;gap:10px;">'
         f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;'
         f'background:{COUNTRY_COLORS.get(iso, "#0e9d6c")};"></span>'
-        f'{meta["name"]} &nbsp;·&nbsp; {meta["region"]}</div>',
+        f'{country_name(iso)} &nbsp;·&nbsp; {region_name(meta["region"])}</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
@@ -164,11 +155,9 @@ if not has_location_data(iso, loc):
         f'<div class="smac-card" style="padding:26px 30px;border-left:4px solid var(--mint);'
         f'max-width:780px;">'
         f'<div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:16px;'
-        f'margin-bottom:8px;">Welcome to SMAC — data being added</div>'
+        f'margin-bottom:8px;">{t("profile.pending_title")}</div>'
         f'<p style="font-size:14.5px;line-height:1.7;color:var(--ink-soft);margin:0;">'
-        f'{loc_display} joined the coalition after our last Climate TRACE data pull '
-        f'({CT_SNAPSHOT_DATE}). Its emissions profile will appear here as soon as its '
-        f'figures are merged in.</p>'
+        f'{t("profile.pending_body", loc=loc_display, date=CT_SNAPSHOT_DATE)}</p>'
         f'</div>',
         unsafe_allow_html=True,
     )
@@ -187,7 +176,7 @@ col1, col2 = st.columns([1, 1], gap="large")
 
 with col2:
     sel_year = st.selectbox(
-        "Year", options=list(reversed(YEARS)),
+        t("common.year"), options=list(reversed(YEARS)),
         index=YEARS[::-1].index(st.session_state.smac_year),
         key="smac_year_select",
     )
@@ -209,7 +198,7 @@ with col1:
         f'<div class="smac-meta" style="display:flex;align-items:center;gap:10px;">'
         f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;'
         f'background:{COUNTRY_COLORS.get(iso, "#0e9d6c")};"></span>'
-        f'{meta["name"]} &nbsp;·&nbsp; {meta["region"]} &nbsp;·&nbsp; {DATA_RANGE_LABEL}</div>',
+        f'{country_name(iso)} &nbsp;·&nbsp; {region_name(meta["region"])} &nbsp;·&nbsp; {DATA_RANGE_LABEL}</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
@@ -222,16 +211,14 @@ with col1:
         f'<a href="https://climatetrace.org/explore?search={loc.replace(" ", "+")}" '
         f'target="_blank" style="text-decoration:none;display:inline-block;margin-top:14px;">'
         f'<span class="smac-pill" style="background:var(--paper-3);color:var(--mint-deep);">'
-        f'🗺 View {loc_display} source map on Climate TRACE →</span></a>',
+        f'🗺 {t("profile.ct_map", loc=loc_display)} →</span></a>',
         unsafe_allow_html=True,
     )
     _snap_loc = snapshot_for(iso, loc)
     if _snap_loc != CT_SNAPSHOT_DATE:
         st.markdown(
             f'<div class="smac-meta" style="font-size:10px;margin-top:10px;max-width:460px;">'
-            f'Emissions figures for {loc_display} are from the {_snap_loc} Climate TRACE '
-            f'snapshot: they use its urban-area boundary, which the current API can\'t be '
-            f'queried by. Facility data is current ({CT_SNAPSHOT_DATE}).</div>',
+            f'{t("profile.kept_snapshot", loc=loc_display, old=_snap_loc, new=CT_SNAPSHOT_DATE)}</div>',
             unsafe_allow_html=True,
         )
 
@@ -266,20 +253,13 @@ with col2:
         _yoy_is_nan = _yoy != _yoy
         _n_mo = _lfl["n_months"]
 
-        _label = (f"{sel_year} CH₄ · first {_n_mo} months" if _partial
-                  else f"{sel_year} Total CH₄")
+        _label = (t("profile.kpi_partial", y=sel_year, n=_n_mo) if _partial
+                  else t("profile.kpi_total", y=sel_year))
         _delta = ("—" if _yoy_is_nan else
-                  (f"{_yoy:+.2f}% vs same {_n_mo} months of {sel_year - 1}" if _partial
-                   else f"{_yoy:+.2f}% YoY"))
-        _help = (
-            f"{loc_display} emitted this over the first {_n_mo} months of {sel_year} — "
-            f"the only months reported so far. The change below compares those same "
-            f"{_n_mo} months in {sel_year - 1}, not the full prior year, because "
-            f"comparing a part-year against a full year would show a large false drop."
-            if _partial else
-            f"Total methane {loc_display} emitted in {sel_year}, in million tonnes (Mt). "
-            f"The small number below is the year-over-year change vs {sel_year - 1}."
-        )
+                  (t("profile.delta_partial", pct=f"{_yoy:+.2f}", n=_n_mo, py=sel_year - 1)
+                   if _partial else t("profile.delta_yoy", pct=f"{_yoy:+.2f}")))
+        _help = (t("profile.help_partial", loc=loc_display, n=_n_mo, y=sel_year, py=sel_year - 1)
+                 if _partial else t("profile.help_total", loc=loc_display, y=sel_year, py=sel_year - 1))
         st.metric(
             _label, f"{fmt_mt(y_now)} Mt", _delta,
             delta_color=("normal" if _yoy_is_nan else ("inverse" if _yoy > 0 else "normal")),
@@ -288,38 +268,30 @@ with col2:
         if _partial:
             st.markdown(
                 f'<div class="smac-meta" style="font-size:10px;margin:-10px 0 12px;">'
-                f'⚠ {sel_year} is a partial year — {_n_mo} of 12 months reported. '
-                f'Totals are not comparable to full years.</div>',
+                f'{t("common.partial_year_warn", y=sel_year, n=_n_mo)}</div>',
                 unsafe_allow_html=True,
             )
         with st.container(key="kpi-gwp100"):
             st.metric(
-                f"CO₂e · GWP100 · {sel_year}", f"{fmt_mt(y_now * GWP100)} Mt",
-                f"×{GWP100} IPCC AR6", delta_color="off",
-                help=f"{sel_year} methane converted to CO₂-equivalent using the 100-year Global "
-                     f"Warming Potential (×{GWP100}) — the standard used in most national "
-                     f"inventories and long-term climate accounting.",
+                t("common.gwp100_label", y=sel_year), f"{fmt_mt(y_now * GWP100)} Mt",
+                t("common.ipcc_factor", f=GWP100), delta_color="off",
+                help=t("profile.help_gwp100", y=sel_year, f=GWP100),
             )
     with kpi_cols[1]:
-        rank_label = f"#{smac_rank_pos} of {n_smac_jurisdictions}" if smac_rank_pos else "—"
+        rank_label = (t("profile.rank_of", pos=smac_rank_pos, n=n_smac_jurisdictions)
+                      if smac_rank_pos else "—")
         with st.container(key="kpi-rank"):
             st.metric(
-                f"Rank within SMAC · {sel_year}", rank_label,
-                f"{smac_share:.1f}% of all SMAC CH₄" if smac_share is not None else "", delta_color="off",
-                help=f"{loc_display}'s position when every one of the {n_smac_jurisdictions} SMAC "
-                     f"member/observer jurisdictions worldwide is ranked by {sel_year} methane "
-                     f"emissions, #1 = highest. The percentage is {loc_display}'s share of the "
-                     f"combined total that all {n_smac_jurisdictions} SMAC jurisdictions emitted "
-                     f"together in {sel_year} — e.g. \"7.3%\" means this one jurisdiction accounts "
-                     f"for 7.3% of everything the whole SMAC coalition emitted that year.",
+                t("profile.rank_label", y=sel_year), rank_label,
+                t("profile.rank_share", pct=f"{smac_share:.1f}") if smac_share is not None else "",
+                delta_color="off",
+                help=t("profile.help_rank", loc=loc_display, n=n_smac_jurisdictions, y=sel_year),
             )
         with st.container(key="kpi-gwp20"):
             st.metric(
-                f"CO₂e · GWP20 · {sel_year}", f"{fmt_mt(y_now * GWP20)} Mt",
-                f"×{GWP20} IPCC AR6", delta_color="off",
-                help=f"{sel_year} methane converted to CO₂-equivalent using the 20-year Global "
-                     f"Warming Potential (×{GWP20}) — reflects methane's much stronger near-term "
-                     f"warming effect, relevant for near-term (e.g. 2030/2050) climate targets.",
+                t("common.gwp20_label", y=sel_year), f"{fmt_mt(y_now * GWP20)} Mt",
+                t("common.ipcc_factor", f=GWP20), delta_color="off",
+                help=t("profile.help_gwp20", y=sel_year, f=GWP20),
             )
 
 st.markdown("<br>", unsafe_allow_html=True)
@@ -328,22 +300,22 @@ st.markdown("<br>", unsafe_allow_html=True)
 col_a, col_b = st.columns([1.3, 1], gap="large")
 
 with col_a:
-    eyebrow("Monthly time series")
-    st.markdown(f"<h3>CH₄ tonnes · {DATA_RANGE_LABEL}</h3>", unsafe_allow_html=True)
+    eyebrow(t("common.monthly_series"))
+    st.markdown(f"<h3>{t('common.ch4_tonnes')} · {DATA_RANGE_LABEL}</h3>", unsafe_allow_html=True)
     monthly = location_monthly(iso, loc)
     st.plotly_chart(time_series_plotly(monthly, height=320), use_container_width=True,
                     config={"displayModeBar": False})
 
 with col_b:
-    eyebrow("Sector breakdown")
-    st.markdown(f"<h3>{sel_year} · real Climate TRACE data</h3>", unsafe_allow_html=True)
+    eyebrow(t("common.sector_breakdown"))
+    st.markdown(f"<h3>{t('profile.sector_h3', y=sel_year)}</h3>", unsafe_allow_html=True)
     sec = location_sectors(iso, loc, sel_year)
     if sec.empty:
-        st.info(f"No {sel_year} sector data for {loc_display} yet.")
+        st.info(t("profile.no_sector", y=sel_year, loc=loc_display))
     else:
         import plotly.graph_objects as go
         fig = go.Figure(go.Pie(
-            labels=sec["sector"], values=sec["total_emission"], hole=0.5,
+            labels=[sector_name(x) for x in sec["sector"]], values=sec["total_emission"], hole=0.5,
             marker=dict(colors=[SECTOR_COLORS.get(s, "#b9c4bd") for s in sec["sector"]]),
             textinfo="percent", textfont=dict(family="Quicksand, sans-serif", size=11),
         ))
@@ -360,7 +332,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 # fermentation (and on pasture vs. in cattle operations) versus manure or rice.
 # Built from the 68 Climate TRACE sub-sectors already in SMAC_ch4_subsectors.csv.
 if not sec.empty:
-    eyebrow("Inside a sector")
+    eyebrow(t("profile.drill_eyebrow"))
     _present = [s for s in SECTOR_ORDER
                 if s in set(sec.loc[sec["total_emission"] > 0, "sector"])]
     _default = "Agriculture" if "Agriculture" in _present else (_present[0] if _present else None)
@@ -368,7 +340,7 @@ if not sec.empty:
         dd_l, dd_r = st.columns([1, 2.2], gap="large")
         with dd_l:
             dd_sector = st.selectbox(
-                "Sector to break down", options=_present,
+                t("profile.drill_select"), options=_present, format_func=sector_name,
                 index=_present.index(_default), key="smac_drill_sector",
             )
         sub_df = location_subsectors(iso, loc, dd_sector, sel_year)
@@ -379,38 +351,40 @@ if not sec.empty:
                 st.markdown(
                     f'<div style="font-family:Quicksand,sans-serif;font-size:26px;font-weight:700;'
                     f'margin-top:6px;">{fmt_int(sec_total)} t</div>'
-                    f'<div class="smac-meta" style="font-size:11px;">{dd_sector} CH₄ in {sel_year} · '
-                    f'{sec_share:.1f}% of {loc_display}\'s total</div>',
+                    f'<div class="smac-meta" style="font-size:11px;">'
+                    f'{t("profile.drill_total", sector=sector_name(dd_sector), y=sel_year, pct=f"{sec_share:.1f}", loc=loc_display)}</div>',
                     unsafe_allow_html=True,
                 )
                 if dd_sector == "Agriculture":
                     ent = sub_df[sub_df["sub_sector"].str.startswith("enteric-fermentation")]
                     if not ent.empty:
+                        _ent_pct = f'{ent["share_of_total"].sum():.1f}'
                         st.markdown(
                             f'<div class="smac-card" style="padding:14px 16px;margin-top:14px;">'
-                            f'<div class="smac-meta" style="font-size:10px;">enteric fermentation</div>'
+                            f'<div class="smac-meta" style="font-size:10px;">{t("profile.enteric")}</div>'
                             f'<div style="font-family:Quicksand,sans-serif;font-size:22px;font-weight:700;">'
                             f'{ent["share_of_sector"].sum():.1f}% <span style="font-size:12px;font-weight:400;'
-                            f'color:var(--ink-soft);">of agriculture</span></div>'
+                            f'color:var(--ink-soft);">{t("profile.of_agriculture")}</span></div>'
                             f'<div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">'
                             f'{fmt_int(ent["total_emission"].sum())} t CH₄ · '
-                            f'{ent["share_of_total"].sum():.1f}% of all {loc_display} methane</div>'
+                            f'{t("profile.of_all_methane", pct=_ent_pct, loc=loc_display)}</div>'
                             f'</div>',
                             unsafe_allow_html=True,
                         )
         with dd_r:
-            st.markdown(f"<h3>{dd_sector} by sub-sector · {sel_year}</h3>", unsafe_allow_html=True)
+            st.markdown(f"<h3>{t('profile.drill_h3', sector=sector_name(dd_sector), y=sel_year)}</h3>",
+                        unsafe_allow_html=True)
             if sub_df.empty:
-                st.info(f"No {sel_year} sub-sector detail for {dd_sector} in {loc_display}.")
+                st.info(t("profile.drill_none", y=sel_year, sector=sector_name(dd_sector), loc=loc_display))
             else:
                 import plotly.graph_objects as go
                 _d = sub_df.sort_values("total_emission", ascending=True)
                 _fig = go.Figure(go.Bar(
-                    x=_d["total_emission"], y=_d["sub_sector_label"], orientation="h",
+                    x=_d["total_emission"], y=[subsector_name(x) for x in _d["sub_sector"]], orientation="h",
                     marker_color=SECTOR_COLORS.get(dd_sector, "#b9c4bd"),
                     customdata=_d[["share_of_sector", "share_of_total"]].values,
                     hovertemplate="<b>%{y}</b><br>%{x:,.0f} t CH₄<br>"
-                                  "%{customdata[0]:.1f}% of sector · %{customdata[1]:.1f}% of total"
+                                  + t("profile.drill_hover") +
                                   "<extra></extra>",
                 ))
                 _fig.update_layout(
@@ -423,15 +397,13 @@ if not sec.empty:
                 )
                 st.plotly_chart(_fig, use_container_width=True, config={"displayModeBar": False})
                 st.markdown(
-                    '<div class="smac-meta" style="font-size:10px;">Climate TRACE sub-sectors. '
-                    '"Pasture" vs "operation" separates grazing cattle from cattle in feedlots '
-                    'and dairies — the two call for different mitigation levers.</div>',
+                    f'<div class="smac-meta" style="font-size:10px;">{t("profile.drill_note")}</div>',
                     unsafe_allow_html=True,
                 )
     st.markdown("<br>", unsafe_allow_html=True)
 
 # ============== TOP 20 EMITTING SOURCES ==============
-eyebrow("Top emitting sources")
+eyebrow(t("common.top_sources"))
 
 # Prefer real named facilities (individual landfills, oil & gas sites) when
 # scripts/fetch_point_sources.py has been run and its CSV committed. Fall back
@@ -441,40 +413,33 @@ facilities = top_facility_sources(iso, loc, sel_year, top_n=20)
 if not facilities.empty:
     top_n_share = facilities.attrs.get("top_n_share_pct", 0.0)
     st.markdown(
-        f"<h3>Top {len(facilities)} facilities ≈ <em>{top_n_share:.1f}%</em> of "
-        f"{loc_display}'s {sel_year} facility-level methane</h3>",
+        f"<h3>{t('profile.fac_h3', n=len(facilities), pct=f'{top_n_share:.1f}', loc=loc_display, y=sel_year)}</h3>",
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="smac-meta" style="margin-bottom:14px;">'
-        "individual emitting assets from Climate TRACE, ranked by methane. Waste, power, "
-        "manufacturing and mineral-extraction rows are genuine single sites (a named landfill, "
-        "a named plant). <strong>Oil &amp; gas rows are often field- or basin-level aggregates</strong> "
-        "rather than one wellpad — e.g. an entry covering a whole production play — so treat "
-        "those as \"where to look\" rather than \"which gate to knock on\". Road transport, "
-        "forestry and most agriculture are excluded entirely, because there an emissions "
-        "source is a road segment or grid cell, not a site.</div>",
+        f'<div class="smac-meta" style="margin-bottom:14px;">{t("profile.fac_note")}</div>',
         unsafe_allow_html=True,
     )
+    _c_fac, _c_type, _c_sec, _c_sub = (t("common.facility"), t("common.type"),
+                                       t("common.sector"), t("common.subsector"))
+    _c_ch4, _c_share = t("common.ch4_t_col", y=sel_year), t("profile.share_fac_col")
     fac_cols = {
-        "source_name": "Facility", "asset_type": "Type", "sector": "Sector",
-        "sub_sector": "Sub-sector",
-        "ch4_tonnes": f"{sel_year} CH₄ (t)", "share": "Share of facility total (%)",
+        "source_name": _c_fac, "asset_type": _c_type, "sector": _c_sec,
+        "sub_sector": _c_sub, "ch4_tonnes": _c_ch4, "share": _c_share,
     }
     show_cols = {k: v for k, v in fac_cols.items() if k in facilities.columns}
     display_fac = facilities[list(show_cols)].rename(columns=show_cols)
     st.dataframe(
         display_fac, hide_index=True, use_container_width=True, height=460,
         column_config={
-            "Facility": st.column_config.TextColumn(width="medium"),
-            "Type": st.column_config.TextColumn(width="small"),
-            "Sector": st.column_config.TextColumn(width="small"),
-            "Sub-sector": st.column_config.TextColumn(width="small"),
-            f"{sel_year} CH₄ (t)": st.column_config.NumberColumn(format="localized"),
-            "Share of facility total (%)": st.column_config.ProgressColumn(
+            _c_fac: st.column_config.TextColumn(width="medium"),
+            _c_type: st.column_config.TextColumn(width="small"),
+            _c_sec: st.column_config.TextColumn(width="small"),
+            _c_sub: st.column_config.TextColumn(width="small"),
+            _c_ch4: st.column_config.NumberColumn(format="localized"),
+            _c_share: st.column_config.ProgressColumn(
                 format="%.2f%%", min_value=0,
-                max_value=float(display_fac["Share of facility total (%)"].max())
-                if "Share of facility total (%)" in display_fac else 1.0,
+                max_value=float(display_fac[_c_share].max()) if _c_share in display_fac else 1.0,
             ),
         },
     )
@@ -482,7 +447,7 @@ if not facilities.empty:
         pts = facilities.dropna(subset=["lat", "lon"])
         if not pts.empty:
             st.markdown(
-                '<div class="smac-meta" style="margin-top:10px;">facility locations</div>',
+                f'<div class="smac-meta" style="margin-top:10px;">{t("common.facility_locations")}</div>',
                 unsafe_allow_html=True,
             )
             st.map(pts.rename(columns={"lat": "latitude", "lon": "longitude"})[
@@ -491,34 +456,33 @@ if not facilities.empty:
 else:
     top20 = top_point_sources(iso, loc, sel_year, top_n=20)
     if top20.empty:
-        st.info(f"No {sel_year} source-level data yet for {loc_display}.")
+        st.info(t("profile.no_sources", y=sel_year, loc=loc_display))
     else:
         top_n_share = top20.attrs.get("top_n_share_pct", 0.0)
         st.markdown(
-            f"<h3>Top {len(top20)} sources ≈ <em>{top_n_share:.1f}%</em> of {loc_display}'s {sel_year} methane</h3>",
+            f"<h3>{t('profile.src_h3', n=len(top20), pct=f'{top_n_share:.1f}', loc=loc_display, y=sel_year)}</h3>",
             unsafe_allow_html=True,
         )
         st.markdown(
-            '<div class="smac-meta" style="margin-bottom:14px;">'
-            "these are activity-level categories, not individual facilities. Facility-level data "
-            "for this jurisdiction hasn't been loaded yet — run "
-            "<code>scripts/fetch_point_sources.py</code> to pull named sites from Climate TRACE's "
-            "asset API. Until then, this ranks the 68 activity categories (e.g. "
-            "\"oil-and-gas-production\") that the aggregated dataset does cover.</div>",
+            f'<div class="smac-meta" style="margin-bottom:14px;">{t("profile.src_note")}</div>',
             unsafe_allow_html=True,
         )
-        display_top20 = top20[["sub_sector_label", "sector", "total_emission", "share"]].rename(columns={
-            "sub_sector_label": "Emitting source", "sector": "Sector",
-            "total_emission": f"{sel_year} CH₄ (t)", "share": "Share of jurisdiction (%)",
+        _s_src, _s_sec = t("profile.src_col"), t("common.sector")
+        _s_ch4, _s_share = t("common.ch4_t_col", y=sel_year), t("profile.share_juris_col")
+        display_top20 = top20[["sub_sector", "sector", "total_emission", "share"]].copy()
+        display_top20["sub_sector"] = display_top20["sub_sector"].map(subsector_name)
+        display_top20["sector"] = display_top20["sector"].map(sector_name)
+        display_top20 = display_top20.rename(columns={
+            "sub_sector": _s_src, "sector": _s_sec, "total_emission": _s_ch4, "share": _s_share,
         })
         st.dataframe(
             display_top20, hide_index=True, use_container_width=True, height=460,
             column_config={
-                "Emitting source": st.column_config.TextColumn(width="medium"),
-                "Sector": st.column_config.TextColumn(width="medium"),
-                f"{sel_year} CH₄ (t)": st.column_config.NumberColumn(format="localized"),
-                "Share of jurisdiction (%)": st.column_config.ProgressColumn(
-                    format="%.2f%%", min_value=0, max_value=float(display_top20["Share of jurisdiction (%)"].max()),
+                _s_src: st.column_config.TextColumn(width="medium"),
+                _s_sec: st.column_config.TextColumn(width="medium"),
+                _s_ch4: st.column_config.NumberColumn(format="localized"),
+                _s_share: st.column_config.ProgressColumn(
+                    format="%.2f%%", min_value=0, max_value=float(display_top20[_s_share].max()),
                 ),
             },
         )
@@ -527,14 +491,15 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 
 # ============== TOP SECTORS + METHANE ACTION PLAN ==============
-eyebrow("Top sectors")
+eyebrow(t("profile.top_sectors"))
 top_sectors = top_sectors_pareto(iso, loc, sel_year, threshold=0.80)
 
 if top_sectors.empty:
-    st.info(f"No {sel_year} data yet for {loc_display} to build an action plan from.")
+    st.info(t("profile.no_plan_data", y=sel_year, loc=loc_display))
 else:
+    _pareto_pct = f"{top_sectors['cum_share'].iloc[-1] * 100:.0f}"
     st.markdown(
-        f"<h3>The sectors driving ~{top_sectors['cum_share'].iloc[-1]*100:.0f}% of {loc_display}'s methane</h3>",
+        f"<h3>{t('profile.pareto_h3', pct=_pareto_pct, loc=loc_display)}</h3>",
         unsafe_allow_html=True,
     )
     src_cols = st.columns(len(top_sectors))
@@ -543,7 +508,7 @@ else:
             st.markdown(
                 f"""
                 <div style="border:1px solid var(--line);border-left:4px solid {SECTOR_COLORS.get(row.sector, '#b9c4bd')};padding:16px 18px;background:var(--paper);height:100%;">
-                  <div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:14px;margin-bottom:4px;">{row.sector}</div>
+                  <div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:14px;margin-bottom:4px;">{sector_name(row.sector)}</div>
                   <div style="font-family:Quicksand,sans-serif;font-size:24px;font-weight:700;letter-spacing:-0.01em;">{row.share*100:.1f}%</div>
                   <div style="font-size:11px;color:var(--ink-soft);margin-top:2px;">{fmt_int(row.total_emission)} t CH₄</div>
                 </div>
@@ -566,21 +531,18 @@ else:
     # "actual methane action plan" heading overstated documents that are often
     # broader climate plans (e.g. Maryland's CCAP, Jalisco's PEACC).
     if official_plans:
-        eyebrow("Existing Action Plans")
-        st.markdown(f"<h3>Published plans and strategies for {loc_display}</h3>",
-                    unsafe_allow_html=True)
+        eyebrow(t("profile.plans_eyebrow"))
+        st.markdown(f"<h3>{t('profile.plans_h3', loc=loc_display)}</h3>", unsafe_allow_html=True)
     elif dedicated_hits:
-        eyebrow("Existing Plans & Documents")
-        st.markdown(f"<h3>What {loc_display}'s own documents say</h3>", unsafe_allow_html=True)
+        eyebrow(t("profile.docs_eyebrow"))
+        st.markdown(f"<h3>{t('profile.docs_h3', loc=loc_display)}</h3>", unsafe_allow_html=True)
     else:
-        eyebrow("Suggested Starting Actions")
-        st.markdown(f"<h3>No published plan on file for {loc_display} — starting points by top source</h3>",
-                    unsafe_allow_html=True)
+        eyebrow(t("profile.suggest_eyebrow"))
+        st.markdown(f"<h3>{t('profile.suggest_h3', loc=loc_display)}</h3>", unsafe_allow_html=True)
 
     if official_plans:
         st.markdown(
-            '<div class="smac-meta" style="margin-bottom:10px;">published by the jurisdiction or its agencies — '
-            'not produced by SMAC</div>',
+            f'<div class="smac-meta" style="margin-bottom:10px;">{t("profile.plans_note")}</div>',
             unsafe_allow_html=True,
         )
         for p in official_plans:
@@ -596,7 +558,7 @@ else:
     if dedicated_hits:
         st.markdown(
             '<div class="smac-meta" style="margin:14px 0 10px;">'
-            f'excerpts retrieved from {loc_display}\'s own documents in our library</div>',
+            f'{t("profile.docs_note", loc=loc_display)}</div>',
             unsafe_allow_html=True,
         )
         for h in dedicated_hits[:3]:
@@ -604,7 +566,7 @@ else:
                 f'<div class="smac-card" style="padding:14px 18px;margin-bottom:10px;">'
                 f'<div style="font-size:13px;line-height:1.55;color:var(--ink);margin-bottom:6px;">'
                 f'&ldquo;{h["text"][:400]}{"…" if len(h["text"]) > 400 else ""}&rdquo;</div>'
-                f'<div class="smac-meta" style="font-size:10.5px;">source: {h["source_file"]}</div>'
+                f'<div class="smac-meta" style="font-size:10.5px;">{t("profile.source")}: {h["source_file"]}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -612,9 +574,7 @@ else:
     if not has_dedicated:
         st.markdown(
             '<div class="smac-meta" style="margin-bottom:14px;">'
-            f'we have no published action plan for {loc_display} on file yet — showing generic '
-            'best-practice actions for each top sector instead, plus the closest matches '
-            'from our general solution-bank library</div>',
+            f'{t("profile.suggest_note", loc=loc_display)}</div>',
             unsafe_allow_html=True,
         )
         bullets = action_plan_bullets(top_sectors)
@@ -626,14 +586,15 @@ else:
                     f'<span style="width:8px;height:8px;border-radius:50%;background:{SECTOR_COLORS.get(sector, "#b9c4bd")};'
                     f'flex-shrink:0;margin-top:6px;"></span>'
                     f'<div><div style="font-family:Quicksand,sans-serif;font-size:10px;letter-spacing:0.08em;'
-                    f'text-transform:uppercase;color:var(--ink-soft);margin-bottom:2px;">{sector}</div>'
-                    f'<div style="font-size:13.5px;line-height:1.5;color:var(--ink);">{bullet}</div></div></div>',
+                    f'text-transform:uppercase;color:var(--ink-soft);margin-bottom:2px;">{sector_name(sector)}</div>'
+                    f'<div style="font-size:13.5px;line-height:1.5;color:var(--ink);">'
+                    f'{tk(f"action.{sector}.{SECTOR_ACTIONS[sector].index(bullet)}", bullet)}</div></div></div>',
                     unsafe_allow_html=True,
                 )
         if rag_hits:
             st.markdown(
                 '<div class="smac-meta" style="margin:14px 0 10px;">'
-                'closest matches from the general solution-bank library</div>',
+                f'{t("profile.bank_note")}</div>',
                 unsafe_allow_html=True,
             )
             for h in rag_hits[:2]:
@@ -641,7 +602,7 @@ else:
                     f'<div class="smac-card" style="padding:14px 18px;margin-bottom:10px;">'
                     f'<div style="font-size:13px;line-height:1.55;color:var(--ink);margin-bottom:6px;">'
                     f'&ldquo;{h["text"][:350]}{"…" if len(h["text"]) > 350 else ""}&rdquo;</div>'
-                    f'<div class="smac-meta" style="font-size:10.5px;">source: {h["source_file"]}</div>'
+                    f'<div class="smac-meta" style="font-size:10.5px;">{t("profile.source")}: {h["source_file"]}</div>'
                     f'</div>',
                     unsafe_allow_html=True,
                 )
@@ -651,19 +612,21 @@ st.markdown("<br>", unsafe_allow_html=True)
 # ============== COUNTRY POLICY CONTEXT ==============
 policy = POLICY.get(iso, {})
 if policy.get("policies"):
-    eyebrow("Country policy context")
-    st.markdown(f"<h3>{meta['name']}'s methane policy stack</h3>", unsafe_allow_html=True)
+    eyebrow(t("profile.policy_eyebrow"))
+    st.markdown(f"<h3>{t('profile.policy_h3', country=country_name(iso))}</h3>", unsafe_allow_html=True)
     st.markdown(
-        f'<p style="font-size:14px;line-height:1.65;color:var(--ink-soft);margin-bottom:6px;">{policy.get("summary", "")}</p>'
+        f'<p style="font-size:14px;line-height:1.65;color:var(--ink-soft);margin-bottom:6px;">'
+        f'{tk(f"policy.{iso}.summary", policy.get("summary", ""))}</p>'
         f'<p style="font-size:11px;line-height:1.5;color:var(--ink-soft);opacity:0.75;margin-bottom:16px;">'
-        f'National-level context — this describes {meta["name"]}\'s policy landscape broadly, not {loc_display} specifically.</p>',
+        f'{t("profile.policy_note", country=country_name(iso), loc=loc_display)}</p>',
         unsafe_allow_html=True,
     )
     st.markdown(
         "".join(
             f'<p style="font-size:14px;line-height:1.65;color:var(--ink-soft);margin-bottom:12px;">'
-            f'<strong style="color:var(--ink);">{n}.</strong> {d}</p>'
-            for n, d in policy["policies"]
+            f'<strong style="color:var(--ink);">{tk(f"policy.{iso}.{i}.name", n)}.</strong> '
+            f'{tk(f"policy.{iso}.{i}.desc", d)}</p>'
+            for i, (n, d) in enumerate(policy["policies"])
         ),
         unsafe_allow_html=True,
     )

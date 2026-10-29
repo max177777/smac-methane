@@ -1,5 +1,5 @@
 """
-Overview / landing page.
+Overview / landing page. All visible text comes from i18n/<lang>.json via t().
 """
 
 import streamlit as st
@@ -11,6 +11,7 @@ from utils.data_loader import (
     country_monthly, country_yearly, fmt_mt, pct_change, display_name,
 )
 from utils.charts import sparkline_plotly, jurisdiction_map_plotly
+from utils.i18n import t, country_name, region_name, subunit_name
 
 
 inject_theme()
@@ -22,45 +23,35 @@ col1, col2 = st.columns([1.4, 1], gap="large")
 
 with col1:
     dot_logo(36)
-    eyebrow("AI Methane Decision Assistant · V1")
+    eyebrow(t("overview.eyebrow"))
     st.markdown(
         '<div style="display:flex;align-items:center;gap:10px;margin:-4px 0 18px;flex-wrap:wrap;">'
         f'<span class="smac-meta" style="font-size:12px;">SMAC · {DATA_RANGE_LABEL}</span>'
         '</div>',
         unsafe_allow_html=True,
     )
-    st.markdown(
-        "<h1 style='margin-bottom:0;'>Translating <em>methane data</em> into "
-        "policy actions.</h1>",
-        unsafe_allow_html=True,
-    )
+    st.markdown(f"<h1 style='margin-bottom:0;'>{t('overview.hero_title')}</h1>",
+                unsafe_allow_html=True)
     st.markdown(
         '<p style="font-family:Inter,sans-serif;font-size:18px;line-height:1.6;'
         'color:var(--ink-soft);max-width:520px;margin-top:24px;font-weight:400;">'
-        "The SMAC Methane Inventory Tool tracks methane emissions across every actual "
-        "Subnational Methane Action Coalition member and observer jurisdiction — "
-        f"{_n_roster} states, provinces, and regions across {len(COUNTRY_ORDER)} countries "
-        "— from 2021 through 2026, paired with a chat that reasons through IPCC GWP "
-        "frameworks and policy context."
-        "</p>",
+        f"{t('overview.hero_body', n=_n_roster, c=len(COUNTRY_ORDER))}</p>",
         unsafe_allow_html=True,
     )
 
     st.write("")
     cta1, cta2, cta3 = st.columns([1, 1, 1])
     with cta1:
-        if st.button("Open Chat →", use_container_width=True, type="primary"):
+        if st.button(t("overview.cta_chat"), use_container_width=True, type="primary"):
             st.switch_page("pages/4_Chat.py")
     with cta2:
-        if st.button("The SMAC Group →", use_container_width=True, type="secondary"):
+        if st.button(t("overview.cta_smac"), use_container_width=True, type="secondary"):
             st.switch_page("pages/2_Country_Profile.py")
     with cta3:
-        if st.button("Data & Methods →", use_container_width=True, type="secondary"):
+        if st.button(t("overview.cta_methods"), use_container_width=True, type="secondary"):
             st.switch_page("pages/5_Data_Methods.py")
     st.markdown(
-        '<div class="smac-meta" style="font-size:10px;margin-top:10px;">'
-        'New here? Start with <strong>Data &amp; Methods</strong> — what this data is, '
-        'and where it falls short.</div>',
+        f'<div class="smac-meta" style="font-size:10px;margin-top:10px;">{t("overview.new_here")}</div>',
         unsafe_allow_html=True,
     )
 
@@ -72,34 +63,27 @@ with col2:
     n_months = total_months_of_data()
     n_subsectors = load_subsector_raw()["sub_sector"].nunique()
 
-    eyebrow("At a glance")
+    eyebrow(t("overview.glance"))
+
+    def _stat(value, unit, caption, last=False):
+        bb = "border-bottom:1px solid var(--line);" if last else ""
+        return (
+            f'<div style="border-top:1px solid var(--line);{bb}padding:20px 0;display:flex;'
+            f'justify-content:space-between;align-items:baseline;gap:12px;">'
+            f'<div style="font-family:Quicksand,sans-serif;font-size:42px;font-weight:300;'
+            f'letter-spacing:-0.02em;line-height:1;">{value}<span style="font-family:Quicksand,'
+            f'sans-serif;font-size:11px;color:var(--ink-soft);margin-left:6px;letter-spacing:0.1em;">'
+            f'{unit}</span></div>'
+            f'<div style="font-family:Quicksand,sans-serif;font-size:10px;text-transform:uppercase;'
+            f'letter-spacing:0.1em;color:var(--ink-soft);text-align:right;max-width:220px;'
+            f'line-height:1.4;">{caption}</div></div>'
+        )
+
     st.markdown(
-        f"""
-        <div style="border-top:1px solid var(--line);padding:20px 0;display:flex;justify-content:space-between;align-items:baseline;">
-          <div style="font-family:Quicksand,sans-serif;font-size:42px;font-weight:300;letter-spacing:-0.02em;line-height:1;">
-            {len(COUNTRY_ORDER)}<span style="font-family:Quicksand,sans-serif;font-size:11px;color:var(--ink-soft);margin-left:6px;letter-spacing:0.1em;">countries</span>
-          </div>
-          <div style="font-family:Quicksand,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-soft);text-align:right;max-width:220px;line-height:1.4;white-space:nowrap;">with SMAC members</div>
-        </div>
-        <div style="border-top:1px solid var(--line);padding:20px 0;display:flex;justify-content:space-between;align-items:baseline;">
-          <div style="font-family:Quicksand,sans-serif;font-size:42px;font-weight:300;letter-spacing:-0.02em;line-height:1;">
-            {total_loc}<span style="font-family:Quicksand,sans-serif;font-size:11px;color:var(--ink-soft);margin-left:6px;letter-spacing:0.1em;">subnational jurisdictions</span>
-          </div>
-          <div style="font-family:Quicksand,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-soft);text-align:right;max-width:220px;line-height:1.4;white-space:nowrap;">SMAC members &amp; observers</div>
-        </div>
-        <div style="border-top:1px solid var(--line);padding:20px 0;display:flex;justify-content:space-between;align-items:baseline;">
-          <div style="font-family:Quicksand,sans-serif;font-size:42px;font-weight:300;letter-spacing:-0.02em;line-height:1;">
-            {n_months}<span style="font-family:Quicksand,sans-serif;font-size:11px;color:var(--ink-soft);margin-left:6px;letter-spacing:0.1em;">months</span>
-          </div>
-          <div style="font-family:Quicksand,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-soft);text-align:right;max-width:220px;line-height:1.4;white-space:nowrap;">monthly time series</div>
-        </div>
-        <div style="border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:20px 0;display:flex;justify-content:space-between;align-items:baseline;">
-          <div style="font-family:Quicksand,sans-serif;font-size:42px;font-weight:300;letter-spacing:-0.02em;line-height:1;">
-            {n_subsectors}<span style="font-family:Quicksand,sans-serif;font-size:11px;color:var(--ink-soft);margin-left:6px;letter-spacing:0.1em;">activity sources</span>
-          </div>
-          <div style="font-family:Quicksand,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-soft);text-align:right;max-width:220px;line-height:1.4;white-space:nowrap;">tracked per jurisdiction</div>
-        </div>
-        """,
+        _stat(len(COUNTRY_ORDER), t("overview.stat_countries"), t("overview.stat_countries_cap"))
+        + _stat(total_loc, t("overview.stat_juris"), t("overview.stat_juris_cap"))
+        + _stat(n_months, t("overview.stat_months"), t("overview.stat_months_cap"))
+        + _stat(n_subsectors, t("overview.stat_sources"), t("overview.stat_sources_cap"), last=True),
         unsafe_allow_html=True,
     )
 
@@ -108,57 +92,29 @@ st.markdown("---")
 # ============== HOW TO USE THIS TOOL (page guide) ==============
 # CalEPA feedback: first-time visitors couldn't tell what each page was for.
 # One card per page — what it shows, the question it answers, and a button.
-eyebrow("How to use this tool")
-st.markdown(
-    "<h2 style='font-size:2.2rem;margin-bottom:8px;'>What each page <em>does</em>.</h2>",
-    unsafe_allow_html=True,
-)
+eyebrow(t("overview.guide_eyebrow"))
+st.markdown(f"<h2 style='font-size:2.2rem;margin-bottom:8px;'>{t('overview.guide_title')}</h2>",
+            unsafe_allow_html=True)
 st.markdown(
     '<p style="font-size:15px;line-height:1.65;color:var(--ink-soft);max-width:720px;'
-    'margin-bottom:22px;">'
-    "New here? A good first pass is three steps: skim <strong>Data &amp; Methods</strong> "
-    "to see what the numbers can and can't tell you, open <strong>your jurisdiction</strong>, "
-    "then take follow-up questions to the <strong>Chat</strong>."
-    "</p>",
+    f'margin-bottom:22px;">{t("overview.guide_intro")}</p>',
     unsafe_allow_html=True,
 )
 
 GUIDE = [
-    ("SMAC Members", "pages/2_Country_Profile.py",
-     "Pick any SMAC member or observer to see its methane total and trend, sector mix, "
-     "a sub-sector drill-down (e.g. enteric fermentation), the top 20 emitting "
-     "facilities on a map, and the action plans it has already published.",
-     "How much methane do we emit, and from where?"),
-    ("Global View", "pages/8_Global_View.py",
-     "Not a SMAC member? Type any state, province or region worldwide to see its "
-     "methane total and trend, sector mix, and its top 20 emitting facilities.",
-     "Where does methane come from in our state?"),
-    ("Comparison", "pages/3_Comparison.py",
-     "Put two jurisdictions — or the same one in two years — side by side: sector "
-     "breakdown, data table, and how the sector mix has shifted since 2021.",
-     "How does our profile differ from a peer's?"),
-    ("Chat", "pages/4_Chat.py",
-     "Ask in plain language. Answers are grounded in the Climate TRACE figures for the "
-     "jurisdiction you select and in SMAC's library of plans and policy documents, "
-     "with the sources shown.",
-     "What policy options fit our largest sources?"),
-    ("Data & Methods", "pages/5_Data_Methods.py",
-     "Where the numbers come from, how Climate TRACE's sectors map to ours, and the "
-     "known limitations — read this before quoting a figure.",
-     "How much should we trust this number?"),
-    ("FAQ", "pages/7_FAQ.py",
-     "Short answers to the questions members ask most — e.g. whether Carbon Mapper "
-     "data is included, why a figure differs from an official inventory.",
-     "Quick answers without reading the full methods."),
-    ("Contact", "pages/6_Contact.py",
-     "Join SMAC, reach the research team, or send a correction or your own inventory "
-     "so we can integrate it.",
-     "A number looks wrong — who do we tell?"),
+    ("smac", "pages/2_Country_Profile.py"),
+    ("global", "pages/8_Global_View.py"),
+    ("compare", "pages/3_Comparison.py"),
+    ("chat", "pages/4_Chat.py"),
+    ("methods", "pages/5_Data_Methods.py"),
+    ("faq", "pages/7_FAQ.py"),
+    ("contact", "pages/6_Contact.py"),
 ]
 GUIDE_PER_ROW = 3
 for row_start in range(0, len(GUIDE), GUIDE_PER_ROW):
     gcols = st.columns(GUIDE_PER_ROW, gap="medium")
-    for j, (title, page, desc, question) in enumerate(GUIDE[row_start:row_start + GUIDE_PER_ROW]):
+    for j, (gk, page) in enumerate(GUIDE[row_start:row_start + GUIDE_PER_ROW]):
+        title = t(f"nav.{gk}")
         with gcols[j]:
             st.markdown(
                 f'<div class="smac-card" style="padding:20px 22px;min-height:230px;">'
@@ -167,35 +123,29 @@ for row_start in range(0, len(GUIDE), GUIDE_PER_ROW):
                 f'<div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:18px;'
                 f'margin-bottom:8px;">{title}</div>'
                 f'<div style="font-size:13px;line-height:1.55;color:var(--ink-soft);'
-                f'margin-bottom:12px;">{desc}</div>'
+                f'margin-bottom:12px;">{t(f"overview.guide_{gk}_desc")}</div>'
                 f'<div style="font-size:12px;line-height:1.45;color:var(--mint-deep);'
-                f'font-style:italic;">&ldquo;{question}&rdquo;</div>'
+                f'font-style:italic;">&ldquo;{t(f"overview.guide_{gk}_q")}&rdquo;</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
-            if st.button(f"Open {title} →", key=f"guide_{page}", use_container_width=True):
+            if st.button(t("overview.guide_open", page=title), key=f"guide_{page}",
+                         use_container_width=True):
                 st.switch_page(page)
     st.markdown('<div style="height:14px;"></div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
 # ============== ABOUT SMAC (mirrors smacmethane.org) ==============
-# Moved here from the SMAC Explorer page: members arriving at the data page
-# already know what SMAC is and want their numbers, so the "what is SMAC"
-# framing belongs on the front page instead.
 smac_l, smac_r = st.columns([1.3, 1], gap="large")
 
 with smac_l:
-    eyebrow("Subnational Methane Action Coalition")
-    st.markdown("<h2 style='font-size:2.2rem;'>Leading the world toward <em>fast methane action</em>.</h2>",
+    eyebrow(t("common.smac_full"))
+    st.markdown(f"<h2 style='font-size:2.2rem;'>{t('overview.about_title')}</h2>",
                 unsafe_allow_html=True)
     st.markdown(
         '<p style="font-family:Inter,sans-serif;font-size:16px;line-height:1.65;'
-        'color:var(--ink-soft);max-width:640px;margin-bottom:18px;">'
-        "Worldwide, states and provinces have the authority and expertise to slash methane "
-        "emissions and combat climate change. Members of the Subnational Methane Action "
-        "Coalition (SMAC) are leading the way."
-        "</p>",
+        f'color:var(--ink-soft);max-width:640px;margin-bottom:18px;">{t("overview.about_body")}</p>',
         unsafe_allow_html=True,
     )
 
@@ -203,37 +153,28 @@ with smac_l:
     with smac_btns[0]:
         st.markdown(
             '<a href="https://www.smacmethane.org/benefits" target="_blank" style="text-decoration:none;">'
-            '<span class="smac-pill" style="display:block;text-align:center;padding:10px 22px;font-size:15px;">Benefits</span></a>',
+            '<span class="smac-pill" style="display:block;text-align:center;padding:10px 22px;font-size:15px;">'
+            f'{t("overview.benefits")}</span></a>',
             unsafe_allow_html=True,
         )
     with smac_btns[1]:
-        if st.button("Join", key="smac_join_btn", type="primary"):
+        if st.button(t("overview.join"), key="smac_join_btn", type="primary"):
             st.switch_page("pages/6_Contact.py")
 
     st.markdown(
         '<div style="margin-top:16px;margin-bottom:26px;">'
         '<a href="https://www.smacmethane.org/s/SMAC_Letter-from-California_2025-1-yg86.pdf" target="_blank" '
         'style="font-family:Quicksand,sans-serif;font-size:13px;font-weight:700;color:var(--mint-deep);text-decoration:none;">'
-        '\U0001F4C4 An Invitation from California \u2192</a></div>',
+        f'\U0001F4C4 {t("overview.ca_letter")} →</a></div>',
         unsafe_allow_html=True,
     )
 
-    eyebrow("The Methane Imperative")
+    eyebrow(t("overview.imperative"))
     st.markdown(
         '<p style="font-family:Inter,sans-serif;font-size:15px;line-height:1.7;'
-        'color:var(--ink-soft);max-width:680px;margin-bottom:14px;">'
-        "Methane is a colorless, combustible gas that has caused nearly one-third of "
-        "Earth's warming. In the short term, one ton of methane traps 80 times more heat "
-        "than one ton of carbon dioxide. Since captured methane can be used for fuel, "
-        "methane solutions are often profitable."
-        "</p>"
+        f'color:var(--ink-soft);max-width:680px;margin-bottom:14px;">{t("overview.imperative_p1")}</p>'
         '<p style="font-family:Inter,sans-serif;font-size:15px;line-height:1.7;'
-        'color:var(--ink-soft);max-width:680px;margin-bottom:8px;">'
-        "States and provinces are uniquely positioned to lead the fight against methane "
-        "emissions. SMAC provides a platform that helps governments gain access to "
-        "technical and policy resources while learning from each other. Joining SMAC is "
-        "always free."
-        "</p>",
+        f'color:var(--ink-soft);max-width:680px;margin-bottom:8px;">{t("overview.imperative_p2")}</p>',
         unsafe_allow_html=True,
     )
 
@@ -249,41 +190,32 @@ st.markdown(
     '<div style="border-top:1px solid var(--line);border-bottom:1px solid var(--line);'
     'padding:18px 0;margin:18px 0;display:flex;gap:48px;flex-wrap:wrap;">'
     '<div><div style="font-family:Quicksand,sans-serif;font-size:28px;font-weight:700;">375M+</div>'
-    '<div class="smac-meta" style="font-size:11px;">combined population of SMAC members</div></div>'
+    f'<div class="smac-meta" style="font-size:11px;">{t("overview.population")}</div></div>'
     '<div><div style="font-family:Quicksand,sans-serif;font-size:28px;font-weight:700;">US$4.6T+</div>'
-    '<div class="smac-meta" style="font-size:11px;">combined GDP of SMAC members</div></div>'
+    f'<div class="smac-meta" style="font-size:11px;">{t("overview.gdp")}</div></div>'
     '</div>',
     unsafe_allow_html=True,
 )
 
 with dark_band():
-    eyebrow("What SMAC does")
-    st.markdown("<h2 style='font-size:2.2rem;margin-bottom:8px;'>Methane policy, <em>simplified</em>.</h2>",
+    eyebrow(t("overview.does_eyebrow"))
+    st.markdown(f"<h2 style='font-size:2.2rem;margin-bottom:8px;'>{t('overview.does_title')}</h2>",
                 unsafe_allow_html=True)
     st.markdown(
         '<p style="font-family:Inter,sans-serif;font-size:15px;line-height:1.65;'
-        'color:rgba(255,255,255,0.75);max-width:680px;margin-bottom:28px;">'
-        "Each jurisdiction has different needs. Whether a government is new to methane "
-        "efforts or already a world leader, SMAC helps officials craft strong methane "
-        "policies and gain global recognition for their efforts."
-        "</p>",
+        f'color:rgba(255,255,255,0.75);max-width:680px;margin-bottom:28px;">{t("overview.does_body")}</p>',
         unsafe_allow_html=True,
     )
-    smac_functions = [
-        ("Identifying Solutions", "Through an extensive network of methane experts, SMAC helps governments build customized methane strategies to meet their needs."),
-        ("Supporting Monitoring", "Through SMAC, governments identify key sources of methane, including through low-cost technologies and publicly available satellite data."),
-        ("Deploying Projects", "Working alongside industry, SMAC tracks and facilitates innovative methane initiatives at oil and gas operations, farms, landfills, and other facilities."),
-        ("Building Model Policies", "SMAC builds international collaborations to exchange model policies, laws, and rules."),
-        ("Promoting Environmental Justice", "Through SMAC, governments are positioned to maximize the social, economic, and health benefits of methane action."),
-    ]
     func_cols = st.columns(2)
-    for i, (title, desc) in enumerate(smac_functions):
+    for i in range(5):
         with func_cols[i % 2]:
             st.markdown(
                 f'<div style="display:flex;gap:12px;margin-bottom:22px;align-items:flex-start;">'
                 f'<span style="width:9px;height:9px;border-radius:50%;background:var(--mint);flex-shrink:0;margin-top:7px;"></span>'
-                f'<div><div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:15px;color:#ffffff;margin-bottom:4px;">{title}</div>'
-                f'<div style="font-size:13px;line-height:1.55;color:rgba(255,255,255,0.72);">{desc}</div></div></div>',
+                f'<div><div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:15px;color:#ffffff;margin-bottom:4px;">'
+                f'{t(f"overview.fn{i + 1}_title")}</div>'
+                f'<div style="font-size:13px;line-height:1.55;color:rgba(255,255,255,0.72);">'
+                f'{t(f"overview.fn{i + 1}_desc")}</div></div></div>',
                 unsafe_allow_html=True,
             )
 
@@ -292,24 +224,16 @@ st.markdown("---")
 
 # ============== MEMBERS ==============
 n_members, n_observers = total_member_counts()
-eyebrow("Members")
-# The mint <em> styling previously fell on "and N observers", which visually
-# promoted observers above members — the opposite of the actual hierarchy.
+eyebrow(t("overview.members_eyebrow"))
+# Mint emphasis stays on members (not observers) — matches the actual hierarchy.
 st.markdown(
-    f"<h2 style='font-size:2.2rem;margin-bottom:12px;'><em>{n_members} members</em> "
-    f"and {n_observers} observers, across {len(COUNTRY_ORDER)} countries.</h2>",
+    f"<h2 style='font-size:2.2rem;margin-bottom:12px;'>"
+    f"{t('overview.members_title', m=n_members, o=n_observers, c=len(COUNTRY_ORDER))}</h2>",
     unsafe_allow_html=True,
 )
 st.markdown(
     '<p style="font-size:14px;line-height:1.7;color:var(--ink-soft);max-width:720px;'
-    'margin-bottom:26px;">'
-    "<strong>Members</strong> are jurisdictions that have formally joined the coalition and "
-    "committed to its methane goals. <strong>Observers</strong> participate in SMAC "
-    "convenings and have access to its technical and policy resources, but have not made "
-    "that formal commitment — often because a domestic process is still underway. Both "
-    "appear throughout this tool; observer status is labelled wherever a jurisdiction is "
-    "shown."
-    "</p>",
+    f'margin-bottom:26px;">{t("overview.members_body")}</p>',
     unsafe_allow_html=True,
 )
 
@@ -328,16 +252,16 @@ for col, regions in zip(member_cols, REGION_GROUPS):
         for region in regions:
             st.markdown(
                 f'<div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:15px;'
-                f'margin:4px 0 10px;">{region}</div>',
+                f'margin:4px 0 10px;">{region_name(region)}</div>',
                 unsafe_allow_html=True,
             )
             for iso in region_to_isos.get(region, []):
                 for row in MEMBER_ROSTER.get(iso, []):
-                    tag = ("  <span style='color:var(--ink-soft);'>(Observer)</span>"
+                    tag = (f"  <span style='color:var(--ink-soft);'>({t('common.observer')})</span>"
                            if row["status"] == "observer" else "")
                     st.markdown(
                         f'<div style="font-size:13.5px;line-height:1.9;color:var(--ink);">'
-                        f'{display_name(row["location"])}, {COUNTRY_META[iso]["name"]}{tag}</div>',
+                        f'{display_name(row["location"])}, {country_name(iso)}{tag}</div>',
                         unsafe_allow_html=True,
                     )
         st.markdown('<div style="height:8px;"></div>', unsafe_allow_html=True)
@@ -346,20 +270,14 @@ st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("---")
 
 with dark_band():
-    eyebrow("Methodology")
-    st.markdown("<h2 style='font-size:2.2rem;margin-bottom:32px;'>Five-stage <em>reasoning pipeline</em>.</h2>", unsafe_allow_html=True)
+    eyebrow(t("overview.method_eyebrow"))
+    st.markdown(f"<h2 style='font-size:2.2rem;margin-bottom:32px;'>{t('overview.method_title')}</h2>",
+                unsafe_allow_html=True)
 
-    flow_steps = [
-        ("01 / DATA", "Load", "Monthly methane data from Climate TRACE across SMAC countries, down to subnational units."),
-        ("02 / CLEAN", "Check", "Validate time trends, detect unusual changes, and flag uncertainty at the local level."),
-        ("03 / INSIGHT", "Translate", "Convert CH₄ into CO₂e using IPCC GWP100 and GWP20, and identify emission hotspots."),
-        ("04 / DECISION", "Reason", "AI chat connects data with policy context and explains what is happening and why."),
-        ("05 / ACTION", "Recommend", "Suggest mitigation pathways based on impact, while flagging potential greenwashing risks."),
-    ]
     flow_cols = st.columns(5)
-    for i, (num, title, desc) in enumerate(flow_steps):
+    for i in range(5):
         with flow_cols[i]:
-            is_last = i == len(flow_steps) - 1
+            is_last = i == 4
             bg = "var(--mint)" if is_last else "rgba(255,255,255,0.06)"
             text_color = "var(--ink)" if is_last else "#ffffff"
             soft_color = "var(--ink)" if is_last else "rgba(255,255,255,0.65)"
@@ -367,9 +285,9 @@ with dark_band():
             st.markdown(
                 f"""
                 <div style="padding:24px 18px;background:{bg};border:1px solid {border_color};border-radius:14px;height:100%;color:{text_color};">
-                  <div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:11px;color:{soft_color};letter-spacing:0.1em;margin-bottom:10px;">{num}</div>
-                  <div style="font-family:Quicksand,sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.01em;margin-bottom:6px;">{title}</div>
-                  <div style="font-size:12.5px;line-height:1.5;color:{soft_color};">{desc}</div>
+                  <div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:11px;color:{soft_color};letter-spacing:0.1em;margin-bottom:10px;">{i + 1:02d} / {t(f"overview.step{i + 1}_tag")}</div>
+                  <div style="font-family:Quicksand,sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.01em;margin-bottom:6px;">{t(f"overview.step{i + 1}_title")}</div>
+                  <div style="font-size:12.5px;line-height:1.5;color:{soft_color};">{t(f"overview.step{i + 1}_desc")}</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -379,14 +297,12 @@ st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("---")
 
 # ============== COUNTRY GRID ==============
-eyebrow("THE SMAC")
+eyebrow(t("overview.grid_eyebrow"))
 st.markdown(
-    f"<h2 style='font-size:2.2rem;margin-bottom:32px;'>{len(COUNTRY_ORDER)} countries, "
-    f"<em>distinct policy textures.</em></h2>",
+    f"<h2 style='font-size:2.2rem;margin-bottom:32px;'>{t('overview.grid_title', c=len(COUNTRY_ORDER))}</h2>",
     unsafe_allow_html=True,
 )
 
-# Build a 3-column responsive grid
 cols_per_row = 3
 year_totals = all_countries_year_total(CURRENT_YEAR)
 for row_start in range(0, len(COUNTRY_ORDER), cols_per_row):
@@ -402,22 +318,23 @@ for row_start in range(0, len(COUNTRY_ORDER), cols_per_row):
             n_loc = int(year_totals.query(f"iso3 == '{iso}'")["n_locations"].iloc[0])
             arrow = "↑" if yoy > 0.5 else ("↓" if yoy < -0.5 else "→")
             arrow_color = "var(--warn)" if yoy > 0.5 else ("var(--good)" if yoy < -0.5 else "var(--ink-soft)")
+            units = t("overview.n_smac_units", n=n_loc, unit=subunit_name(meta["subunit_type"], n_loc))
 
             st.markdown(
                 f"""
                 <div style="border:1px solid var(--line);padding:24px 22px;background:var(--paper);height:100%;">
                   <div style="font-family:Quicksand,sans-serif;font-size:10px;color:var(--ink-soft);letter-spacing:0.16em;display:flex;justify-content:space-between;margin-bottom:14px;">
-                    <span>{meta['region'].upper()}</span><span>ISO · {iso}</span>
+                    <span>{region_name(meta['region']).upper()}</span><span>ISO · {iso}</span>
                   </div>
-                  <div style="font-family:Quicksand,sans-serif;font-size:30px;font-weight:400;letter-spacing:-0.02em;line-height:1;margin-bottom:4px;">{meta['name']}</div>
-                  <div style="font-family:Inter,sans-serif;font-size:12px;color:var(--ink-soft);margin-bottom:18px;">{n_loc} SMAC {meta['subunit_type']}{'s' if n_loc != 1 else ''}</div>
+                  <div style="font-family:Quicksand,sans-serif;font-size:30px;font-weight:400;letter-spacing:-0.02em;line-height:1;margin-bottom:4px;">{country_name(iso)}</div>
+                  <div style="font-family:Inter,sans-serif;font-size:12px;color:var(--ink-soft);margin-bottom:18px;">{units}</div>
                   <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
                     <div style="display:flex;justify-content:space-between;border-bottom:1px dotted var(--line-soft);padding-bottom:5px;font-size:12px;">
-                      <span style="color:var(--ink-soft);font-family:Quicksand,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;">{CURRENT_YEAR} total</span>
+                      <span style="color:var(--ink-soft);font-family:Quicksand,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;">{t("overview.year_total", y=CURRENT_YEAR)}</span>
                       <span style="font-family:Quicksand,sans-serif;font-weight:500;">{fmt_mt(y_now)} Mt CH₄</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;border-bottom:1px dotted var(--line-soft);padding-bottom:5px;font-size:12px;">
-                      <span style="color:var(--ink-soft);font-family:Quicksand,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;">YoY {str(CURRENT_YEAR - 1)[2:]}→{str(CURRENT_YEAR)[2:]}</span>
+                      <span style="color:var(--ink-soft);font-family:Quicksand,sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;">{t("common.yoy")} {str(CURRENT_YEAR - 1)[2:]}→{str(CURRENT_YEAR)[2:]}</span>
                       <span style="font-family:Quicksand,sans-serif;font-weight:500;color:{arrow_color};">{arrow} {yoy:+.2f}%</span>
                     </div>
                   </div>
@@ -425,7 +342,6 @@ for row_start in range(0, len(COUNTRY_ORDER), cols_per_row):
                 """,
                 unsafe_allow_html=True,
             )
-            # Sparkline
             monthly = country_monthly(iso)
             st.plotly_chart(sparkline_plotly(monthly, height=50), use_container_width=True,
                             config={"displayModeBar": False}, key=f"spark_{iso}")

@@ -17,16 +17,16 @@ from utils.data_loader import (
     fmt_int, fmt_mt,
 )
 from utils.charts import SECTOR_COLORS, INK, INK_SOFT, LINE_SOFT, PAPER
+from utils.i18n import t, sector_name, country_name
 
 inject_theme()
 
 YEARS = list(range(2021, CURRENT_YEAR + 2))  # includes the partial current-year+1 (2026)
 
-eyebrow("Comparison")
-st.markdown("<h1>Compare CH₄ <em>emissions</em></h1>", unsafe_allow_html=True)
+eyebrow(t("nav.compare"))
+st.markdown(f"<h1>{t('compare.title')}</h1>", unsafe_allow_html=True)
 st.markdown(
-    '<div class="smac-meta" style="margin-bottom:18px;">'
-    'pick any two SMAC jurisdictions and compare side by side</div>',
+    f'<div class="smac-meta" style="margin-bottom:18px;">{t("compare.subtitle")}</div>',
     unsafe_allow_html=True,
 )
 
@@ -41,20 +41,20 @@ DEFAULT_B = ("CAN", "Alberta")
 def _picker(side: str, default: tuple[str, str]):
     """Renders Country + Subnational + Year pickers for one side ('A' or 'B').
     Returns (iso, location, year)."""
-    st.markdown(f"<h3 style='margin-bottom:10px;'>Location {side}</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='margin-bottom:10px;'>{t('compare.location', side=side)}</h3>", unsafe_allow_html=True)
     d_iso, d_loc = default
     iso = st.selectbox(
-        f"Country {side}", options=COUNTRY_ORDER,
+        t("compare.country", side=side), options=COUNTRY_ORDER,
         index=COUNTRY_ORDER.index(d_iso) if d_iso in COUNTRY_ORDER else 0,
-        format_func=lambda x: COUNTRY_META[x]["name"],
+        format_func=country_name,
         key=f"cmp_country_{side}",
     )
     locs = list_locations(iso)
     location = st.selectbox(
-        f"Subnational unit {side}", options=locs,
+        t("compare.unit", side=side), options=locs,
         index=locs.index(d_loc) if d_loc in locs else 0,
         format_func=display_name, key=f"cmp_loc_{side}")
-    year = st.selectbox(f"Year {side}", options=list(reversed(YEARS)),
+    year = st.selectbox(t("compare.year", side=side), options=list(reversed(YEARS)),
                         index=YEARS[::-1].index(CURRENT_YEAR), key=f"cmp_year_{side}")
     return iso, location, year
 
@@ -77,7 +77,7 @@ def _sector_bar(sec_df, title, key, y_max=None):
     ordered = [s for s in SECTOR_ORDER if s in set(sec_df["sector"])]
     vals = sec_df.set_index("sector").reindex(ordered)["total_emission"].fillna(0)
     fig.add_trace(go.Bar(
-        x=ordered, y=vals.values,
+        x=[sector_name(x) for x in ordered], y=vals.values,
         marker_color=[SECTOR_COLORS.get(s, "#b9c4bd") for s in ordered],
     ))
     fig.update_layout(
@@ -100,14 +100,14 @@ def _trend_chart(iso, location, key, y_max=None):
         if sub.empty:
             continue
         fig.add_trace(go.Bar(
-            x=sub["year"], y=sub["ch4_tonnes"], name=s,
+            x=sub["year"], y=sub["ch4_tonnes"], name=sector_name(s),
             marker_color=SECTOR_COLORS.get(s, "#b9c4bd"),
         ))
     fig.update_layout(
         barmode="stack", height=340, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         margin=dict(l=10, r=10, t=10, b=10),
         xaxis=dict(dtick=1, tickfont=dict(size=10, family="Quicksand, sans-serif")),
-        yaxis=dict(gridcolor=LINE_SOFT, title="CH₄ tonnes",
+        yaxis=dict(gridcolor=LINE_SOFT, title=t("common.ch4_tonnes"),
                    tickfont=dict(size=10, family="Quicksand, sans-serif"),
                    range=[0, y_max] if y_max else None),
         legend=dict(orientation="v", font=dict(size=9, family="Quicksand, sans-serif")),
@@ -117,8 +117,8 @@ def _trend_chart(iso, location, key, y_max=None):
 
 
 # ============== SECTOR BREAKDOWN ==============
-label_a = f"{display_name(loc_a)} ({COUNTRY_META[iso_a]['name']})"
-label_b = f"{display_name(loc_b)} ({COUNTRY_META[iso_b]['name']})"
+label_a = f"{display_name(loc_a)} ({country_name(iso_a)})"
+label_b = f"{display_name(loc_b)} ({country_name(iso_b)})"
 
 sec_a = _sector_df(iso_a, loc_a, year_a)
 sec_b = _sector_df(iso_b, loc_b, year_b)
@@ -133,12 +133,9 @@ sec_b = _sector_df(iso_b, loc_b, year_b)
 # below switches to a shared axis for anyone who wants the absolute comparison;
 # the axis labels always show the real numbers either way.
 _shared_scale = st.checkbox(
-    "Use the same scale on both charts",
+    t("compare.same_scale"),
     value=False,
-    help="Off by default: each chart scales to its own maximum, so you can read the "
-         "shape of each jurisdiction's breakdown even when the two differ by orders "
-         "of magnitude. Turn it on to compare absolute bar heights between the two "
-         "sides — but note a much smaller jurisdiction will then look almost flat.",
+    help=t("compare.same_scale_help"),
 )
 _sector_ymax = max(
     [float(sec_a["total_emission"].max()) if not sec_a.empty else 0,
@@ -152,51 +149,55 @@ _trend_ymax = max(
      float(_tb.groupby("year")["ch4_tonnes"].sum().max()) if not _tb.empty else 0]) * 1.08 or None
 _trend_ymax = _trend_ymax if _shared_scale else None
 
-st.markdown(f"<h3>{label_a} ({year_a}) vs {label_b} ({year_b}) — sector breakdown</h3>", unsafe_allow_html=True)
+st.markdown(f"<h3>{t('compare.breakdown_h3', a=label_a, ya=year_a, b=label_b, yb=year_b)}</h3>", unsafe_allow_html=True)
 bar_a, bar_b = st.columns(2, gap="large")
 with bar_a:
-    st.markdown(f'<div class="smac-meta">{label_a} · CH₄ by sector · {year_a}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="smac-meta">{t("compare.by_sector", label=label_a, y=year_a)}</div>', unsafe_allow_html=True)
     if sec_a.empty:
-        st.info(f"No {year_a} data for {label_a}.")
+        st.info(t("compare.no_data", y=year_a, label=label_a))
     else:
         _sector_bar(sec_a, label_a, "chart_sec_a", y_max=_sector_ymax)
 with bar_b:
-    st.markdown(f'<div class="smac-meta">{label_b} · CH₄ by sector · {year_b}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="smac-meta">{t("compare.by_sector", label=label_b, y=year_b)}</div>', unsafe_allow_html=True)
     if sec_b.empty:
-        st.info(f"No {year_b} data for {label_b}.")
+        st.info(t("compare.no_data", y=year_b, label=label_b))
     else:
         _sector_bar(sec_b, label_b, "chart_sec_b", y_max=_sector_ymax)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ============== DATA TABLE ==============
-st.markdown("<h3>Data table</h3>", unsafe_allow_html=True)
+st.markdown(f"<h3>{t('compare.table')}</h3>", unsafe_allow_html=True)
 tbl_a, tbl_b = st.columns(2, gap="large")
 with tbl_a:
-    st.markdown(f'<div class="smac-meta">Data table · {label_a}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="smac-meta">{t("compare.table")} · {label_a}</div>', unsafe_allow_html=True)
+    _col = t("common.ch4_t_col", y=year_a)
     st.dataframe(
-        sec_a.rename(columns={"sector": "Sector", "total_emission": f"{year_a} CH₄ (t)"}),
+        sec_a.assign(sector=sec_a["sector"].map(sector_name))
+        .rename(columns={"sector": t("common.sector"), "total_emission": _col}),
         hide_index=True, use_container_width=True,
-        column_config={f"{year_a} CH₄ (t)": st.column_config.NumberColumn(format="localized")},
+        column_config={_col: st.column_config.NumberColumn(format="localized")},
     )
 with tbl_b:
-    st.markdown(f'<div class="smac-meta">Data table · {label_b}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="smac-meta">{t("compare.table")} · {label_b}</div>', unsafe_allow_html=True)
+    _col = t("common.ch4_t_col", y=year_b)
     st.dataframe(
-        sec_b.rename(columns={"sector": "Sector", "total_emission": f"{year_b} CH₄ (t)"}),
+        sec_b.assign(sector=sec_b["sector"].map(sector_name))
+        .rename(columns={"sector": t("common.sector"), "total_emission": _col}),
         hide_index=True, use_container_width=True,
-        column_config={f"{year_b} CH₄ (t)": st.column_config.NumberColumn(format="localized")},
+        column_config={_col: st.column_config.NumberColumn(format="localized")},
     )
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ============== MULTI-YEAR TREND ==============
-st.markdown("<h3>CH₄ emissions trend by sector</h3>", unsafe_allow_html=True)
+st.markdown(f"<h3>{t('compare.trend_h3')}</h3>", unsafe_allow_html=True)
 trend_a, trend_b = st.columns(2, gap="large")
 with trend_a:
-    st.markdown(f'<div class="smac-meta">{label_a} · CH₄ by sector · {2021}–{CURRENT_YEAR + 1}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="smac-meta">{t("compare.by_sector", label=label_a, y=f"2021–{CURRENT_YEAR + 1}")}</div>', unsafe_allow_html=True)
     _trend_chart(iso_a, loc_a, "chart_trend_a", y_max=_trend_ymax)
 with trend_b:
-    st.markdown(f'<div class="smac-meta">{label_b} · CH₄ by sector · {2021}–{CURRENT_YEAR + 1}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="smac-meta">{t("compare.by_sector", label=label_b, y=f"2021–{CURRENT_YEAR + 1}")}</div>', unsafe_allow_html=True)
     _trend_chart(iso_b, loc_b, "chart_trend_b", y_max=_trend_ymax)
 
 

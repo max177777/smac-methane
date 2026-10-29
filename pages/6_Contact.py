@@ -6,17 +6,15 @@ Replicates smacmethane.org/contact — membership + research team contacts.
 import streamlit as st
 
 from utils.theme import inject_theme, eyebrow, render_footer
+from utils.i18n import t
 
 inject_theme()
 
-eyebrow("Contact & Join")
-st.markdown("<h1>Get in <em>touch</em>.</h1>", unsafe_allow_html=True)
+eyebrow(t("contact.eyebrow"))
+st.markdown(f"<h1>{t('contact.title')}</h1>", unsafe_allow_html=True)
 st.markdown(
     '<p style="font-family:Inter,sans-serif;font-size:16px;line-height:1.6;'
-    'color:var(--ink-soft);max-width:640px;margin-bottom:8px;">'
-    "Joining SMAC is always free. Reach out below to join as a member, or to "
-    "connect with the research team behind this tool."
-    "</p>",
+    f'color:var(--ink-soft);max-width:640px;margin-bottom:8px;">{t("contact.intro")}</p>',
     unsafe_allow_html=True,
 )
 
@@ -38,99 +36,79 @@ def contact_card(name: str, role: str, email: str, url: str | None = None):
 
 
 # ============== MEMBERSHIP ==============
-eyebrow("Membership")
-st.markdown("<h3>Want your jurisdiction to join SMAC?</h3>", unsafe_allow_html=True)
+eyebrow(t("contact.membership"))
+st.markdown(f"<h3>{t('contact.join_h3')}</h3>", unsafe_allow_html=True)
 contact_card(
-    "The California Environmental Protection Agency",
-    "SMAC Secretariat — membership inquiries",
+    t("contact.calepa"),
+    t("contact.calepa_role"),
     "methane@calepa.ca.gov",
 )
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ============== IMPLEMENTATION ==============
-eyebrow("Implementation")
+eyebrow(t("contact.implementation"))
 st.markdown("<h3>Climate Group</h3>", unsafe_allow_html=True)
 contact_card(
     "Jebi Rahman",
-    "Director of Global Implementation, Climate Group",
+    t("contact.role_jebi"),
     "jrahman@theclimategroup.org",
 )
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ============== RESEARCH ==============
-eyebrow("Research")
+eyebrow(t("contact.research"))
 st.markdown("<h3>Project Climate, UC Berkeley Law (CLEE)</h3>", unsafe_allow_html=True)
 
 col1, col2 = st.columns(2, gap="large")
 with col1:
     contact_card(
-        "Ken Alex", "Director, Project Climate, UC Berkeley",
+        "Ken Alex", t("contact.role_ken"),
         "ken.alex@berkeley.edu",
         "https://www.law.berkeley.edu/research/clee/about/people/ken-alex/",
     )
     contact_card(
-        "Shivani Shukla", "Lead Methane Research Fellow, Project Climate, UC Berkeley",
+        "Shivani Shukla", t("contact.role_shivani"),
         "shivani.shukla@berkeley.edu",
         "https://www.law.berkeley.edu/research/clee/about/people/shivani-shukla/",
     )
 with col2:
     contact_card(
-        "Linnan Cao", "Methane Research Fellow, Project Climate, UC Berkeley",
+        "Linnan Cao", t("contact.role_fellow"),
         "lncao@berkeley.edu",
         "https://www.law.berkeley.edu/research/clee/about/people/linnan-cao/",
     )
     contact_card(
-        "Max Mingxuan Xu", "Methane Research Fellow, Project Climate, UC Berkeley",
+        "Max Mingxuan Xu", t("contact.role_fellow"),
         "max_xu@berkeley.edu",
     )
 
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown(
-    '<div class="smac-meta">Center for Law, Energy &amp; the Environment (CLEE) · '
-    'UC Berkeley Law</div>',
+    f'<div class="smac-meta">{t("contact.clee")}</div>',
     unsafe_allow_html=True,
 )
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ============== DATA CORRECTIONS ==============
-eyebrow("Data corrections")
-st.markdown("<h3>See a figure that looks wrong?</h3>", unsafe_allow_html=True)
+_P = 'font-size:15px;line-height:1.7;color:var(--ink-soft);max-width:760px;'
+eyebrow(t("contact.corrections"))
+st.markdown(f"<h3>{t('contact.corr_h3')}</h3>", unsafe_allow_html=True)
 st.markdown(
-    '<p style="font-size:15px;line-height:1.7;color:var(--ink-soft);max-width:760px;">'
-    "Most figures in this tool are modelled estimates from Climate TRACE, not measurements "
-    "and not a jurisdiction's own reported inventory. Where a government maintains its own "
-    "inventory, the two can disagree — sometimes substantially — and the official inventory "
-    "is usually the more authoritative of the pair for that jurisdiction."
-    "</p>"
-    '<p style="font-size:15px;line-height:1.7;color:var(--ink-soft);max-width:760px;">'
-    "So if something here looks wrong for your jurisdiction, we would rather hear it than "
-    "not. Two things are especially useful to us:"
-    "</p>"
-    '<ul style="font-size:15px;line-height:1.7;color:var(--ink-soft);max-width:760px;">'
-    "<li><strong>A figure you believe is inaccurate</strong> — tell us which jurisdiction, "
-    "year and sector, and what you think the right number is.</li>"
-    "<li><strong>An official inventory we should be reading</strong> — if your jurisdiction "
-    "publishes its own greenhouse gas or methane inventory, send it over. We have already "
-    "integrated Maryland's state inventory this way, and we would like to do the same for "
-    "others.</li>"
-    "</ul>",
+    f'<p style="{_P}">{t("contact.corr_p1")}</p><p style="{_P}">{t("contact.corr_p2")}</p>'
+    f'<ul style="{_P}"><li>{t("contact.corr_li1")}</li><li>{t("contact.corr_li2")}</li></ul>',
     unsafe_allow_html=True,
 )
 contact_card(
     "Max Mingxuan Xu",
-    "Data corrections and inventory contributions",
+    t("contact.corr_role"),
     "max_xu@berkeley.edu",
 )
 st.markdown(
     '<div class="smac-meta" style="font-size:11.5px;max-width:760px;line-height:1.6;">'
-    "Where a jurisdiction's own inventory is still being reconciled against Climate TRACE, "
-    "its profile is marked <strong>under construction</strong> rather than shown with one "
-    "source standing in for the other. See <strong>Data &amp; Methods</strong> for what the "
-    "underlying data can and cannot support."
-    "</div>",
+    f'{t("contact.corr_note")}</div>',
     unsafe_allow_html=True,
 )
 

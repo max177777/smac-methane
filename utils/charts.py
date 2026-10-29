@@ -11,6 +11,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from utils.data_loader import COUNTRY_META, COUNTRY_COLORS, display_name
+from utils.i18n import sector_name, country_name
 from utils.policy_content import all_jurisdiction_coords, get_jurisdiction_coords
 
 
@@ -235,11 +236,11 @@ def sector_stack_plotly(df_long: pd.DataFrame, normalize: bool = False,
             continue
         sub = sub.set_index("region").reindex(order).reset_index()
         fig.add_trace(go.Bar(
-            x=sub["region"], y=sub["value"], name=sector,
+            x=sub["region"], y=sub["value"], name=sector_name(sector),
             width=0.6,
             marker_color=SECTOR_COLORS.get(sector, INK_SOFT),
             marker_line=dict(color=PAPER, width=1),
-            hovertemplate=f"<b>%{{x}}</b><br>{sector}: %{{y:,.1f}}{suffix}<extra></extra>",
+            hovertemplate=f"<b>%{{x}}</b><br>{sector_name(sector)}: %{{y:,.1f}}{suffix}<extra></extra>",
         ))
     fig.update_layout(
         barmode="stack", height=height, bargap=0.35,
@@ -280,7 +281,7 @@ def sector_pies_plotly(df_long: pd.DataFrame, height: int = 300) -> go.Figure:
         present = [s for s in SECTOR_ORDER if s in set(sub["sector"])]
         sub = sub.set_index("sector").loc[present].reset_index()
         fig.add_trace(go.Pie(
-            labels=sub["sector"], values=sub["value"],
+            labels=[sector_name(x) for x in sub["sector"]], values=sub["value"],
             hole=0.5, sort=False, direction="clockwise",
             marker=dict(colors=[SECTOR_COLORS.get(s, INK_SOFT) for s in sub["sector"]],
                         line=dict(color=PAPER, width=1.5)),
@@ -320,7 +321,7 @@ def jurisdiction_map_plotly(highlight: tuple[str, str] | None = None, height: in
     """
     coords = all_jurisdiction_coords()
     df = pd.DataFrame(coords)
-    df["country"] = df["iso3"].map(lambda i: COUNTRY_META[i]["name"])
+    df["country"] = df["iso3"].map(country_name)
     df["color"] = df["iso3"].map(lambda i: COUNTRY_COLORS.get(i, MOSS))
     df["label"] = df["location"].map(display_name) + ", " + df["country"]
 
@@ -335,7 +336,7 @@ def jurisdiction_map_plotly(highlight: tuple[str, str] | None = None, height: in
         fig.add_trace(go.Scattermap(
             lat=[lat], lon=[lon], mode="markers",
             marker=dict(size=22, color=COUNTRY_COLORS.get(h_iso, MOSS)),
-            text=[f"{display_name(h_loc)}, {COUNTRY_META[h_iso]['name']}"],
+            text=[f"{display_name(h_loc)}, {country_name(h_iso)}"],
             hovertemplate="<b>%{text}</b><extra></extra>",
         ))
         fig.update_layout(
@@ -355,7 +356,7 @@ def jurisdiction_map_plotly(highlight: tuple[str, str] | None = None, height: in
         fig.add_trace(go.Scattergeo(
             lat=sub["lat"], lon=sub["lon"], mode="markers",
             marker=dict(size=8, color=sub["color"].iloc[0], line=dict(width=0.5, color="#ffffff")),
-            text=sub["label"], name=COUNTRY_META[iso]["name"],
+            text=sub["label"], name=country_name(iso),
             hovertemplate="<b>%{text}</b><extra></extra>",
         ))
     fig.update_geos(
@@ -388,7 +389,7 @@ def sector_bar_plotly(sec_df: pd.DataFrame, height: int = 260) -> go.Figure:
     lands at the top of the rendered chart."""
     d = sec_df.sort_values("total_emission", ascending=True)
     fig = go.Figure(go.Bar(
-        x=d["total_emission"], y=d["sector"], orientation="h",
+        x=d["total_emission"], y=[sector_name(x) for x in d["sector"]], orientation="h",
         marker_color=[SECTOR_COLORS.get(s, INK_SOFT) for s in d["sector"]],
         hovertemplate="<b>%{y}</b><br>%{x:,.0f} t CH₄<extra></extra>",
     ))
@@ -420,9 +421,9 @@ def sector_trend_plotly(trend_df: pd.DataFrame, height: int = 280) -> go.Figure:
         if sub.empty:
             continue
         fig.add_trace(go.Bar(
-            x=sub["year"], y=sub["ch4_tonnes"], name=sector,
+            x=sub["year"], y=sub["ch4_tonnes"], name=sector_name(sector),
             marker_color=SECTOR_COLORS.get(sector, INK_SOFT),
-            hovertemplate=f"<b>%{{x}}</b><br>{sector}: %{{y:,.0f}} t CH₄<extra></extra>",
+            hovertemplate=f"<b>%{{x}}</b><br>{sector_name(sector)}: %{{y:,.0f}} t CH₄<extra></extra>",
         ))
     fig.update_layout(
         barmode="stack", height=height, margin=dict(l=10, r=10, t=10, b=10),

@@ -19,16 +19,20 @@ st.set_page_config(
     },
 )
 
-overview = st.Page("pages/1_Overview.py", title="Overview", default=True)
-data_methods = st.Page("pages/5_Data_Methods.py", title="Data & Methods")
-# "SMAC Members" (was "Subnational Methane Action Coalition"): a short label that
-# matches the Overview page guide, and leaves room for a separate non-SMAC global page.
-country_profile = st.Page("pages/2_Country_Profile.py", title="SMAC Members")
-global_view = st.Page("pages/8_Global_View.py", title="Global View")
-comparison = st.Page("pages/3_Comparison.py", title="Comparison")
-chat = st.Page("pages/4_Chat.py", title="Chat")
-faq = st.Page("pages/7_FAQ.py", title="FAQ")
-contact = st.Page("pages/6_Contact.py", title="Contact")
+from utils.i18n import t, language_switcher  # noqa: E402
+
+# Language picker, top-right of every page (see utils/i18n.py). Page titles in
+# the nav bar follow the chosen language; URLs (/Country_Profile etc.) don't change.
+language_switcher()
+
+overview = st.Page("pages/1_Overview.py", title=t("nav.overview"), default=True)
+data_methods = st.Page("pages/5_Data_Methods.py", title=t("nav.methods"))
+country_profile = st.Page("pages/2_Country_Profile.py", title=t("nav.smac"))
+global_view = st.Page("pages/8_Global_View.py", title=t("nav.global"))
+comparison = st.Page("pages/3_Comparison.py", title=t("nav.compare"))
+chat = st.Page("pages/4_Chat.py", title=t("nav.chat"))
+faq = st.Page("pages/7_FAQ.py", title=t("nav.faq"))
+contact = st.Page("pages/6_Contact.py", title=t("nav.contact"))
 
 pg = st.navigation([overview, data_methods, country_profile, global_view, comparison, chat, faq, contact], position="top")
 pg.run()

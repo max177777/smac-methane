@@ -47,3 +47,22 @@ The full run also builds `data/global/` (every level-1 admin worldwide) for the
 2. Run `python scripts/fetch_climatetrace_all.py --smac-only` (resolves its GADM
    id and rebuilds all SMAC files), commit `data/`, push.
    (`scripts/add_jurisdiction.py` still works if you only have a downloaded CSV.)
+
+## Languages
+
+The site is available in English, 中文, Español, Português, 한국어 and हिन्दी
+(switcher top-right; the choice is kept in the `?lang=` URL parameter, so a link
+like `…/?lang=pt` opens in Portuguese). The chat answers in the chosen language.
+
+* All interface text lives in `i18n/<lang>.json` (flat `key → text`). `en.json`
+  is the source of truth; any key missing in another language falls back to English.
+* Keep `{placeholders}`, HTML tags and `**bold**` exactly as in English.
+* Text that comes from code tables (policy notes, pathways, sector actions,
+  subsector names) is mirrored into `en.json` by:
+
+      python scripts/i18n_tool.py sync    # after editing utils/policy_content.py etc.
+      python scripts/i18n_tool.py check   # lists missing keys / broken placeholders per language
+
+  `check` exits non-zero if a translation would break a page.
+* Translations were machine-produced; please have native speakers review them.
+  Place and facility names and quoted source documents stay in their original language.
