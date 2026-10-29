@@ -34,5 +34,5 @@ chat = st.Page("pages/4_Chat.py", title=t("nav.chat"))
 faq = st.Page("pages/7_FAQ.py", title=t("nav.faq"))
 contact = st.Page("pages/6_Contact.py", title=t("nav.contact"))
 
-pg = st.navigation([overview, data_methods, country_profile, global_view, comparison, chat, faq, contact], position="top")
+pg = st.navigation([overview, data_methods, global_view, country_profile, comparison, chat, faq, contact], position="top")
 pg.run()

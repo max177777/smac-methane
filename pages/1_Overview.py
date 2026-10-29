@@ -102,11 +102,11 @@ st.markdown(
 )
 
 GUIDE = [
-    ("smac", "pages/2_Country_Profile.py"),
+    ("methods", "pages/5_Data_Methods.py"),   # same order as the top navigation
     ("global", "pages/8_Global_View.py"),
+    ("smac", "pages/2_Country_Profile.py"),
     ("compare", "pages/3_Comparison.py"),
     ("chat", "pages/4_Chat.py"),
-    ("methods", "pages/5_Data_Methods.py"),
     ("faq", "pages/7_FAQ.py"),
     ("contact", "pages/6_Contact.py"),
 ]
