@@ -1,0 +1,8 @@
+{
+ "pulled": "2026-10-28",
+ "api_version": "v7",
+ "source": "Climate TRACE /v7/sources/emissions + /v7/sources",
+ "kept_from_earlier_snapshot": {
+  "IND||Delhi [New Delhi]": "31 August 2026"
+ }
+}
