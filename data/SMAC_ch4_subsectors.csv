@@ -18665,7 +18665,7 @@ IND,Delhi [New Delhi],2021,3,Fossil Fuel Extraction & Mining,oil-and-gas-transpo
 IND,Delhi [New Delhi],2021,3,Buildings (Onsite Fuel Use),other-energy-use,29.61537253066431
 IND,Delhi [New Delhi],2021,3,Fossil Fuel Extraction & Mining,other-fossil-fuel-operations,0.0
 IND,Delhi [New Delhi],2021,3,Fossil Fuel Extraction & Mining,other-mining-quarrying,0.3723383515979844
-IND,Delhi [New Delhi],2021,3,Fossil Fuel Extraction & Mining,other-solid-fuels,1892.8949111054012
+IND,Delhi [New Delhi],2021,3,Fossil Fuel Extraction & Mining,other-solid-fuels,1892.8949111054008
 IND,Delhi [New Delhi],2021,3,Fossil Fuel Extraction & Mining,rock-quarrying,0.0
 IND,Delhi [New Delhi],2021,3,Fossil Fuel Extraction & Mining,sand-quarrying,0.0
 IND,Delhi [New Delhi],2021,3,Manufacturing & Industry,aluminum,0.0
@@ -18733,7 +18733,7 @@ IND,Delhi [New Delhi],2021,4,Fossil Fuel Extraction & Mining,oil-and-gas-transpo
 IND,Delhi [New Delhi],2021,4,Buildings (Onsite Fuel Use),other-energy-use,28.875154933072896
 IND,Delhi [New Delhi],2021,4,Fossil Fuel Extraction & Mining,other-fossil-fuel-operations,0.0
 IND,Delhi [New Delhi],2021,4,Fossil Fuel Extraction & Mining,other-mining-quarrying,0.3806710987348116
-IND,Delhi [New Delhi],2021,4,Fossil Fuel Extraction & Mining,other-solid-fuels,1953.7835411079495
+IND,Delhi [New Delhi],2021,4,Fossil Fuel Extraction & Mining,other-solid-fuels,1953.7835411079493
 IND,Delhi [New Delhi],2021,4,Fossil Fuel Extraction & Mining,rock-quarrying,0.0
 IND,Delhi [New Delhi],2021,4,Fossil Fuel Extraction & Mining,sand-quarrying,0.0
 IND,Delhi [New Delhi],2021,4,Manufacturing & Industry,aluminum,0.0
@@ -18755,7 +18755,7 @@ IND,Delhi [New Delhi],2021,4,Power & Heat,electricity-generation,0.0
 IND,Delhi [New Delhi],2021,4,Power & Heat,heat-plants,0.0
 IND,Delhi [New Delhi],2021,4,Forestry & Land Use,water-reservoirs,1.3735516665656996e-08
 IND,Delhi [New Delhi],2021,4,Transportation,domestic-aviation,1.2195599951822946
-IND,Delhi [New Delhi],2021,4,Transportation,domestic-shipping,3.8709256612574733e-16
+IND,Delhi [New Delhi],2021,4,Transportation,domestic-shipping,3.8709256612574723e-16
 IND,Delhi [New Delhi],2021,4,Transportation,international-aviation,1.2305006179285527
 IND,Delhi [New Delhi],2021,4,Transportation,international-shipping,0.0
 IND,Delhi [New Delhi],2021,4,Transportation,non-broadcasting-vessels,0.0
@@ -19209,7 +19209,7 @@ IND,Delhi [New Delhi],2021,11,Fossil Fuel Extraction & Mining,oil-and-gas-transp
 IND,Delhi [New Delhi],2021,11,Buildings (Onsite Fuel Use),other-energy-use,31.76761002659468
 IND,Delhi [New Delhi],2021,11,Fossil Fuel Extraction & Mining,other-fossil-fuel-operations,0.0
 IND,Delhi [New Delhi],2021,11,Fossil Fuel Extraction & Mining,other-mining-quarrying,0.3780482911270414
-IND,Delhi [New Delhi],2021,11,Fossil Fuel Extraction & Mining,other-solid-fuels,1941.2099229476612
+IND,Delhi [New Delhi],2021,11,Fossil Fuel Extraction & Mining,other-solid-fuels,1941.2099229476607
 IND,Delhi [New Delhi],2021,11,Fossil Fuel Extraction & Mining,rock-quarrying,0.0
 IND,Delhi [New Delhi],2021,11,Fossil Fuel Extraction & Mining,sand-quarrying,0.0
 IND,Delhi [New Delhi],2021,11,Manufacturing & Industry,aluminum,0.0
@@ -19909,9 +19909,9 @@ IND,Delhi [New Delhi],2022,9,Manufacturing & Industry,textiles-leather-apparel,2
 IND,Delhi [New Delhi],2022,9,Manufacturing & Industry,wood-and-wood-products,0.0
 IND,Delhi [New Delhi],2022,9,Power & Heat,electricity-generation,0.0
 IND,Delhi [New Delhi],2022,9,Power & Heat,heat-plants,0.0
-IND,Delhi [New Delhi],2022,9,Forestry & Land Use,water-reservoirs,1.7137834316408302e-09
+IND,Delhi [New Delhi],2022,9,Forestry & Land Use,water-reservoirs,1.71378343164083e-09
 IND,Delhi [New Delhi],2022,9,Transportation,domestic-aviation,1.3427097992789143
-IND,Delhi [New Delhi],2022,9,Transportation,domestic-shipping,1.0727021423093561e-16
+IND,Delhi [New Delhi],2022,9,Transportation,domestic-shipping,1.072702142309356e-16
 IND,Delhi [New Delhi],2022,9,Transportation,international-aviation,2.2076296038346954
 IND,Delhi [New Delhi],2022,9,Transportation,international-shipping,0.0
 IND,Delhi [New Delhi],2022,9,Transportation,non-broadcasting-vessels,0.0
@@ -20047,7 +20047,7 @@ IND,Delhi [New Delhi],2022,11,Power & Heat,electricity-generation,0.0
 IND,Delhi [New Delhi],2022,11,Power & Heat,heat-plants,0.0
 IND,Delhi [New Delhi],2022,11,Forestry & Land Use,water-reservoirs,5.823658567163444e-09
 IND,Delhi [New Delhi],2022,11,Transportation,domestic-aviation,1.3524228057229275
-IND,Delhi [New Delhi],2022,11,Transportation,domestic-shipping,1.135262972332034e-16
+IND,Delhi [New Delhi],2022,11,Transportation,domestic-shipping,1.1352629723320341e-16
 IND,Delhi [New Delhi],2022,11,Transportation,international-aviation,2.322922485232689
 IND,Delhi [New Delhi],2022,11,Transportation,international-shipping,0.0
 IND,Delhi [New Delhi],2022,11,Transportation,non-broadcasting-vessels,0.0
@@ -20226,7 +20226,7 @@ IND,Delhi [New Delhi],2023,2,Fossil Fuel Extraction & Mining,iron-mining,0.0
 IND,Delhi [New Delhi],2023,2,Fossil Fuel Extraction & Mining,oil-and-gas-production,0.0
 IND,Delhi [New Delhi],2023,2,Fossil Fuel Extraction & Mining,oil-and-gas-refining,0.0
 IND,Delhi [New Delhi],2023,2,Fossil Fuel Extraction & Mining,oil-and-gas-transport,0.0
-IND,Delhi [New Delhi],2023,2,Buildings (Onsite Fuel Use),other-energy-use,29.901045493563597
+IND,Delhi [New Delhi],2023,2,Buildings (Onsite Fuel Use),other-energy-use,29.9010454935636
 IND,Delhi [New Delhi],2023,2,Fossil Fuel Extraction & Mining,other-fossil-fuel-operations,0.0
 IND,Delhi [New Delhi],2023,2,Fossil Fuel Extraction & Mining,other-mining-quarrying,0.4004462500591677
 IND,Delhi [New Delhi],2023,2,Fossil Fuel Extraction & Mining,other-solid-fuels,3158.704432466267
@@ -20253,7 +20253,7 @@ IND,Delhi [New Delhi],2023,2,Forestry & Land Use,water-reservoirs,0.0
 IND,Delhi [New Delhi],2023,2,Transportation,domestic-aviation,1.3462393725404702
 IND,Delhi [New Delhi],2023,2,Transportation,domestic-shipping,3.2594807551951747e-16
 IND,Delhi [New Delhi],2023,2,Transportation,international-aviation,2.1682186371826138
-IND,Delhi [New Delhi],2023,2,Transportation,international-shipping,7.655927232153179e-16
+IND,Delhi [New Delhi],2023,2,Transportation,international-shipping,7.65592723215318e-16
 IND,Delhi [New Delhi],2023,2,Transportation,non-broadcasting-vessels,0.0
 IND,Delhi [New Delhi],2023,2,Transportation,other-transport,0.0523421136347367
 IND,Delhi [New Delhi],2023,2,Transportation,railways,0.7234457765266259
@@ -20361,7 +20361,7 @@ IND,Delhi [New Delhi],2023,4,Fossil Fuel Extraction & Mining,copper-mining,0.0
 IND,Delhi [New Delhi],2023,4,Fossil Fuel Extraction & Mining,iron-mining,0.0
 IND,Delhi [New Delhi],2023,4,Fossil Fuel Extraction & Mining,oil-and-gas-production,0.0
 IND,Delhi [New Delhi],2023,4,Fossil Fuel Extraction & Mining,oil-and-gas-refining,0.0
-IND,Delhi [New Delhi],2023,4,Fossil Fuel Extraction & Mining,oil-and-gas-transport,4.4147606387846394e-14
+IND,Delhi [New Delhi],2023,4,Fossil Fuel Extraction & Mining,oil-and-gas-transport,4.41476063878464e-14
 IND,Delhi [New Delhi],2023,4,Buildings (Onsite Fuel Use),other-energy-use,33.741276837990284
 IND,Delhi [New Delhi],2023,4,Fossil Fuel Extraction & Mining,other-fossil-fuel-operations,0.0
 IND,Delhi [New Delhi],2023,4,Fossil Fuel Extraction & Mining,other-mining-quarrying,0.4262543586956646
@@ -20521,11 +20521,11 @@ IND,Delhi [New Delhi],2023,6,Manufacturing & Industry,textiles-leather-apparel,2
 IND,Delhi [New Delhi],2023,6,Manufacturing & Industry,wood-and-wood-products,0.0
 IND,Delhi [New Delhi],2023,6,Power & Heat,electricity-generation,0.0
 IND,Delhi [New Delhi],2023,6,Power & Heat,heat-plants,0.0
-IND,Delhi [New Delhi],2023,6,Forestry & Land Use,water-reservoirs,4.5223534419778635e-08
+IND,Delhi [New Delhi],2023,6,Forestry & Land Use,water-reservoirs,4.522353441977864e-08
 IND,Delhi [New Delhi],2023,6,Transportation,domestic-aviation,1.2125241890399527
 IND,Delhi [New Delhi],2023,6,Transportation,domestic-shipping,3.2238294588085884e-16
 IND,Delhi [New Delhi],2023,6,Transportation,international-aviation,2.36709257910264
-IND,Delhi [New Delhi],2023,6,Transportation,international-shipping,1.494261155337202e-15
+IND,Delhi [New Delhi],2023,6,Transportation,international-shipping,1.4942611553372019e-15
 IND,Delhi [New Delhi],2023,6,Transportation,non-broadcasting-vessels,0.0
 IND,Delhi [New Delhi],2023,6,Transportation,other-transport,0.0530039909724717
 IND,Delhi [New Delhi],2023,6,Transportation,railways,0.7322007885771905
@@ -20591,9 +20591,9 @@ IND,Delhi [New Delhi],2023,7,Power & Heat,electricity-generation,0.0
 IND,Delhi [New Delhi],2023,7,Power & Heat,heat-plants,0.0
 IND,Delhi [New Delhi],2023,7,Forestry & Land Use,water-reservoirs,0.0
 IND,Delhi [New Delhi],2023,7,Transportation,domestic-aviation,1.276857678840424
-IND,Delhi [New Delhi],2023,7,Transportation,domestic-shipping,4.630659625231244e-16
+IND,Delhi [New Delhi],2023,7,Transportation,domestic-shipping,4.630659625231245e-16
 IND,Delhi [New Delhi],2023,7,Transportation,international-aviation,2.468941915272635
-IND,Delhi [New Delhi],2023,7,Transportation,international-shipping,1.493710377562648e-15
+IND,Delhi [New Delhi],2023,7,Transportation,international-shipping,1.4937103775626479e-15
 IND,Delhi [New Delhi],2023,7,Transportation,non-broadcasting-vessels,0.0
 IND,Delhi [New Delhi],2023,7,Transportation,other-transport,0.0516587976973998
 IND,Delhi [New Delhi],2023,7,Transportation,railways,0.7135209770404569
@@ -20729,7 +20729,7 @@ IND,Delhi [New Delhi],2023,9,Forestry & Land Use,water-reservoirs,0.0
 IND,Delhi [New Delhi],2023,9,Transportation,domestic-aviation,1.2610400832561743
 IND,Delhi [New Delhi],2023,9,Transportation,domestic-shipping,0.0
 IND,Delhi [New Delhi],2023,9,Transportation,international-aviation,2.443325766067493
-IND,Delhi [New Delhi],2023,9,Transportation,international-shipping,5.8146806197874035e-15
+IND,Delhi [New Delhi],2023,9,Transportation,international-shipping,5.814680619787404e-15
 IND,Delhi [New Delhi],2023,9,Transportation,non-broadcasting-vessels,0.0
 IND,Delhi [New Delhi],2023,9,Transportation,other-transport,0.0535518359576317
 IND,Delhi [New Delhi],2023,9,Transportation,railways,0.7398591249068777
@@ -21059,7 +21059,7 @@ IND,Delhi [New Delhi],2024,2,Manufacturing & Industry,lime,0.0
 IND,Delhi [New Delhi],2024,2,Manufacturing & Industry,other-chemicals,0.0
 IND,Delhi [New Delhi],2024,2,Manufacturing & Industry,other-manufacturing,126.16972437428343
 IND,Delhi [New Delhi],2024,2,Manufacturing & Industry,other-metals,28.80618784850029
-IND,Delhi [New Delhi],2024,2,Manufacturing & Industry,petrochemical-steam-cracking,2.616331083983176e-14
+IND,Delhi [New Delhi],2024,2,Manufacturing & Industry,petrochemical-steam-cracking,2.6163310839831764e-14
 IND,Delhi [New Delhi],2024,2,Manufacturing & Industry,pulp-and-paper,0.0
 IND,Delhi [New Delhi],2024,2,Manufacturing & Industry,textiles-leather-apparel,2.434281505683018
 IND,Delhi [New Delhi],2024,2,Manufacturing & Industry,wood-and-wood-products,0.0
@@ -21127,7 +21127,7 @@ IND,Delhi [New Delhi],2024,3,Manufacturing & Industry,lime,0.0
 IND,Delhi [New Delhi],2024,3,Manufacturing & Industry,other-chemicals,0.0
 IND,Delhi [New Delhi],2024,3,Manufacturing & Industry,other-manufacturing,129.75673168681666
 IND,Delhi [New Delhi],2024,3,Manufacturing & Industry,other-metals,29.3798362343032
-IND,Delhi [New Delhi],2024,3,Manufacturing & Industry,petrochemical-steam-cracking,2.6163310839831732e-14
+IND,Delhi [New Delhi],2024,3,Manufacturing & Industry,petrochemical-steam-cracking,2.616331083983173e-14
 IND,Delhi [New Delhi],2024,3,Manufacturing & Industry,pulp-and-paper,0.0
 IND,Delhi [New Delhi],2024,3,Manufacturing & Industry,textiles-leather-apparel,2.480453194148448
 IND,Delhi [New Delhi],2024,3,Manufacturing & Industry,wood-and-wood-products,0.0
@@ -21135,7 +21135,7 @@ IND,Delhi [New Delhi],2024,3,Power & Heat,electricity-generation,0.0
 IND,Delhi [New Delhi],2024,3,Power & Heat,heat-plants,0.0
 IND,Delhi [New Delhi],2024,3,Forestry & Land Use,water-reservoirs,0.0
 IND,Delhi [New Delhi],2024,3,Transportation,domestic-aviation,1.3660116989500954
-IND,Delhi [New Delhi],2024,3,Transportation,domestic-shipping,7.464371320961627e-16
+IND,Delhi [New Delhi],2024,3,Transportation,domestic-shipping,7.464371320961628e-16
 IND,Delhi [New Delhi],2024,3,Transportation,international-aviation,2.77513570270268
 IND,Delhi [New Delhi],2024,3,Transportation,international-shipping,0.0
 IND,Delhi [New Delhi],2024,3,Transportation,non-broadcasting-vessels,0.0
@@ -21313,7 +21313,7 @@ IND,Delhi [New Delhi],2024,6,Fossil Fuel Extraction & Mining,copper-mining,0.0
 IND,Delhi [New Delhi],2024,6,Fossil Fuel Extraction & Mining,iron-mining,0.0
 IND,Delhi [New Delhi],2024,6,Fossil Fuel Extraction & Mining,oil-and-gas-production,0.0
 IND,Delhi [New Delhi],2024,6,Fossil Fuel Extraction & Mining,oil-and-gas-refining,0.0
-IND,Delhi [New Delhi],2024,6,Fossil Fuel Extraction & Mining,oil-and-gas-transport,8.829521277569279e-14
+IND,Delhi [New Delhi],2024,6,Fossil Fuel Extraction & Mining,oil-and-gas-transport,8.82952127756928e-14
 IND,Delhi [New Delhi],2024,6,Buildings (Onsite Fuel Use),other-energy-use,39.5697025931713
 IND,Delhi [New Delhi],2024,6,Fossil Fuel Extraction & Mining,other-fossil-fuel-operations,0.0
 IND,Delhi [New Delhi],2024,6,Fossil Fuel Extraction & Mining,other-mining-quarrying,0.4264706115041565
@@ -21788,7 +21788,7 @@ IND,Delhi [New Delhi],2025,1,Fossil Fuel Extraction & Mining,coal-mining,0.0
 IND,Delhi [New Delhi],2025,1,Fossil Fuel Extraction & Mining,copper-mining,0.0
 IND,Delhi [New Delhi],2025,1,Fossil Fuel Extraction & Mining,iron-mining,0.0
 IND,Delhi [New Delhi],2025,1,Fossil Fuel Extraction & Mining,oil-and-gas-production,0.0
-IND,Delhi [New Delhi],2025,1,Fossil Fuel Extraction & Mining,oil-and-gas-refining,2.3715474862989476e-10
+IND,Delhi [New Delhi],2025,1,Fossil Fuel Extraction & Mining,oil-and-gas-refining,2.371547486298948e-10
 IND,Delhi [New Delhi],2025,1,Fossil Fuel Extraction & Mining,oil-and-gas-transport,0.0
 IND,Delhi [New Delhi],2025,1,Buildings (Onsite Fuel Use),other-energy-use,33.012962067186514
 IND,Delhi [New Delhi],2025,1,Fossil Fuel Extraction & Mining,other-fossil-fuel-operations,0.0
@@ -21924,7 +21924,7 @@ IND,Delhi [New Delhi],2025,3,Fossil Fuel Extraction & Mining,coal-mining,0.0
 IND,Delhi [New Delhi],2025,3,Fossil Fuel Extraction & Mining,copper-mining,0.0
 IND,Delhi [New Delhi],2025,3,Fossil Fuel Extraction & Mining,iron-mining,0.0
 IND,Delhi [New Delhi],2025,3,Fossil Fuel Extraction & Mining,oil-and-gas-production,0.0
-IND,Delhi [New Delhi],2025,3,Fossil Fuel Extraction & Mining,oil-and-gas-refining,2.371580366005672e-10
+IND,Delhi [New Delhi],2025,3,Fossil Fuel Extraction & Mining,oil-and-gas-refining,2.3715803660056716e-10
 IND,Delhi [New Delhi],2025,3,Fossil Fuel Extraction & Mining,oil-and-gas-transport,0.0
 IND,Delhi [New Delhi],2025,3,Buildings (Onsite Fuel Use),other-energy-use,36.849341384012426
 IND,Delhi [New Delhi],2025,3,Fossil Fuel Extraction & Mining,other-fossil-fuel-operations,0.0
@@ -22078,7 +22078,7 @@ IND,Delhi [New Delhi],2025,5,Manufacturing & Industry,iron-and-steel,0.0
 IND,Delhi [New Delhi],2025,5,Manufacturing & Industry,lime,0.0
 IND,Delhi [New Delhi],2025,5,Manufacturing & Industry,other-chemicals,0.0
 IND,Delhi [New Delhi],2025,5,Manufacturing & Industry,other-manufacturing,129.98532549574037
-IND,Delhi [New Delhi],2025,5,Manufacturing & Industry,other-metals,29.578196812097797
+IND,Delhi [New Delhi],2025,5,Manufacturing & Industry,other-metals,29.5781968120978
 IND,Delhi [New Delhi],2025,5,Manufacturing & Industry,petrochemical-steam-cracking,0.0
 IND,Delhi [New Delhi],2025,5,Manufacturing & Industry,pulp-and-paper,0.0
 IND,Delhi [New Delhi],2025,5,Manufacturing & Industry,textiles-leather-apparel,2.4580193681156866
@@ -22623,7 +22623,7 @@ IND,Delhi [New Delhi],2026,1,Manufacturing & Industry,lime,0.0
 IND,Delhi [New Delhi],2026,1,Manufacturing & Industry,other-chemicals,0.0
 IND,Delhi [New Delhi],2026,1,Manufacturing & Industry,other-manufacturing,127.1029821685467
 IND,Delhi [New Delhi],2026,1,Manufacturing & Industry,other-metals,29.149380230768912
-IND,Delhi [New Delhi],2026,1,Manufacturing & Industry,petrochemical-steam-cracking,2.6163310839831773e-14
+IND,Delhi [New Delhi],2026,1,Manufacturing & Industry,petrochemical-steam-cracking,2.616331083983177e-14
 IND,Delhi [New Delhi],2026,1,Manufacturing & Industry,pulp-and-paper,0.0
 IND,Delhi [New Delhi],2026,1,Manufacturing & Industry,textiles-leather-apparel,2.4377122599029377
 IND,Delhi [New Delhi],2026,1,Manufacturing & Industry,wood-and-wood-products,0.0
@@ -22759,13 +22759,13 @@ IND,Delhi [New Delhi],2026,3,Manufacturing & Industry,lime,0.0
 IND,Delhi [New Delhi],2026,3,Manufacturing & Industry,other-chemicals,0.0
 IND,Delhi [New Delhi],2026,3,Manufacturing & Industry,other-manufacturing,129.7567316868166
 IND,Delhi [New Delhi],2026,3,Manufacturing & Industry,other-metals,29.379836234303177
-IND,Delhi [New Delhi],2026,3,Manufacturing & Industry,petrochemical-steam-cracking,2.616331083983173e-14
+IND,Delhi [New Delhi],2026,3,Manufacturing & Industry,petrochemical-steam-cracking,2.6163310839831732e-14
 IND,Delhi [New Delhi],2026,3,Manufacturing & Industry,pulp-and-paper,0.0
 IND,Delhi [New Delhi],2026,3,Manufacturing & Industry,textiles-leather-apparel,2.480453194148448
 IND,Delhi [New Delhi],2026,3,Manufacturing & Industry,wood-and-wood-products,0.0
 IND,Delhi [New Delhi],2026,3,Power & Heat,electricity-generation,0.0
 IND,Delhi [New Delhi],2026,3,Power & Heat,heat-plants,0.0
-IND,Delhi [New Delhi],2026,3,Forestry & Land Use,water-reservoirs,4.457607913647645e-08
+IND,Delhi [New Delhi],2026,3,Forestry & Land Use,water-reservoirs,4.4576079136476453e-08
 IND,Delhi [New Delhi],2026,3,Transportation,domestic-aviation,1.483349157972462
 IND,Delhi [New Delhi],2026,3,Transportation,domestic-shipping,9.780329981096689e-16
 IND,Delhi [New Delhi],2026,3,Transportation,international-aviation,3.016116803987681
