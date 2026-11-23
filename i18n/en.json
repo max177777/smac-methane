@@ -23,7 +23,6 @@
  "action.Waste.0": "Expand landfill gas capture and flaring/utilization systems",
  "action.Waste.1": "Divert organic waste from landfills via composting or anaerobic digestion",
  "action.Waste.2": "Upgrade wastewater treatment to capture fugitive methane",
- "brand.tagline": "SMAC Methane Atlas · a CLEE tool",
  "chat.about_p1": "<strong>What we're trying to do:</strong> give each jurisdiction a first-pass, directional read on <strong>which sectors and which subnational units are the largest sources of methane</strong> — a clearer sense of the major emitters — so that a government can prioritise where a real action plan is worth building. This is a triage tool, not a certified inventory.",
  "chat.about_p2": "<strong>Where the numbers come from:</strong> Climate TRACE, an independent nonprofit coalition that <em>models</em> emissions from satellite imagery, remote sensors, and activity data (production volumes, land use, livestock counts) — it is inference from indirect signals, not a network of continuous ground monitors.",
  "chat.about_p3": "<strong>Key deficiency to keep in mind:</strong> satellite instruments pass over a given location periodically, not continuously — so a satellite-derived estimate is closer to a series of snapshots stitched together than to a real-time emissions feed. Estimates also carry wider uncertainty for diffuse sources (small-scale agriculture, informal waste) than for large point sources (oil &amp; gas facilities), and the subnational split itself is a modeled allocation, not a jurisdiction's own self-report.",

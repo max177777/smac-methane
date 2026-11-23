@@ -143,11 +143,11 @@ def _on_change():
 def language_switcher(left=None) -> None:
     """Compact picker, right-aligned at the top of the page. Call once per run
     (app.py does), before the page renders. `left`, if given, is called to fill
-    the space to the left of the picker (app.py puts the CLEE brand bar there)."""
+    the slot just left of the picker (app.py puts the CLEE logo there)."""
     lang = current_lang()
     if st.query_params.get("lang") != lang:
         st.query_params["lang"] = lang
-    lcol, right = st.columns([6, 1], vertical_alignment="center")
+    _, lcol, right = st.columns([3.6, 2.4, 1], vertical_alignment="center")
     if left is not None:
         with lcol:
             left()

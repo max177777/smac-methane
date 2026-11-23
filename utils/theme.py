@@ -486,21 +486,24 @@ def inject_theme():
     st.markdown(CSS, unsafe_allow_html=True)
 
 
+BRAND_STYLE = "green"   # "green": white/gold logo on a CLEE-green chip · "plain": blue logo, no background
+
+
 def brand_bar():
-    """UC Berkeley · CLEE band at the top of every page (called once from app.py)."""
-    from utils.i18n import t
-    logo = _img_uri("clee_horizontal_whitegold.png")
+    """Compact UC Berkeley · CLEE logo, right-aligned next to the language
+    picker in the top-right corner of every page (called from app.py)."""
+    if BRAND_STYLE == "plain":
+        logo, wrap = _img_uri("clee_horizontal_blue.png"), "padding:4px 0;"
+    else:
+        logo = _img_uri("clee_horizontal_whitegold.png")
+        wrap = f"background:{CLEE_GREEN};border-radius:10px;padding:9px 14px;"
+    alt = "UC Berkeley Center for Law, Energy &amp; the Environment"
+    inner = (f'<img src="{logo}" alt="{alt}" style="height:22px;width:auto;max-width:100%;display:block;">'
+             if logo else f'<span style="color:{CLEE_GOLD};font-weight:700;">UC Berkeley · CLEE</span>')
     st.markdown(
-        f'<div class="clee-brand-bar" style="background:{CLEE_GREEN};border-radius:12px;'
-        f'padding:12px 20px;margin:0;display:flex;align-items:center;'
-        f'justify-content:space-between;gap:16px;flex-wrap:wrap;">'
-        + (f'<a href="{CLEE_URL}" target="_blank" rel="noopener" style="line-height:0;">'
-           f'<img src="{logo}" alt="UC Berkeley Center for Law, Energy &amp; the Environment" '
-           f'style="height:30px;width:auto;max-width:100%;display:block;"></a>' if logo
-           else f'<span style="color:{CLEE_GOLD};font-weight:700;">UC Berkeley · CLEE</span>')
-        + f'<span style="font-family:Quicksand,sans-serif;font-size:12px;font-weight:600;'
-        f'letter-spacing:0.06em;color:rgba(255,255,255,0.88);">{t("brand.tagline")}</span>'
-        "</div>",
+        f'<div class="clee-brand" style="display:flex;justify-content:flex-end;">'
+        f'<a href="{CLEE_URL}" target="_blank" rel="noopener" title="{alt}" '
+        f'style="display:inline-block;line-height:0;{wrap}">{inner}</a></div>',
         unsafe_allow_html=True,
     )
 

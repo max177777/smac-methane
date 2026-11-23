@@ -24,7 +24,7 @@ from utils.theme import brand_bar  # noqa: E402
 
 # Language picker, top-right of every page (see utils/i18n.py). Page titles in
 # the nav bar follow the chosen language; URLs (/Country_Profile etc.) don't change.
-language_switcher(left=brand_bar)  # UC Berkeley · CLEE band + picker, every page
+language_switcher(left=brand_bar)  # CLEE logo + language picker, top-right of every page
 
 overview = st.Page("pages/1_Overview.py", title=t("nav.overview"), default=True)
 data_methods = st.Page("pages/5_Data_Methods.py", title=t("nav.methods"))
