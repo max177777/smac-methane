@@ -205,3 +205,85 @@ def country_admins(iso3: str, year: int) -> pd.DataFrame:
     sub["share_pct"] = sub["ch4_tonnes"] / tot * 100 if tot else 0.0
     return sub.sort_values("ch4_tonnes", ascending=False).reset_index(drop=True)[
         ["gadm_id", "location", "ch4_tonnes", "share_pct"]]
+
+
+# ------------------------------------------------------------ landing insights
+# Nov-2026: the Global View landing (nothing picked yet) shows a world map,
+# sector-aware leaderboards, the global sector mix, how concentrated emissions
+# are, and the biggest year-on-year movers. `sector=None` means all sectors.
+
+def months_in_year(year: int) -> list[int]:
+    return sorted(int(m) for m in monthly().query("year == @year")["month"].unique())
+
+
+def global_sectors() -> list[str]:
+    """Sector categories present in the global dataset, in the site's order."""
+    from utils.data_loader import SECTOR_ORDER
+    present = set(sector_year()["sector"].unique())
+    return [s for s in SECTOR_ORDER if s in present] + sorted(present - set(SECTOR_ORDER))
+
+
+@st.cache_data(show_spinner=False)
+def admin_values(year: int, sector: str | None = None) -> pd.DataFrame:
+    """One row per admin for `year`: gadm_id, iso3, location, country_name,
+    ch4_tonnes (total, or one sector), largest first."""
+    if sector is None:
+        v = monthly().query("year == @year").groupby("gadm_id", as_index=False)["ch4_tonnes"].sum()
+    else:
+        v = sector_year().query("year == @year and sector == @sector")[["gadm_id", "ch4_tonnes"]]
+    v = v.merge(admins()[["gadm_id", "iso3", "location", "country_name"]], on="gadm_id")
+    return v[v["ch4_tonnes"] > 0].sort_values("ch4_tonnes", ascending=False).reset_index(drop=True)
+
+
+@st.cache_data(show_spinner=False)
+def country_values(year: int, sector: str | None = None) -> pd.DataFrame:
+    """One row per country: iso3, country_name, ch4_tonnes (sum of its admins),
+    n_admins, largest first."""
+    v = admin_values(year, sector)
+    return (v.groupby(["iso3", "country_name"], as_index=False)
+              .agg(ch4_tonnes=("ch4_tonnes", "sum"), n_admins=("gadm_id", "nunique"))
+              .sort_values("ch4_tonnes", ascending=False).reset_index(drop=True))
+
+
+@st.cache_data(show_spinner=False)
+def global_sector_trend() -> pd.DataFrame:
+    """year, sector, ch4_tonnes summed over every admin (for the stacked bars)."""
+    return sector_year().groupby(["year", "sector"], as_index=False)["ch4_tonnes"].sum()
+
+
+@st.cache_data(show_spinner=False)
+def world_like_for_like(year: int) -> dict:
+    """World total for `year` and the previous year over the same months."""
+    ms = months_in_year(year)
+    m = monthly()
+    now = m.query("year == @year")["ch4_tonnes"].sum()
+    prev = m[(m["year"] == year - 1) & m["month"].isin(ms)]["ch4_tonnes"].sum()
+    return dict(now=now, prev=prev, n_months=len(ms), is_partial=len(ms) < 12,
+                pct=(now - prev) / prev * 100 if prev else None)
+
+
+@st.cache_data(show_spinner=False)
+def movers(year: int, sector: str | None = None, n: int = 8) -> pd.DataFrame | None:
+    """Largest absolute increases and decreases vs the previous year, per admin.
+    All sectors: same months in both years. One sector: complete years only
+    (sector data is annual) — returns None for a partial year."""
+    ms = months_in_year(year)
+    if sector is None:
+        m = monthly()
+        a = m[(m["year"] == year)].groupby("gadm_id")["ch4_tonnes"].sum()
+        b = m[(m["year"] == year - 1) & m["month"].isin(ms)].groupby("gadm_id")["ch4_tonnes"].sum()
+    else:
+        if len(ms) < 12 or year - 1 not in set(sector_year()["year"]):
+            return None
+        s = sector_year().query("sector == @sector")
+        a = s[s["year"] == year].set_index("gadm_id")["ch4_tonnes"]
+        b = s[s["year"] == year - 1].set_index("gadm_id")["ch4_tonnes"]
+    d = pd.concat([a.rename("now"), b.rename("prev")], axis=1).fillna(0)
+    if d.empty:
+        return None
+    d["change"] = d["now"] - d["prev"]
+    d = d.reset_index().merge(admins()[["gadm_id", "iso3", "location", "country_name"]], on="gadm_id")
+    up = d.nlargest(n, "change")
+    down = d.nsmallest(n, "change")
+    out = pd.concat([up[up["change"] > 0], down[down["change"] < 0]])
+    return out.sort_values("change").reset_index(drop=True)
