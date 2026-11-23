@@ -589,6 +589,20 @@ FOOTER_PAGES = [("", "nav.overview"), ("Data_Methods", "nav.methods"), ("Global_
                 ("FAQ", "nav.faq"), ("Contact", "nav.contact")]
 
 
+# Footer palettes, taken from the site's own colours (see :root above).
+#   "light": paper-mint band, moss headings, Berkeley-blue logos — blends with the pages
+#   "dark":  near-black green band, mint headings, white logos — a clear end to the page
+FOOTER_STYLE = "light"
+FOOTER_THEMES = {
+    "light": dict(band="#f4f8f6", border="#e2e9e5", text="#12161a", soft="#566058", head="#0e9d6c",
+                  strip="#e7f5ee", strip_text="#566058", logo="clee_vertical_blue.png",
+                  wordmark="uc_berkeley_wordmark_blue.png"),
+    "dark": dict(band="#0f1d17", border="#0f1d17", text="#ffffff", soft="rgba(255,255,255,0.72)", head="#5ee6a8",
+                 strip="#0b0f0d", strip_text="rgba(255,255,255,0.7)", logo="clee_vertical_white.png",
+                 wordmark="uc_berkeley_wordmark_white.png"),
+}
+
+
 def render_footer():
     """Site-wide footer, full browser width like law.berkeley.edu/clee: a
     CLEE-green band (logo + who we are · page links · resources · legal notes)
@@ -597,8 +611,10 @@ def render_footer():
     from utils.i18n import t, current_lang
     lang = current_lang()
     q = f"?lang={lang}"
-    a = "color:#ffffff;text-decoration:none;"
-    head = (f"font-family:Quicksand,sans-serif;font-weight:700;font-size:17px;color:{CLEE_GOLD};"
+    P = FOOTER_THEMES[FOOTER_STYLE]
+    a = f"color:{P['text']};text-decoration:none;"
+    head = (f"font-family:Quicksand,sans-serif;font-weight:700;font-size:13px;letter-spacing:0.08em;"
+            f"text-transform:uppercase;color:{P['head']};"
             "margin:0 0 12px 0;")
     li = "margin:0 0 8px 0;font-size:13.5px;font-weight:600;"
 
@@ -609,12 +625,12 @@ def render_footer():
                                            ("https://www.smacmethane.org/", "SMAC"),
                                            ("https://climatetrace.org/", "Climate TRACE")])
     legal = "".join(
-        f'<details style="margin:0 0 8px 0;"><summary style="cursor:pointer;{li}margin:0;color:#ffffff;">'
+        f'<details style="margin:0 0 8px 0;"><summary style="cursor:pointer;{li}margin:0;color:{P["text"]};">'
         f'{t(f"footer.{k}_title")}</summary>'
-        f'<div style="font-size:12px;line-height:1.55;opacity:0.85;margin:6px 0 4px 0;">{_md_bold(t(f"footer.{k}_body"))}</div>'
+        f'<div style="font-size:12px;line-height:1.55;color:{P["soft"]};margin:6px 0 4px 0;">{_md_bold(t(f"footer.{k}_body"))}</div>'
         f"</details>" for k in ("sources", "ai", "privacy", "terms"))
-    logo = _img_uri("clee_vertical_whitegold.png")
-    wordmark = _img_uri("uc_berkeley_wordmark_blue.png")
+    logo = _img_uri(P["logo"])
+    wordmark = _img_uri(P["wordmark"])
     note = (f'<div style="font-size:11px;opacity:0.8;margin-top:4px;">{t("footer.translation_note")}</div>'
             if lang != "en" else "")
     col = "flex:1 1 180px;min-width:170px;"
@@ -623,24 +639,24 @@ def render_footer():
         '<div class="clee-site-footer" style="position:relative;width:100vw;left:50%;margin-left:-50vw;'
         'margin-top:64px;font-family:Inter,sans-serif;">'
         # ---- green band
-        f'<div style="background:{CLEE_GREEN};color:#ffffff;padding:48px 0 40px 0;">'
+        f'<div style="background:{P["band"]};color:{P["text"]};border-top:1px solid {P["border"]};padding:48px 0 40px 0;">'
         '<div class="clee-ft-inner" style="max-width:1280px;box-sizing:border-box;margin:0 auto;padding:0 5rem;display:flex;flex-wrap:wrap;gap:36px 48px;">'
         f'<div style="flex:1.6 1 260px;min-width:240px;">'
         + (f'<a href="{CLEE_URL}" target="_blank" rel="noopener"><img src="{logo}" alt="UC Berkeley Center for Law, '
-           f'Energy &amp; the Environment" style="height:58px;width:auto;display:block;margin-bottom:16px;"></a>'
+           f'Energy &amp; the Environment" style="height:52px;width:auto;display:block;margin-bottom:16px;"></a>'
            if logo else "")
         + f'<div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:14.5px;line-height:1.5;">{t("footer.clee_line")}</div>'
-        f'<div style="font-size:12.5px;line-height:1.6;opacity:0.85;margin-top:6px;max-width:380px;">{t("footer.clee_body")}</div>'
+        f'<div style="font-size:12.5px;line-height:1.6;color:{P["soft"]};margin-top:6px;max-width:380px;">{t("footer.clee_body")}</div>'
         "</div>"
         f'<div style="{col}"><div style="{head}">{t("footer.explore")}</div>{pages}</div>'
         f'<div style="{col}"><div style="{head}">{t("footer.resources")}</div>{resources}</div>'
         f'<div style="{col}"><div style="{head}">{t("footer.legal")}</div>{legal}</div>'
         "</div></div>"
         # ---- gold strip
-        '<div style="background:#fde38a;color:#1b2a4a;padding:16px 0;">'
+        f'<div style="background:{P["strip"]};color:{P["strip_text"]};padding:16px 0;">'
         '<div class="clee-ft-inner" style="max-width:1280px;box-sizing:border-box;margin:0 auto;padding:0 5rem;display:flex;flex-wrap:wrap;align-items:center;'
         'justify-content:space-between;gap:12px 32px;">'
-        + (f'<img src="{wordmark}" alt="UC Berkeley" style="height:26px;width:auto;display:block;">' if wordmark
+        + (f'<img src="{wordmark}" alt="UC Berkeley" style="height:22px;width:auto;display:block;">' if wordmark
            else '<span style="font-weight:700;">UC Berkeley</span>')
         + f'<div class="clee-ft-copy" style="flex:1 1 320px;font-size:12px;line-height:1.5;max-width:760px;text-align:right;">{t("footer.copyright")}'
         f'<div style="font-size:11px;opacity:0.8;margin-top:2px;">{t("footer.thirdparty")}</div>{note}</div>'
