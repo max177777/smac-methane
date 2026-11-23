@@ -592,7 +592,7 @@ FOOTER_PAGES = [("", "nav.overview"), ("Data_Methods", "nav.methods"), ("Global_
 # Footer palettes, taken from the site's own colours (see :root above).
 #   "light": paper-mint band, moss headings, Berkeley-blue logos — blends with the pages
 #   "dark":  near-black green band, mint headings, white logos — a clear end to the page
-FOOTER_STYLE = "light"
+FOOTER_STYLE = "dark"
 FOOTER_THEMES = {
     "light": dict(band="#f4f8f6", border="#e2e9e5", text="#12161a", soft="#566058", head="#0e9d6c",
                   strip="#e7f5ee", strip_text="#566058", logo="clee_vertical_blue.png",
