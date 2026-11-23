@@ -140,17 +140,13 @@ def _on_change():
     st.query_params["lang"] = st.session_state["lang"]
 
 
-def language_switcher(left=None) -> None:
+def language_switcher() -> None:
     """Compact picker, right-aligned at the top of the page. Call once per run
-    (app.py does), before the page renders. `left`, if given, is called to fill
-    the slot just left of the picker (app.py puts the CLEE logo there)."""
+    (app.py does), before the page renders."""
     lang = current_lang()
     if st.query_params.get("lang") != lang:
         st.query_params["lang"] = lang
-    _, lcol, right = st.columns([3.6, 2.4, 1], vertical_alignment="center")
-    if left is not None:
-        with lcol:
-            left()
+    _, right = st.columns([6, 1])
     with right:
         st.selectbox(
             "Language", options=list(LANGS), index=list(LANGS).index(lang),
