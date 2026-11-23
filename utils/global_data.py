@@ -159,3 +159,49 @@ def year_ranking(year: int) -> pd.DataFrame:
 
 def data_years() -> list[int]:
     return sorted(int(y) for y in monthly()["year"].unique())
+
+
+# ------------------------------------------------------------ country totals
+# Nov-2026 feedback: with every level-1 admin now covered, show a country's total
+# again — as the sum of its states/provinces, and (when data/global/
+# country_monthly.csv has been fetched) next to Climate TRACE's own national
+# figure, whose difference is emissions not attributed to any admin.
+
+@st.cache_data(show_spinner=False)
+def national_monthly() -> pd.DataFrame:
+    """Climate TRACE country (level-0) totals, if fetched; else empty."""
+    p = GLOBAL_DIR / "country_monthly.csv"
+    if not p.exists():
+        return pd.DataFrame(columns=["iso3", "year", "month", "ch4_tonnes"])
+    return pd.read_csv(p)
+
+
+@st.cache_data(show_spinner=False)
+def country_year_totals(year: int) -> pd.DataFrame:
+    """One row per country for `year`: iso3, country_name, subnational_sum,
+    n_admins, national (NaN if not fetched), unattributed (national − sum),
+    rank. Partial years use the same months for both figures."""
+    m = monthly()
+    m = m[m["year"] == year].merge(admins()[["gadm_id", "iso3", "country_name"]], on="gadm_id")
+    out = (m.groupby(["iso3", "country_name"], as_index=False)
+             .agg(subnational_sum=("ch4_tonnes", "sum"), n_admins=("gadm_id", "nunique")))
+    months = sorted(m["month"].unique())
+    nat = national_monthly()
+    nat = nat[(nat["year"] == year) & nat["month"].isin(months)]
+    nat = nat.groupby("iso3", as_index=False)["ch4_tonnes"].sum().rename(columns={"ch4_tonnes": "national"})
+    out = out.merge(nat, on="iso3", how="left")
+    out["unattributed"] = out["national"] - out["subnational_sum"]
+    basis = out["national"].fillna(out["subnational_sum"])
+    out["rank"] = basis.rank(ascending=False, method="min").astype(int)
+    return out.sort_values("rank").reset_index(drop=True)
+
+
+def country_admins(iso3: str, year: int) -> pd.DataFrame:
+    """Every admin of one country for `year`, largest first, with share of the
+    country's subnational sum. Columns: gadm_id, location, ch4_tonnes, share_pct."""
+    rank = year_ranking(year)
+    sub = rank[rank["iso3"] == iso3].merge(admins()[["gadm_id", "location"]], on="gadm_id")
+    tot = sub["ch4_tonnes"].sum()
+    sub["share_pct"] = sub["ch4_tonnes"] / tot * 100 if tot else 0.0
+    return sub.sort_values("ch4_tonnes", ascending=False).reset_index(drop=True)[
+        ["gadm_id", "location", "ch4_tonnes", "share_pct"]]

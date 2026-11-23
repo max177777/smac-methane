@@ -26,17 +26,24 @@ RUST = "#c9645a"      # tertiary chart accent
 SKY = "#4c8bf5"       # quaternary chart accent
 
 
+def _fill(hex_color: str, alpha: float = 0.12) -> str:
+    h = hex_color.lstrip("#")
+    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    return f"rgba({r},{g},{b},{alpha})"
+
+
 def time_series_plotly(df: pd.DataFrame, y_col: str = "ch4_tonnes",
-                        title: str = "", height: int = 320) -> go.Figure:
-    """Monthly time series with area fill. df must have 'date' and y_col columns."""
+                       title: str = "", height: int = 320, color: str | None = None) -> go.Figure:
+    """Monthly time series with area fill. df must have 'date' and y_col columns.
+    `color` (hex) overrides the default green, e.g. a sector colour."""
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=df["date"],
         y=df[y_col],
         mode="lines",
-        line=dict(color=MOSS, width=2),
+        line=dict(color=color or MOSS, width=2),
         fill="tozeroy",
-        fillcolor="rgba(14,157,108,0.12)",
+        fillcolor=_fill(color) if color else "rgba(14,157,108,0.12)",
         name="CH₄ tonnes",
         hovertemplate="<b>%{x|%b %Y}</b><br>%{y:,.0f} t CH₄<extra></extra>",
     ))

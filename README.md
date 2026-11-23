@@ -36,6 +36,14 @@ All Climate TRACE data is pulled locally, then committed:
 It is resumable (re-run to continue) and writes `data/ct_snapshot.json`, which
 sets the snapshot date shown on the site.
 
+Country totals on the Global View page are the sum of each country's
+states/provinces. To show Climate TRACE's own national totals next to them (and
+the share not attributed to any region, e.g. offshore oil & gas), run:
+
+    python scripts/fetch_climatetrace_all.py --national-only   # ~230 countries, a few minutes
+
+It writes `data/global/country_monthly.csv`; the page picks it up automatically.
+
 The full run also builds `data/global/` (every level-1 admin worldwide) for the
 **Global View** page; until those files are committed the page shows a notice.
 
@@ -50,7 +58,8 @@ The full run also builds `data/global/` (every level-1 admin worldwide) for the
 
 ## Languages
 
-The site is available in English, 中文, Español, Português, 한국어 and हिन्दी
+The site is available in English, 中文, Español, Português, 한국어, हिन्दी, Français,
+Deutsch, Bahasa Indonesia and Italiano
 (switcher top-right; the choice is kept in the `?lang=` URL parameter, so a link
 like `…/?lang=pt` opens in Portuguese). The chat answers in the chosen language.
 

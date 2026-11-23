@@ -7,6 +7,7 @@ than the SMAC Members page, which keeps the document library, action plans and
 sub-sector drill-down. Data: data/global/, built by scripts/fetch_climatetrace_all.py.
 """
 
+import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -62,24 +63,47 @@ with pc2:
 if gid is None:
     rank = gd.year_ranking(year)
     n_mo = len(gd.monthly().query("year == @year")["month"].unique())
-    top = rank.nsmallest(15, "rank_world").merge(adm[["gadm_id", "location", "country_name"]],
-                                                 on="gadm_id")  # rank already carries iso3
-    eyebrow(t("global.lead_eyebrow"))
     _part = t("global.first_months", n=n_mo) if 0 < n_mo < 12 else ""
-    st.markdown(f"<h3>{t('global.lead_h3', y=year)}{_part}</h3>", unsafe_allow_html=True)
-    d = top.sort_values("ch4_tonnes")
+    eyebrow(t("global.lead_eyebrow"))
+    _view = st.radio(t("global.lead_view"), ["sub", "country"], horizontal=True,
+                     format_func=lambda v: t("global.lead_view_sub") if v == "sub" else t("global.lead_view_country"),
+                     key="gv_lead_view", label_visibility="collapsed")
+    if _view == "country":
+        ct = gd.country_year_totals(year).head(15)
+        ct["value"] = ct["national"].fillna(ct["subnational_sum"])
+        d = ct.sort_values("value")
+        st.markdown(f"<h3>{t('global.lead_country_h3', y=year)}{_part}</h3>", unsafe_allow_html=True)
+        _labels = [country_name(r.iso3, r.country_name) for r in d.itertuples()]
+        _x = d["value"]
+        _custom = d["n_admins"]
+        _hover = "<b>%{y}</b><br>%{x:,.0f} t CH₄<br>" + t("global.hover_n_admins") + "<extra></extra>"
+    else:
+        top = rank.nsmallest(15, "rank_world").merge(adm[["gadm_id", "location", "country_name"]],
+                                                     on="gadm_id")  # rank already carries iso3
+        st.markdown(f"<h3>{t('global.lead_h3', y=year)}{_part}</h3>", unsafe_allow_html=True)
+        d = top.sort_values("ch4_tonnes")
+        _labels = [f"{r.location}, {country_name(r.iso3, r.country_name)}" for r in d.itertuples()]
+        _x = d["ch4_tonnes"]
+        _custom = None
+        _hover = "<b>%{y}</b><br>%{x:,.0f} t CH₄<extra></extra>"
     fig = go.Figure(go.Bar(
-        x=d["ch4_tonnes"],
-        y=[f"{r.location}, {country_name(r.iso3, r.country_name)}" for r in d.itertuples()],
+        x=_x,
+        y=_labels,
+        customdata=_custom,
         orientation="h",
         marker_color="#0e9d6c",
-        hovertemplate="<b>%{y}</b><br>%{x:,.0f} t CH₄<extra></extra>",
+        hovertemplate=_hover,
     ))
     fig.update_layout(height=460, margin=dict(l=0, r=10, t=6, b=10),
                       paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                       xaxis=dict(title="CH₄ (t)", tickformat=",.0f", gridcolor=LINE_SOFT),
                       font=dict(family="Inter, sans-serif", size=12))
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    if _view == "country":
+        _note = ("global.country_basis_national" if gd.national_monthly().shape[0]
+                 else "global.country_basis_sum")
+        st.markdown(f'<div class="smac-meta" style="font-size:10px;margin-bottom:6px;">{t(_note)}</div>',
+                    unsafe_allow_html=True)
     st.markdown(f'<div class="smac-meta">{t("global.pick_hint")}</div>', unsafe_allow_html=True)
     render_footer()
     st.stop()
@@ -150,6 +174,67 @@ if lfl["is_partial"]:
         unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
+
+# ============== COUNTRY CONTEXT: this region vs the country total ==============
+# Nov-2026 feedback — e.g. Germany's 16 Länder vs Germany's total.
+_ct = gd.country_year_totals(year)
+_ct = _ct[_ct["iso3"] == row["iso3"]]
+if len(_ct):
+    c0 = _ct.iloc[0]
+    _ca = gd.country_admins(row["iso3"], year)
+    _share = float(_ca.loc[_ca["gadm_id"] == gid, "share_pct"].sum())
+    _has_nat = c0["national"] == c0["national"]   # not NaN
+    eyebrow(t("global.country_eyebrow"))
+    st.markdown(f"<h3>{t('global.country_h3', loc=loc, country=country, y=year)}</h3>",
+                unsafe_allow_html=True)
+    q1, q2, q3 = st.columns(3)
+    with q1:
+        st.metric(t("global.kpi_country_sum", n=int(c0["n_admins"])), f"{fmt_mt(c0['subnational_sum'])} Mt",
+                  t("global.kpi_country_rank", pos=int(c0["rank"]), n=len(gd.country_year_totals(year))),
+                  delta_color="off", help=t("global.help_country_sum"))
+    with q2:
+        st.metric(t("global.kpi_share", loc=loc), f"{_share:.1f}%",
+                  t("global.kpi_share_delta", pos=int(rr.iloc[0]["rank_country"]) if len(rr) else 0,
+                    n=int(c0["n_admins"])),
+                  delta_color="off")
+    with q3:
+        if _has_nat:
+            _un = c0["unattributed"]
+            st.metric(t("global.kpi_national"), f"{fmt_mt(c0['national'])} Mt",
+                      t("global.kpi_unattributed", v=fmt_mt(_un),
+                        pct=f"{_un / c0['national'] * 100:.1f}" if c0["national"] else "0"),
+                      delta_color="off", help=t("global.help_national"))
+        else:
+            st.metric(t("global.kpi_national"), "—", t("global.national_pending"), delta_color="off",
+                      help=t("global.help_national"))
+
+    # Bar: every admin in the country (top 14 + the rest), this one highlighted.
+    _top = _ca if len(_ca) <= 16 else _ca.head(14)
+    if gid not in set(_top["gadm_id"]):
+        _top = pd.concat([_top.head(13), _ca[_ca["gadm_id"] == gid]])
+    _rest = _ca[~_ca["gadm_id"].isin(_top["gadm_id"])]
+    _bars = [(r.location, r.ch4_tonnes, r.gadm_id == gid) for r in _top.itertuples()]
+    if len(_rest):
+        _bars.append((t("global.other_admins", n=len(_rest)), _rest["ch4_tonnes"].sum(), False))
+    if _has_nat and c0["unattributed"] > 0:
+        _bars.append((t("global.unattributed_bar"), c0["unattributed"], None))
+    _bars = _bars[::-1]
+    _colors = ["#0e9d6c" if h else ("#d7ddd9" if h is None else "#a9c9bb") for _, _, h in _bars]
+    fig = go.Figure(go.Bar(
+        x=[v for _, v, _ in _bars], y=[n for n, _, _ in _bars], orientation="h",
+        marker=dict(color=_colors, line=dict(color=["#0e9d6c" if h else "rgba(0,0,0,0)" for _, _, h in _bars],
+                                             width=1)),
+        hovertemplate="<b>%{y}</b><br>%{x:,.0f} t CH₄<extra></extra>",
+    ))
+    fig.update_layout(height=max(220, 26 * len(_bars) + 40), margin=dict(l=0, r=10, t=6, b=10),
+                      paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                      xaxis=dict(title="CH₄ (t)", tickformat=",.0f", gridcolor=LINE_SOFT),
+                      font=dict(family="Inter, sans-serif", size=12))
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.markdown(f'<div class="smac-meta" style="font-size:10px;">'
+                f'{t("global.country_basis_national" if _has_nat else "global.country_basis_sum")}</div>',
+                unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
 # ============== TREND + SECTOR MIX ==============
 ca, cb = st.columns([1.3, 1], gap="large")

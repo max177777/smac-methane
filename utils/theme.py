@@ -12,9 +12,27 @@ All original class names (smac-eyebrow, smac-meta, smac-struct-label,
 smac-method-block, smac-flag) are preserved, so existing pages keep working untouched.
 """
 
+import base64
+from functools import lru_cache
 from itertools import count
+from pathlib import Path
 
 import streamlit as st
+
+# UC Berkeley Law · CLEE brand colours (sampled from CLEE's official logo files).
+CLEE_GREEN = "#00553a"
+CLEE_GOLD = "#f9ad0c"
+CLEE_URL = "https://www.law.berkeley.edu/research/clee/"
+ASSETS = Path(__file__).parent.parent / "assets"
+
+
+@lru_cache(maxsize=None)
+def _img_uri(name: str) -> str:
+    """assets/<name> as a data: URI, so st.markdown can show it inline."""
+    try:
+        return "data:image/png;base64," + base64.b64encode((ASSETS / name).read_bytes()).decode()
+    except OSError:
+        return ""
 
 
 CSS = """
@@ -468,6 +486,25 @@ def inject_theme():
     st.markdown(CSS, unsafe_allow_html=True)
 
 
+def brand_bar():
+    """UC Berkeley · CLEE band at the top of every page (called once from app.py)."""
+    from utils.i18n import t
+    logo = _img_uri("clee_horizontal_whitegold.png")
+    st.markdown(
+        f'<div class="clee-brand-bar" style="background:{CLEE_GREEN};border-radius:12px;'
+        f'padding:12px 20px;margin:0;display:flex;align-items:center;'
+        f'justify-content:space-between;gap:16px;flex-wrap:wrap;">'
+        + (f'<a href="{CLEE_URL}" target="_blank" rel="noopener" style="line-height:0;">'
+           f'<img src="{logo}" alt="UC Berkeley Center for Law, Energy &amp; the Environment" '
+           f'style="height:30px;width:auto;max-width:100%;display:block;"></a>' if logo
+           else f'<span style="color:{CLEE_GOLD};font-weight:700;">UC Berkeley · CLEE</span>')
+        + f'<span style="font-family:Quicksand,sans-serif;font-size:12px;font-weight:600;'
+        f'letter-spacing:0.06em;color:rgba(255,255,255,0.88);">{t("brand.tagline")}</span>'
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+
 def eyebrow(text: str):
     """Render a small section eyebrow label."""
     st.markdown(f'<div class="smac-eyebrow">{text}</div>', unsafe_allow_html=True)
@@ -555,6 +592,23 @@ def render_footer():
     doesn't need its own nav page, and doesn't bloat every page by default."""
     from utils.i18n import t, current_lang
     st.markdown("<br><br>", unsafe_allow_html=True)
+    # CLEE identification block (Nov-2026 feedback: footer must identify CLEE).
+    logo = _img_uri("clee_vertical_whitegold.png")
+    st.markdown(
+        f'<div class="clee-footer" style="background:{CLEE_GREEN};border-radius:14px;padding:22px 26px;'
+        f'margin-bottom:22px;display:flex;align-items:center;gap:28px;flex-wrap:wrap;">'
+        + (f'<a href="{CLEE_URL}" target="_blank" rel="noopener">'
+           f'<img src="{logo}" alt="UC Berkeley Center for Law, Energy &amp; the Environment" '
+           f'style="height:64px;width:auto;display:block;"></a>' if logo else "")
+        + '<div style="flex:1;min-width:240px;color:#ffffff;">'
+        f'<div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:15px;line-height:1.5;">'
+        f'{t("footer.clee_line")}</div>'
+        f'<div style="font-size:12.5px;line-height:1.55;opacity:0.85;margin-top:4px;">{t("footer.clee_body")}</div>'
+        f'<a href="{CLEE_URL}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;'
+        f'font-size:12.5px;font-weight:600;color:{CLEE_GOLD};text-decoration:none;">{t("footer.clee_link")} →</a>'
+        "</div></div>",
+        unsafe_allow_html=True,
+    )
     note = ("" if current_lang() == "en" else
             f'<div style="font-size:11px;color:var(--ink-soft);opacity:0.75;margin-top:4px;">'
             f'{t("footer.translation_note")}</div>')

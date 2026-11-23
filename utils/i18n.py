@@ -36,6 +36,10 @@ LANGS: dict[str, str] = {
     "pt": "Português",
     "ko": "한국어",
     "hi": "हिन्दी",
+    "fr": "Français",
+    "de": "Deutsch",
+    "id": "Bahasa Indonesia",
+    "it": "Italiano",
 }
 DEFAULT = "en"
 
@@ -43,6 +47,7 @@ DEFAULT = "en"
 LANG_ENGLISH_NAME = {
     "en": "English", "zh": "Simplified Chinese", "es": "Spanish",
     "pt": "Brazilian Portuguese", "ko": "Korean", "hi": "Hindi",
+    "fr": "French", "de": "German", "id": "Indonesian", "it": "Italian",
 }
 
 
@@ -135,13 +140,17 @@ def _on_change():
     st.query_params["lang"] = st.session_state["lang"]
 
 
-def language_switcher() -> None:
+def language_switcher(left=None) -> None:
     """Compact picker, right-aligned at the top of the page. Call once per run
-    (app.py does), before the page renders."""
+    (app.py does), before the page renders. `left`, if given, is called to fill
+    the space to the left of the picker (app.py puts the CLEE brand bar there)."""
     lang = current_lang()
     if st.query_params.get("lang") != lang:
         st.query_params["lang"] = lang
-    _, right = st.columns([6, 1])
+    lcol, right = st.columns([6, 1], vertical_alignment="center")
+    if left is not None:
+        with lcol:
+            left()
     with right:
         st.selectbox(
             "Language", options=list(LANGS), index=list(LANGS).index(lang),

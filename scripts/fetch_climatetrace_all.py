@@ -33,6 +33,7 @@ USAGE — everything is resumable: re-running skips work already cached.
     python scripts/fetch_climatetrace_all.py                    # everything (several hours)
     python scripts/fetch_climatetrace_all.py --countries ESP,MEX --limit-admins 5   # quick test
     python scripts/fetch_climatetrace_all.py --build-only       # rebuild outputs from cache
+    python scripts/fetch_climatetrace_all.py --national-only    # a few min: country totals for Global View
 
 The raw cache lives OUTSIDE the repo (default: ../ct_cache next to the repo
 folder) so it can never be committed by accident. Delete it to force a
@@ -427,6 +428,36 @@ def build_global(admins: pd.DataFrame, cache: Path, facility_years: list[int]) -
 
 
 # ------------------------------------------------------------ main
+def build_national(isos: list[str], cache: Path) -> None:
+    """Climate TRACE's own country (level-0) totals -> data/global/country_monthly.csv.
+
+    The Global View compares these with the sum of a country's level-1 admins:
+    the gap is emissions Climate TRACE attributes to the country but not to any
+    state/province (offshore oil & gas, shipping, sources outside admin
+    boundaries). Uses the same /sources/emissions call as the admins, with the
+    ISO3 code as gadmId; cached under emissions/<ISO3>.json."""
+    GLOBAL.mkdir(parents=True, exist_ok=True)
+    out, failed = [], []
+    for i, iso in enumerate(isos, 1):
+        try:
+            e = fetch_emissions(iso, cache)
+        except FetchFailed as ex:
+            failed.append(iso)
+            log(f"  ! national {iso}: {ex} — will retry on the next run")
+            continue
+        if not e or e.get("empty"):
+            continue
+        out += [(iso, y, m, round(v, 3)) for y, m, v in e["totals"]]
+        if i % 25 == 0 or i == len(isos):
+            log(f"  national {i}/{len(isos)}")
+    if out:
+        pd.DataFrame(out, columns=["iso3", "year", "month", "ch4_tonnes"]) \
+            .to_csv(GLOBAL / "country_monthly.csv", index=False)
+        log(f"national: {len({r[0] for r in out})} countries -> data/global/country_monthly.csv")
+    if failed:
+        log(f"{len(failed)} countr(ies) failed: {failed[:20]}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--smac-only", action="store_true", help="only the 37 SMAC jurisdictions")
@@ -437,6 +468,9 @@ def main():
                     help="skip the (slow) global facility fetch")
     ap.add_argument("--global-facility-years", default="2025",
                     help="years for the global top-20 facilities (default 2025)")
+    ap.add_argument("--national-only", action="store_true",
+                    help="only Climate TRACE's country (level-0) totals for the Global View "
+                         "(~230 countries, a few minutes); skips SMAC and admins")
     ap.add_argument("--cache", default=str(ROOT.parent / "ct_cache"),
                     help="raw cache folder (default: ../ct_cache, outside the repo)")
     args = ap.parse_args()
@@ -446,6 +480,15 @@ def main():
         global OFFLINE
         OFFLINE = True
     log(f"cache: {cache}")
+
+    if args.national_only:
+        admins = load_admins(cache)
+        isos = sorted(admins["iso3"].dropna().unique())
+        if args.countries:
+            isos = [i for i in isos if i in {c.strip().upper() for c in args.countries.split(",")}]
+        log(f"\nNATIONAL: {len(isos)} countries")
+        build_national(isos, cache)
+        return
 
     # ---- SMAC ----
     gadm_map = fps.build_gadm_map()           # reuses data/smac_gadm_ids.json, resolves Catalonia
@@ -489,6 +532,8 @@ def main():
             log(f"\n{len(failed)} admin(s) failed and were not cached: {failed[:20]} — "
                 f"just re-run the same command to retry them.")
         build_global(admins, cache, fy)
+        log("\nNATIONAL totals")
+        build_national(sorted(admins["iso3"].dropna().unique()), cache)
 
     (DATA / "ct_snapshot.json").write_text(json.dumps({
         "pulled": date.today().isoformat(), "api_version": API_VERSION,
