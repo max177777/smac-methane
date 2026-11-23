@@ -17,6 +17,7 @@ from utils.data_loader import (
     all_member_locations, member_status, location_yearly, location_monthly,
     smac_wide_ranking, location_sectors, top_sectors_pareto, action_plan_bullets,
     location_yoy_like_for_like, has_location_data, location_subsectors, SECTOR_ORDER,
+    location_sector_list,
     top_point_sources, top_facility_sources, fmt_int, fmt_mt, pct_change, display_name,
 )
 from utils.policy_content import POLICY, GWP100, GWP20, get_official_plans
@@ -301,10 +302,33 @@ col_a, col_b = st.columns([1.3, 1], gap="large")
 
 with col_a:
     eyebrow(t("common.monthly_series"))
-    st.markdown(f"<h3>{t('common.ch4_tonnes')} · {DATA_RANGE_LABEL}</h3>", unsafe_allow_html=True)
-    monthly = location_monthly(iso, loc)
-    st.plotly_chart(time_series_plotly(monthly, height=320), use_container_width=True,
-                    config={"displayModeBar": False})
+    # Nov-2026 feedback: let users see the monthly trend of one sector, not only the total.
+    _ALL = "__all__"
+    _ts_opts = [_ALL] + location_sector_list(iso, loc)
+    _hc, _sc = st.columns([1.4, 1], vertical_alignment="bottom")
+    with _sc:
+        ts_sector = st.selectbox(
+            t("profile.ts_sector_select"), options=_ts_opts, index=0,
+            format_func=lambda s: t("profile.ts_all_sectors") if s == _ALL else sector_name(s),
+            key=f"ts_sector_{iso}_{loc}",
+        )
+    _sel = None if ts_sector == _ALL else ts_sector
+    with _hc:
+        _what = t("common.ch4_tonnes") if _sel is None else f"{sector_name(_sel)} · {t('common.ch4_tonnes')}"
+        st.markdown(f"<h3>{_what} · {DATA_RANGE_LABEL}</h3>", unsafe_allow_html=True)
+    monthly = location_monthly(iso, loc, _sel)
+    st.plotly_chart(
+        time_series_plotly(monthly, height=320,
+                           color=None if _sel is None else SECTOR_COLORS.get(_sel)),
+        use_container_width=True, config={"displayModeBar": False})
+    if _sel is not None:
+        _tot = location_monthly(iso, loc)["ch4_tonnes"].sum()
+        _sec = monthly["ch4_tonnes"].sum()
+        if _tot:
+            st.markdown(
+                f'<div class="smac-meta" style="font-size:10px;">'
+                f'{t("profile.ts_sector_share", sector=sector_name(_sel), pct=f"{_sec / _tot * 100:.1f}", loc=loc_display, r=DATA_RANGE_LABEL)}'
+                f"</div>", unsafe_allow_html=True)
 
 with col_b:
     eyebrow(t("common.sector_breakdown"))

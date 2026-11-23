@@ -32,7 +32,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 I18N = ROOT / "i18n"
-LANGS = ["en", "zh", "es", "pt", "ko", "hi"]
+LANGS = ["en", "zh", "es", "pt", "ko", "hi", "fr", "de", "id", "it"]
 GENERATED_PREFIXES = ("policy.", "pathway.", "action.", "subsector.", "uc.")
 
 

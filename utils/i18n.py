@@ -36,6 +36,10 @@ LANGS: dict[str, str] = {
     "pt": "Português",
     "ko": "한국어",
     "hi": "हिन्दी",
+    "fr": "Français",
+    "de": "Deutsch",
+    "id": "Bahasa Indonesia",
+    "it": "Italiano",
 }
 DEFAULT = "en"
 
@@ -43,6 +47,7 @@ DEFAULT = "en"
 LANG_ENGLISH_NAME = {
     "en": "English", "zh": "Simplified Chinese", "es": "Spanish",
     "pt": "Brazilian Portuguese", "ko": "Korean", "hi": "Hindi",
+    "fr": "French", "de": "German", "id": "Indonesian", "it": "Italian",
 }
 
 

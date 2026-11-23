@@ -11,7 +11,7 @@ import streamlit as st
 
 st.set_page_config(
     page_title="SMAC · Subnational Methane Insights & Chat",
-    page_icon="🌫",
+    page_icon="assets/clee_square_green.png",
     layout="wide",
     initial_sidebar_state="auto",
     menu_items={
@@ -24,6 +24,11 @@ from utils.i18n import t, language_switcher  # noqa: E402
 # Language picker, top-right of every page (see utils/i18n.py). Page titles in
 # the nav bar follow the chosen language; URLs (/Country_Profile etc.) don't change.
 language_switcher()
+
+# UC Berkeley · CLEE logo at the far left of the header, before the page links
+# (like law.berkeley.edu/clee). Links to the CLEE site.
+st.logo("assets/clee_horizontal_blue.png", size="large",
+        link="https://www.law.berkeley.edu/research/clee/")
 
 overview = st.Page("pages/1_Overview.py", title=t("nav.overview"), default=True)
 data_methods = st.Page("pages/5_Data_Methods.py", title=t("nav.methods"))

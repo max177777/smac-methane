@@ -382,16 +382,30 @@ def location_yearly(iso: str, location: str) -> pd.DataFrame:
 
 
 @st.cache_data(show_spinner=False)
-def location_monthly(iso: str, location: str) -> pd.DataFrame:
-    """Monthly series for a single subnational unit (summed across sectors)."""
+def location_monthly(iso: str, location: str, sector: str | None = None) -> pd.DataFrame:
+    """Monthly series for a single subnational unit — summed across sectors, or
+    for one of the 8 sector categories when `sector` is given."""
     df = load_raw()
     sub = df[(df["iso3_country"] == iso) & (df["location"] == location)]
+    if sector is not None:
+        sub = sub[sub["sector"] == sector]
     out = (
         sub.groupby(["year", "month", "date"], as_index=False)["total_emission"]
         .sum()
         .rename(columns={"total_emission": "ch4_tonnes"})
     )
     return out.sort_values("date").reset_index(drop=True)
+
+
+@st.cache_data(show_spinner=False)
+def location_sector_list(iso: str, location: str) -> list[str]:
+    """Sectors with any emissions for this unit over the whole data range, in
+    the site's standard sector order (for the monthly-series sector picker)."""
+    df = load_raw()
+    sub = df[(df["iso3_country"] == iso) & (df["location"] == location)]
+    tot = sub.groupby("sector")["total_emission"].sum()
+    present = set(tot[tot > 0].index)
+    return [s for s in SECTOR_ORDER if s in present] + sorted(present - set(SECTOR_ORDER))
 
 
 @st.cache_data(show_spinner=False)

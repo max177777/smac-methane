@@ -12,9 +12,27 @@ All original class names (smac-eyebrow, smac-meta, smac-struct-label,
 smac-method-block, smac-flag) are preserved, so existing pages keep working untouched.
 """
 
+import base64
+from functools import lru_cache
 from itertools import count
+from pathlib import Path
 
 import streamlit as st
+
+# UC Berkeley Law · CLEE brand colours (sampled from CLEE's official logo files).
+CLEE_GREEN = "#00553a"
+CLEE_GOLD = "#f9ad0c"
+CLEE_URL = "https://www.law.berkeley.edu/research/clee/"
+ASSETS = Path(__file__).parent.parent / "assets"
+
+
+@lru_cache(maxsize=None)
+def _img_uri(name: str) -> str:
+    """assets/<name> as a data: URI, so st.markdown can show it inline."""
+    try:
+        return "data:image/png;base64," + base64.b64encode((ASSETS / name).read_bytes()).decode()
+    except OSError:
+        return ""
 
 
 CSS = """
@@ -62,6 +80,16 @@ html, body, [class*="css"], .stApp {
   padding-bottom: 4rem;
   max-width: 1280px;
 }
+/* the full-width CLEE footer is the last element: no gap under it */
+[data-testid="stMainBlockContainer"], .main .block-container { padding-bottom: 0 !important; }
+[data-testid="stMain"] { overflow-x: hidden; }
+/* full-width footer on phones: normal side padding, left-aligned copyright */
+@media (max-width: 760px) {
+  .clee-site-footer .clee-ft-inner { padding: 0 1.25rem !important; }
+  .clee-site-footer .clee-ft-copy { text-align: left !important; }
+}
+/* UC Berkeley · CLEE logo in the header, left of the page navigation */
+[data-testid="stHeaderLogo"], [data-testid="stLogo"] { height: 2.6rem !important; max-width: 22rem; }
 
 /* sidebar */
 [data-testid="stSidebar"] {
@@ -549,36 +577,89 @@ def thinking():
     )
 
 
+def _md_bold(text: str) -> str:
+    """Translation strings use **bold**; the footer is raw HTML."""
+    import re
+    return re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
+
+
+# Page url paths (st.navigation derives them from the file names in app.py).
+FOOTER_PAGES = [("", "nav.overview"), ("Data_Methods", "nav.methods"), ("Global_View", "nav.global"),
+                ("Country_Profile", "nav.smac"), ("Comparison", "nav.compare"), ("Chat", "nav.chat"),
+                ("FAQ", "nav.faq"), ("Contact", "nav.contact")]
+
+
+# Footer palettes, taken from the site's own colours (see :root above).
+#   "light": paper-mint band, moss headings, Berkeley-blue logos — blends with the pages
+#   "dark":  near-black green band, mint headings, white logos — a clear end to the page
+FOOTER_STYLE = "light"
+FOOTER_THEMES = {
+    "light": dict(band="#f4f8f6", border="#e2e9e5", text="#12161a", soft="#566058", head="#0e9d6c",
+                  strip="#e7f5ee", strip_text="#566058", logo="clee_vertical_blue.png",
+                  wordmark="uc_berkeley_wordmark_blue.png"),
+    "dark": dict(band="#0f1d17", border="#0f1d17", text="#ffffff", soft="rgba(255,255,255,0.72)", head="#5ee6a8",
+                 strip="#0b0f0d", strip_text="rgba(255,255,255,0.7)", logo="clee_vertical_white.png",
+                 wordmark="uc_berkeley_wordmark_white.png"),
+}
+
+
 def render_footer():
-    """Site-wide footer — call once at the bottom of every page. Short by design
-    (© line + compact link row); the fuller legal text lives in expanders so it
-    doesn't need its own nav page, and doesn't bloat every page by default."""
+    """Site-wide footer, full browser width like law.berkeley.edu/clee: a
+    CLEE-green band (logo + who we are · page links · resources · legal notes)
+    over a gold strip (UC Berkeley wordmark · copyright). Call once at the
+    bottom of every page."""
     from utils.i18n import t, current_lang
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    note = ("" if current_lang() == "en" else
-            f'<div style="font-size:11px;color:var(--ink-soft);opacity:0.75;margin-top:4px;">'
-            f'{t("footer.translation_note")}</div>')
+    lang = current_lang()
+    q = f"?lang={lang}"
+    P = FOOTER_THEMES[FOOTER_STYLE]
+    a = f"color:{P['text']};text-decoration:none;"
+    head = (f"font-family:Quicksand,sans-serif;font-weight:700;font-size:13px;letter-spacing:0.08em;"
+            f"text-transform:uppercase;color:{P['head']};"
+            "margin:0 0 12px 0;")
+    li = "margin:0 0 8px 0;font-size:13.5px;font-weight:600;"
+
+    pages = "".join(f'<div style="{li}"><a href="./{path}{q}" target="_self" style="{a}">{t(key)}</a></div>'
+                    for path, key in FOOTER_PAGES)
+    resources = "".join(f'<div style="{li}"><a href="{url}" target="_blank" rel="noopener" style="{a}">{label} ↗</a></div>'
+                        for url, label in [(CLEE_URL, "CLEE · UC Berkeley Law"),
+                                           ("https://www.smacmethane.org/", "SMAC"),
+                                           ("https://climatetrace.org/", "Climate TRACE")])
+    legal = "".join(
+        f'<details style="margin:0 0 8px 0;"><summary style="cursor:pointer;{li}margin:0;color:{P["text"]};">'
+        f'{t(f"footer.{k}_title")}</summary>'
+        f'<div style="font-size:12px;line-height:1.55;color:{P["soft"]};margin:6px 0 4px 0;">{_md_bold(t(f"footer.{k}_body"))}</div>'
+        f"</details>" for k in ("sources", "ai", "privacy", "terms"))
+    logo = _img_uri(P["logo"])
+    wordmark = _img_uri(P["wordmark"])
+    note = (f'<div style="font-size:11px;opacity:0.8;margin-top:4px;">{t("footer.translation_note")}</div>'
+            if lang != "en" else "")
+    col = "flex:1 1 180px;min-width:170px;"
+
     st.markdown(
-        '<div style="border-top:1px solid var(--line);padding-top:20px;">'
-        '<div style="font-family:Quicksand,sans-serif;font-size:12px;color:var(--ink-soft);line-height:1.6;">'
-        f'{t("footer.copyright")}</div>'
-        '<div style="font-size:11px;color:var(--ink-soft);opacity:0.75;margin-top:4px;max-width:720px;">'
-        f'{t("footer.thirdparty")}</div>{note}'
-        "</div>",
+        '<div class="clee-site-footer" style="position:relative;width:100vw;left:50%;margin-left:-50vw;'
+        'margin-top:64px;font-family:Inter,sans-serif;">'
+        # ---- green band
+        f'<div style="background:{P["band"]};color:{P["text"]};border-top:1px solid {P["border"]};padding:48px 0 40px 0;">'
+        '<div class="clee-ft-inner" style="max-width:1280px;box-sizing:border-box;margin:0 auto;padding:0 5rem;display:flex;flex-wrap:wrap;gap:36px 48px;">'
+        f'<div style="flex:1.6 1 260px;min-width:240px;">'
+        + (f'<a href="{CLEE_URL}" target="_blank" rel="noopener"><img src="{logo}" alt="UC Berkeley Center for Law, '
+           f'Energy &amp; the Environment" style="height:52px;width:auto;display:block;margin-bottom:16px;"></a>'
+           if logo else "")
+        + f'<div style="font-family:Quicksand,sans-serif;font-weight:700;font-size:14.5px;line-height:1.5;">{t("footer.clee_line")}</div>'
+        f'<div style="font-size:12.5px;line-height:1.6;color:{P["soft"]};margin-top:6px;max-width:380px;">{t("footer.clee_body")}</div>'
+        "</div>"
+        f'<div style="{col}"><div style="{head}">{t("footer.explore")}</div>{pages}</div>'
+        f'<div style="{col}"><div style="{head}">{t("footer.resources")}</div>{resources}</div>'
+        f'<div style="{col}"><div style="{head}">{t("footer.legal")}</div>{legal}</div>'
+        "</div></div>"
+        # ---- gold strip
+        f'<div style="background:{P["strip"]};color:{P["strip_text"]};padding:16px 0;">'
+        '<div class="clee-ft-inner" style="max-width:1280px;box-sizing:border-box;margin:0 auto;padding:0 5rem;display:flex;flex-wrap:wrap;align-items:center;'
+        'justify-content:space-between;gap:12px 32px;">'
+        + (f'<img src="{wordmark}" alt="UC Berkeley" style="height:22px;width:auto;display:block;">' if wordmark
+           else '<span style="font-weight:700;">UC Berkeley</span>')
+        + f'<div class="clee-ft-copy" style="flex:1 1 320px;font-size:12px;line-height:1.5;max-width:760px;text-align:right;">{t("footer.copyright")}'
+        f'<div style="font-size:11px;opacity:0.8;margin-top:2px;">{t("footer.thirdparty")}</div>{note}</div>'
+        "</div></div></div>",
         unsafe_allow_html=True,
     )
-
-    st.markdown('<div style="height:10px;"></div>', unsafe_allow_html=True)
-    link_cols = st.columns(6)
-    with link_cols[0]:
-        st.page_link("pages/1_Overview.py", label=t("footer.about"), icon=None)
-    with link_cols[1]:
-        st.page_link("pages/7_FAQ.py", label=t("nav.faq"), icon=None)
-    with link_cols[5]:
-        st.page_link("pages/6_Contact.py", label=t("nav.contact"), icon=None)
-
-    exp_cols = st.columns(4)
-    for col, k in zip(exp_cols, ("sources", "ai", "privacy", "terms")):
-        with col:
-            with st.expander(t(f"footer.{k}_title")):
-                st.markdown(t(f"footer.{k}_body"))
